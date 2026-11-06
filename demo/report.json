@@ -1,10 +1,10 @@
 {
   "product": "StrataSignal",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "schema_version": 1,
   "dataset_kind": "synthetic",
   "as_of": "2026-11-06",
-  "input_sha256": "07e266defc6c50501c0b1fb1c57ba4efba172834718cbe245f7278ae62084d10",
+  "input_sha256": "ec58dd2aab27df5fbab0ac4cb5c3cd8e59b101bc1aa340c1d3af7a9b9ec6578f",
   "scope": "Abastecimento declarado pelo cliente; um material representa uma especificação técnica homogênea.",
   "materials": [
     {
@@ -267,7 +267,7 @@
   "scenario": {
     "country": "CN",
     "duration_days": 45,
-    "reduction": 1,
+    "reduction": 1.0,
     "assumption": "Fluxo normal = demanda constante; redução começa no dia 0; estoque integralmente utilizável. Sem reposição extraordinária.",
     "outcomes": [
       {
@@ -292,5 +292,6 @@
         "replacement_reference_usd": 0.0
       }
     ]
-  }
+  },
+  "portfolio_id": "demo-industrial-minerals"
 }

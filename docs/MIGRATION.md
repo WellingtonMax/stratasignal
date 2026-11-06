@@ -6,6 +6,8 @@ The product was extracted from `products/stratasignal/` in `WellingtonMax/freela
 
 The original commits remain in the portfolio repository's Git history. No source history was rewritten or force-pushed. This repository starts an independent history with an explicit migration reference; it does not claim to contain the original commit graph.
 
+The standalone migration checkpoint is commit `85ee0ea1f363a0b1ba341efb5ba70ba1a6bc0a26`. All 30 source blobs other than the adapted README were verified against the original Git hashes. The dedicated test/packaging workflow and Python/JavaScript CodeQL workflow both completed successfully before retiring the portfolio implementation.
+
 The portfolio becomes a showcase and retains a migration pointer and links to this repository. Its product-specific CI is retired after destination verification. Other portfolio projects and their workflows remain under their existing maintenance scope. Future StrataSignal development belongs here.
 
 The product remains public, like its source repository. Moving it does not remove previously published code from Git history. Customer data, private reports and credentials must not be committed.

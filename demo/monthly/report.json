@@ -1,0 +1,467 @@
+{
+  "product": "StrataSignal",
+  "version": "0.2.0",
+  "schema_version": 1,
+  "dataset_kind": "synthetic",
+  "as_of": "2026-11-06",
+  "input_sha256": "ec58dd2aab27df5fbab0ac4cb5c3cd8e59b101bc1aa340c1d3af7a9b9ec6578f",
+  "scope": "Abastecimento declarado pelo cliente; um material representa uma especificação técnica homogênea.",
+  "materials": [
+    {
+      "material": "ndpr-oxide",
+      "name": "Óxido NdPr · especificação demonstrativa",
+      "monthly_demand_kg": 1200,
+      "stock_kg": 650,
+      "weighted_unit_cost_usd": 63.05,
+      "coverage_days": 16.25,
+      "max_nominal_lead_days": 50,
+      "country_hhi": 7450.0,
+      "supplier_hhi": 7450.0,
+      "top_origin_share": 0.85,
+      "country_shares": {
+        "CN": 0.85,
+        "MY": 0.15
+      },
+      "priority_score": 78,
+      "priority": "alta",
+      "evidence_flags": 2,
+      "observed_orders": 260,
+      "observed_late_orders": 95,
+      "observed_late_rate": 0.3654,
+      "suppliers": [
+        {
+          "supplier": "CN-02",
+          "origin_country": "CN",
+          "allocation_share": 0.85,
+          "nominal_lead_days": 50,
+          "unit_cost_usd": 62
+        },
+        {
+          "supplier": "MY-01",
+          "origin_country": "MY",
+          "allocation_share": 0.15,
+          "nominal_lead_days": 42,
+          "unit_cost_usd": 69
+        }
+      ],
+      "actions": [
+        "Avaliar segunda origem para a mesma especificação; homologação técnica antes de alterar compras.",
+        "Revisar reposição e estoque de segurança: cobertura inferior ao maior prazo nominal.",
+        "Conferir evidências das posições sinalizadas com os emissores e responsáveis por compras."
+      ]
+    },
+    {
+      "material": "graphite-flake",
+      "name": "Grafita natural · flocos 95% (fictícia)",
+      "monthly_demand_kg": 18000,
+      "stock_kg": 10000,
+      "weighted_unit_cost_usd": 4.368,
+      "coverage_days": 16.67,
+      "max_nominal_lead_days": 38,
+      "country_hhi": 5968.0,
+      "supplier_hhi": 5968.0,
+      "top_origin_share": 0.72,
+      "country_shares": {
+        "BR": 0.28,
+        "CN": 0.72
+      },
+      "priority_score": 69,
+      "priority": "alta",
+      "evidence_flags": 4,
+      "observed_orders": 260,
+      "observed_late_orders": 105,
+      "observed_late_rate": 0.4038,
+      "suppliers": [
+        {
+          "supplier": "CN-01",
+          "origin_country": "CN",
+          "allocation_share": 0.72,
+          "nominal_lead_days": 38,
+          "unit_cost_usd": 4.2
+        },
+        {
+          "supplier": "BR-01",
+          "origin_country": "BR",
+          "allocation_share": 0.28,
+          "nominal_lead_days": 24,
+          "unit_cost_usd": 4.8
+        }
+      ],
+      "actions": [
+        "Avaliar segunda origem para a mesma especificação; homologação técnica antes de alterar compras.",
+        "Revisar reposição e estoque de segurança: cobertura inferior ao maior prazo nominal.",
+        "Conferir evidências das posições sinalizadas com os emissores e responsáveis por compras."
+      ]
+    },
+    {
+      "material": "lithium-carbonate",
+      "name": "Carbonato de lítio · grau industrial (fictício)",
+      "monthly_demand_kg": 6000,
+      "stock_kg": 18000,
+      "weighted_unit_cost_usd": 11.450000000000001,
+      "coverage_days": 90.0,
+      "max_nominal_lead_days": 28,
+      "country_hhi": 5050.0,
+      "supplier_hhi": 5050.0,
+      "top_origin_share": 0.55,
+      "country_shares": {
+        "AR": 0.45,
+        "CL": 0.55
+      },
+      "priority_score": 20,
+      "priority": "rotina",
+      "evidence_flags": 0,
+      "observed_orders": 260,
+      "observed_late_orders": 105,
+      "observed_late_rate": 0.4038,
+      "suppliers": [
+        {
+          "supplier": "CL-01",
+          "origin_country": "CL",
+          "allocation_share": 0.55,
+          "nominal_lead_days": 28,
+          "unit_cost_usd": 11
+        },
+        {
+          "supplier": "AR-01",
+          "origin_country": "AR",
+          "allocation_share": 0.45,
+          "nominal_lead_days": 25,
+          "unit_cost_usd": 12
+        }
+      ],
+      "actions": [
+        "Manter revisão periódica das alocações e evidências."
+      ]
+    }
+  ],
+  "metadata_flags": [
+    {
+      "code": "expired_evidence",
+      "material": "graphite-flake",
+      "supplier": "CN-01",
+      "evidence_id": "EV-CN-01"
+    },
+    {
+      "code": "shared_fingerprint",
+      "material": "graphite-flake",
+      "supplier": "CN-01",
+      "evidence_id": "EV-CN-01"
+    },
+    {
+      "code": "origin_mismatch",
+      "material": "graphite-flake",
+      "supplier": "BR-01",
+      "evidence_id": "EV-BR-01"
+    },
+    {
+      "code": "shared_fingerprint",
+      "material": "graphite-flake",
+      "supplier": "BR-01",
+      "evidence_id": "EV-BR-01"
+    },
+    {
+      "code": "issue_after_observation",
+      "material": "ndpr-oxide",
+      "supplier": "CN-02",
+      "evidence_id": "EV-CN-02"
+    },
+    {
+      "code": "missing_evidence",
+      "material": "ndpr-oxide",
+      "supplier": "MY-01",
+      "evidence_id": null
+    }
+  ],
+  "delay_model": {
+    "status": "synthetic_demo",
+    "reason": "Estima atraso em um novo pedido com quantidade igual à alocação mensal e prazo nominal informado.",
+    "algorithm": "Regressão logística regularizada; sem ajuste de hiperparâmetros no holdout.",
+    "evaluation": {
+      "cutoff": "2025-11-13",
+      "train_orders": 556,
+      "test_orders": 195,
+      "latest_train_label_on": "2025-11-12",
+      "right_censored_orders": 0,
+      "brier": 0.20716,
+      "baseline_brier": 0.23568,
+      "roc_auc": 0.73006,
+      "reliability_bins": [
+        {
+          "n": 21,
+          "mean_estimate": 0.1641,
+          "observed_late_rate": 0.0476
+        },
+        {
+          "n": 116,
+          "mean_estimate": 0.3056,
+          "observed_late_rate": 0.3103
+        },
+        {
+          "n": 57,
+          "mean_estimate": 0.4762,
+          "observed_late_rate": 0.6316
+        },
+        {
+          "n": 1,
+          "mean_estimate": 0.6262,
+          "observed_late_rate": 1.0
+        }
+      ],
+      "baseline": "Frequência de atraso no treinamento.",
+      "protocol": "Holdout cronológico único de 25%; rótulos de treino observáveis antes do corte; atributos de histórico atualizados sequencialmente.",
+      "calibration": "Não calibrado para uso operacional; bins descritivos. Um único holdout não valida estabilidade."
+    },
+    "predictions": [
+      {
+        "supplier": "CN-01",
+        "material": "graphite-flake",
+        "estimated_delay_probability": 0.3648,
+        "scenario_quantity_kg": 12960.0,
+        "scenario_quoted_lead_days": 38
+      },
+      {
+        "supplier": "BR-01",
+        "material": "graphite-flake",
+        "estimated_delay_probability": 0.3808,
+        "scenario_quantity_kg": 5040.0,
+        "scenario_quoted_lead_days": 24
+      },
+      {
+        "supplier": "CN-02",
+        "material": "ndpr-oxide",
+        "estimated_delay_probability": 0.464,
+        "scenario_quantity_kg": 1020.0,
+        "scenario_quoted_lead_days": 50
+      },
+      {
+        "supplier": "MY-01",
+        "material": "ndpr-oxide",
+        "estimated_delay_probability": 0.2121,
+        "scenario_quantity_kg": 180.0,
+        "scenario_quoted_lead_days": 42
+      },
+      {
+        "supplier": "CL-01",
+        "material": "lithium-carbonate",
+        "estimated_delay_probability": 0.3446,
+        "scenario_quantity_kg": 3300.0,
+        "scenario_quoted_lead_days": 28
+      },
+      {
+        "supplier": "AR-01",
+        "material": "lithium-carbonate",
+        "estimated_delay_probability": 0.3805,
+        "scenario_quantity_kg": 2700.0,
+        "scenario_quoted_lead_days": 25
+      }
+    ],
+    "use": "Demonstração técnica; validar com dados reais, revisão de calibração e testes prospectivos antes de orientar compras."
+  },
+  "limitations": [
+    "Pontuação de prioridade é uma regra de triagem, não probabilidade de crise.",
+    "Metadados e hashes não comprovam autenticidade, origem física ou conformidade.",
+    "Simulações condicionais não são previsões de eventos geopolíticos.",
+    "Preços unitários são informados no conjunto; custo de referência não é prejuízo ou economia prevista."
+  ],
+  "scenario": {
+    "country": "CN",
+    "duration_days": 45,
+    "reduction": 1.0,
+    "assumption": "Fluxo normal = demanda constante; redução começa no dia 0; estoque integralmente utilizável. Sem reposição extraordinária.",
+    "outcomes": [
+      {
+        "material": "ndpr-oxide",
+        "affected_share": 0.85,
+        "stockout_day": 19.1,
+        "uncovered_kg": 880.0,
+        "replacement_reference_usd": 55484.0
+      },
+      {
+        "material": "graphite-flake",
+        "affected_share": 0.72,
+        "stockout_day": 23.1,
+        "uncovered_kg": 9440.0,
+        "replacement_reference_usd": 41233.92
+      },
+      {
+        "material": "lithium-carbonate",
+        "affected_share": 0,
+        "stockout_day": null,
+        "uncovered_kg": 0,
+        "replacement_reference_usd": 0.0
+      }
+    ]
+  },
+  "portfolio_id": "demo-industrial-minerals",
+  "comparison": {
+    "portfolio_id": "demo-industrial-minerals",
+    "previous_as_of": "2026-10-06",
+    "current_as_of": "2026-11-06",
+    "elapsed_days": 31,
+    "previous_input_sha256": "60b5d2471a20317ccc3ca31adea021057b53b9347f5bfdee2c93d7e1aaee5063",
+    "current_input_sha256": "ec58dd2aab27df5fbab0ac4cb5c3cd8e59b101bc1aa340c1d3af7a9b9ec6578f",
+    "rule_version": "0.2.0",
+    "summary": {
+      "comparable_materials": 3,
+      "added_materials": 0,
+      "removed_materials": 0,
+      "specification_changes": 0,
+      "new_signals": 0,
+      "cleared_signals": 0
+    },
+    "materials": [
+      {
+        "material": "graphite-flake",
+        "name": "Grafita natural · flocos 95% (fictícia)",
+        "metrics": {
+          "country_hhi": {
+            "previous": 5968.0,
+            "current": 5968.0,
+            "delta": 0.0
+          },
+          "supplier_hhi": {
+            "previous": 5968.0,
+            "current": 5968.0,
+            "delta": 0.0
+          },
+          "coverage_days": {
+            "previous": 6.67,
+            "current": 16.67,
+            "delta": 10.0
+          },
+          "max_nominal_lead_days": {
+            "previous": 38,
+            "current": 38,
+            "delta": 0
+          },
+          "priority_score": {
+            "previous": 78,
+            "current": 69,
+            "delta": -9
+          },
+          "stock_kg": {
+            "previous": 4000,
+            "current": 10000,
+            "delta": 6000
+          },
+          "monthly_demand_kg": {
+            "previous": 18000,
+            "current": 18000,
+            "delta": 0
+          }
+        },
+        "new_signals": [],
+        "cleared_signals": [],
+        "supplier_changes": {
+          "added": [],
+          "removed": [],
+          "changed": []
+        },
+        "country_share_changes": [],
+        "status": "comparable"
+      },
+      {
+        "material": "lithium-carbonate",
+        "name": "Carbonato de lítio · grau industrial (fictício)",
+        "metrics": {
+          "country_hhi": {
+            "previous": 5050.0,
+            "current": 5050.0,
+            "delta": 0.0
+          },
+          "supplier_hhi": {
+            "previous": 5050.0,
+            "current": 5050.0,
+            "delta": 0.0
+          },
+          "coverage_days": {
+            "previous": 90.0,
+            "current": 90.0,
+            "delta": 0.0
+          },
+          "max_nominal_lead_days": {
+            "previous": 28,
+            "current": 28,
+            "delta": 0
+          },
+          "priority_score": {
+            "previous": 20,
+            "current": 20,
+            "delta": 0
+          },
+          "stock_kg": {
+            "previous": 18000,
+            "current": 18000,
+            "delta": 0
+          },
+          "monthly_demand_kg": {
+            "previous": 6000,
+            "current": 6000,
+            "delta": 0
+          }
+        },
+        "new_signals": [],
+        "cleared_signals": [],
+        "supplier_changes": {
+          "added": [],
+          "removed": [],
+          "changed": []
+        },
+        "country_share_changes": [],
+        "status": "comparable"
+      },
+      {
+        "material": "ndpr-oxide",
+        "name": "Óxido NdPr · especificação demonstrativa",
+        "metrics": {
+          "country_hhi": {
+            "previous": 7450.0,
+            "current": 7450.0,
+            "delta": 0.0
+          },
+          "supplier_hhi": {
+            "previous": 7450.0,
+            "current": 7450.0,
+            "delta": 0.0
+          },
+          "coverage_days": {
+            "previous": 16.25,
+            "current": 16.25,
+            "delta": 0.0
+          },
+          "max_nominal_lead_days": {
+            "previous": 50,
+            "current": 50,
+            "delta": 0
+          },
+          "priority_score": {
+            "previous": 78,
+            "current": 78,
+            "delta": 0
+          },
+          "stock_kg": {
+            "previous": 650,
+            "current": 650,
+            "delta": 0
+          },
+          "monthly_demand_kg": {
+            "previous": 1200,
+            "current": 1200,
+            "delta": 0
+          }
+        },
+        "new_signals": [],
+        "cleared_signals": [],
+        "supplier_changes": {
+          "added": [],
+          "removed": [],
+          "changed": []
+        },
+        "country_share_changes": [],
+        "status": "comparable"
+      }
+    ],
+    "scope": "Os dois conjuntos foram recalculados com a mesma versão das regras. Mudanças de nome/especificação não recebem deltas. Sinais ausentes na análise atual não comprovam resolução. portfolio_id é declarado pelo operador; não autentica o cliente."
+  }
+}

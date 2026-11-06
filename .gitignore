@@ -10,3 +10,4 @@ reports/
 playwright-results/
 node_modules/
 demo/input.synthetic.json
+demo/input.previous.synthetic.json

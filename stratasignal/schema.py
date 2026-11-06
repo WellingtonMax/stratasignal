@@ -90,7 +90,9 @@ def rows(value, maximum, allow_empty=True):
 
 
 def validate_bundle(data):
-    fields(data, ("schema_version", "dataset_kind", "as_of", "positions", "orders", "evidence"))
+    fields(data, ("schema_version", "dataset_kind", "as_of", "positions", "orders", "evidence"), ("portfolio_id",))
+    if "portfolio_id" in data:
+        identifier(data["portfolio_id"])
     if type(data["schema_version"]) is not int or data["schema_version"] != 1:
         raise InputError("Versão de esquema não suportada")
     if data["dataset_kind"] not in ("synthetic", "client"):

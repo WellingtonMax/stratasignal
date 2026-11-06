@@ -1,6 +1,7 @@
 """Explainable exposure, metadata triage, and deterministic stress scenarios."""
 
 from collections import defaultdict
+from . import __version__
 from .schema import country, day, number, validate_bundle
 
 
@@ -100,7 +101,7 @@ def analyze(data, input_sha256, *, shock_country="CN", duration_days=45, reducti
     if enable_ml:
         from .ml import evaluate_delay_model
         model = evaluate_delay_model(data)
-    report = {"product": "StrataSignal", "version": "0.1.0", "schema_version": 1,
+    report = {"product": "StrataSignal", "version": __version__, "schema_version": 1,
               "dataset_kind": data["dataset_kind"], "as_of": data["as_of"], "input_sha256": input_sha256,
               "scope": "Abastecimento declarado pelo cliente; um material representa uma especificação técnica homogênea.",
               "materials": materials, "metadata_flags": flags, "delay_model": model,
@@ -109,4 +110,6 @@ def analyze(data, input_sha256, *, shock_country="CN", duration_days=45, reducti
                               "Simulações condicionais não são previsões de eventos geopolíticos.",
                               "Preços unitários são informados no conjunto; custo de referência não é prejuízo ou economia prevista."]}
     report["scenario"] = scenario(materials, shock_country, duration_days, reduction)
+    if "portfolio_id" in data:
+        report["portfolio_id"] = data["portfolio_id"]
     return report

@@ -87,5 +87,41 @@
   } else {
     $("market-context").append(node("p","Nenhum arquivo público foi incorporado a este relatório. O adaptador local aceita o CSV oficial do Comex Stat por NCM e período; dados de demonstração não representam comércio real."));
   }
+  const comparison = report.comparison;
+  if (comparison) {
+    $("changes-nav").hidden = false;
+    $("comparison-period").textContent = "Carteira " + comparison.portfolio_id + " · " + comparison.previous_as_of + " → " + comparison.current_as_of + " · " + comparison.elapsed_days + " dias entre cortes";
+    const summary = comparison.summary;
+    metric($("comparison-summary"),"Materiais comparáveis",summary.comparable_materials);
+    metric($("comparison-summary"),"Adicionados / fora do conjunto atual",summary.added_materials + " / " + summary.removed_materials);
+    metric($("comparison-summary"),"Especificações que precisam de revisão",summary.specification_changes);
+    metric($("comparison-summary"),"Sinais novos / ausentes nos materiais comparáveis",summary.new_signals + " / " + summary.cleared_signals);
+    const statusNames = {comparable:"Comparável",added:"Adicionado",removed:"Fora do conjunto atual",specification_changed:"Conferir especificação"};
+    const signed = (value,unit="") => (value > 0 ? "+" : "") + fmt(value,2) + unit;
+    for (const change of comparison.materials) {
+      const tr = node("tr"); const values = [change.name,statusNames[change.status] || change.status];
+      if (change.status === "comparable") {
+        values.push(signed(change.metrics.country_hhi.delta),signed(change.metrics.coverage_days.delta," dias"),signed(change.metrics.priority_score.delta," pontos"),change.new_signals.length + " / " + change.cleared_signals.length);
+      } else { values.push("—","—","—","—"); }
+      values.forEach(v=>tr.append(node("td",v))); $("comparison-table").append(tr);
+      const details = node("div",undefined,"action"); details.append(node("strong",change.name));
+      const lines = [];
+      if (change.status === "specification_changed") lines.push("Nome/especificação anterior: " + change.previous_name + ". Deltas suspensos até conferência técnica.");
+      if (change.status === "added") lines.push("Material incluído neste conjunto; sem base anterior para deltas.");
+      if (change.status === "removed") lines.push("Material ausente do conjunto atual; não se presume o motivo da remoção.");
+      if (change.status === "comparable") {
+        const supplierChanges = change.supplier_changes;
+        if (supplierChanges.added.length) lines.push("Fornecedores adicionados: " + supplierChanges.added.join(", "));
+        if (supplierChanges.removed.length) lines.push("Fornecedores ausentes: " + supplierChanges.removed.join(", "));
+        if (supplierChanges.changed.length) lines.push("Posições com dados alterados: " + supplierChanges.changed.join(", "));
+        change.country_share_changes.forEach(c=>lines.push("Alocação em " + countryName(c.country) + ": " + pct(c.previous) + " → " + pct(c.current) + " (" + signed(c.delta_percentage_points," p.p.") + ")"));
+        change.new_signals.forEach(f=>lines.push("Sinal novo: " + (flagNames[f.code] || f.code) + " · " + f.supplier));
+        change.cleared_signals.forEach(f=>lines.push("Sinal ausente agora: " + (flagNames[f.code] || f.code) + " · " + f.supplier));
+      }
+      if (!lines.length) lines.push("Nenhuma mudança de fornecedores, origens ou sinais documentais; os deltas quantitativos estão na tabela.");
+      lines.forEach(line=>details.append(node("span",line))); $("comparison-details").append(details);
+    }
+    $("comparison-scope").textContent = comparison.scope + " Versão das regras: " + comparison.rule_version + ".";
+  }
   $("download").addEventListener("click", () => { const blob = new Blob([JSON.stringify(report,null,2)], {type:"application/json"}); const url = URL.createObjectURL(blob); const a = node("a"); a.href = url; a.download = "stratasignal-analysis.json"; a.click(); setTimeout(() => URL.revokeObjectURL(url),1000); });
 })();

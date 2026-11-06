@@ -68,4 +68,4 @@ jobs:
         run: |
           /tmp/stratasignal-installed/bin/python -m pip install --no-deps /tmp/stratasignal-wheels/stratasignal-*.whl
           cd /tmp
-          /tmp/stratasignal-installed/bin/python -m stratasignal demo --out /tmp/stratasignal-package-demo --without-ml
+          /tmp/stratasignal-installed/bin/python -m stratasignal demo --with-comparison --out /tmp/stratasignal-package-demo --without-ml

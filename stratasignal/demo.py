@@ -1,6 +1,7 @@
 """Deterministic fictional procurement data; never presented as customer results."""
 
 import hashlib
+import copy
 import random
 from datetime import date, timedelta
 
@@ -12,7 +13,7 @@ def demo_bundle():
         ("ndpr-oxide", "Óxido NdPr · especificação demonstrativa", 1200, 650, [("CN-02", "CN", .85, 50, 62), ("MY-01", "MY", .15, 42, 69)]),
         ("lithium-carbonate", "Carbonato de lítio · grau industrial (fictício)", 6000, 18000, [("CL-01", "CL", .55, 28, 11), ("AR-01", "AR", .45, 25, 12)]),
     ]
-    data = {"schema_version": 1, "dataset_kind": "synthetic", "as_of": "2026-11-06", "positions": [], "orders": [], "evidence": []}
+    data = {"schema_version": 1, "dataset_kind": "synthetic", "portfolio_id": "demo-industrial-minerals", "as_of": "2026-11-06", "positions": [], "orders": [], "evidence": []}
     as_of = date.fromisoformat(data["as_of"])
     for material, name, demand, stock, suppliers in catalog:
         for supplier, origin, allocation, lead, cost in suppliers:
@@ -41,3 +42,14 @@ def demo_bundle():
                                          "expires_on": "2026-09-30" if supplier == "CN-01" else "2027-01-10",
                                          "sha256": hashlib.sha256(digest_source.encode()).hexdigest()})
     return data
+
+
+def demo_previous_bundle():
+    previous = copy.deepcopy(demo_bundle())
+    previous["as_of"] = "2026-10-06"
+    for position in previous["positions"]:
+        if position["material"] == "graphite-flake":
+            position["stock_kg"] -= 6000
+    for evidence in previous["evidence"]:
+        evidence["observed_on"] = "2026-10-01"
+    return previous

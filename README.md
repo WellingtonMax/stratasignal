@@ -4,7 +4,7 @@
 
 **Status:** research-backed product hypothesis; functioning prototype; no paying customers, field validation, security certification or production SaaS claimed. The name is provisional.
 
-[Market research and business model, in Portuguese](docs/MARKET_RESEARCH_PT.md) · [Interactive sample report](demo/report.html) (download and open locally) · [Methodology](docs/METHODOLOGY.md) · [Security](SECURITY.md) · [Verification](docs/VERIFICATION.md)
+[Market research and business model, in Portuguese](docs/MARKET_RESEARCH_PT.md) · [Sample report](demo/report.html) · [Monthly comparison](demo/monthly/report.html) (download HTML and open locally) · [Methodology](docs/METHODOLOGY.md) · [Security](SECURITY.md) · [Verification](docs/VERIFICATION.md) · [Migration record](docs/MIGRATION.md)
 
 ## The service a customer receives
 
@@ -15,6 +15,7 @@ An analyst reviews a bounded procurement dataset and delivers a private HTML dec
 | Exposure analysis | Country and supplier HHI, declared allocations, stock coverage and nominal lead-time comparison, separately for each specification |
 | Metadata triage | Missing evidence, origin disagreement, inconsistent dates, expiration and identical fingerprints across suppliers |
 | Conditional scenarios | Change affected country, supply reduction and duration; calculate uncovered demand and stock depletion |
+| Period comparison | Same-portfolio snapshots: concentration, stock coverage, supplier allocations and new/disappearing documentary signals; specification changes suspend deltas |
 | Machine learning | Regularized logistic regression for order lateness; chronological holdout, matured labels, baseline comparison and abstention |
 | Public-data preparation | Streaming importer for the MDIC's documented local CSV layout, with explicit NCM, flow and period |
 | Private delivery | No network calls, hosted backend, telemetry, external fonts or third-party AI services during analysis or report use |
@@ -37,6 +38,14 @@ python -m stratasignal demo --out reports/demo-001
 
 Open `reports/demo-001/report.html`. It works offline. Navigate between overview, scenarios, evidence and model/provenance. Export JSON from the report. Existing output directories are deliberately refused; use a new run identifier.
 
+To demonstrate the monthly comparison with two explicitly synthetic snapshots:
+
+```bash
+python -m stratasignal demo --with-comparison --out reports/monthly-demo-001
+```
+
+The **Evolução** section shows changes between the two dates. Both synthetic input files are saved in the output directory for inspection.
+
 Without third-party dependencies:
 
 ```bash
@@ -57,6 +66,19 @@ python -m stratasignal analyze \
 Generate the full synthetic input for schema exploration with `python -m stratasignal sample --out sample.synthetic.json`. For each material, demand, stock and name must match across supplier rows and allocation shares must sum to one. Quantities are kilograms and cost is USD/kg. Technical grades, product forms and origin definitions must be reviewed before grouping records. `ZZ` explicitly denotes an unknown origin; two-letter country codes are operator-supplied and not independently verified against an ISO registry.
 
 The schema rejects unknown fields, duplicate IDs, orphan records, unsupported dates, non-finite values and inconsistent allocations. Limit: 4 MiB per JSON input, 20 materials, 64 positions, 3,000 orders and 500 documentary records.
+
+## Compare reporting periods
+
+Use two raw procurement input bundles, not generated report files. Give both a stable, pseudonymous `portfolio_id` for the same customer/portfolio and preserve material/supplier/evidence identifiers across periods. The earlier `as_of` must precede the current one; data kinds must match. Inputs without a portfolio identifier remain supported for a single analysis.
+
+```bash
+python -m stratasignal compare \
+  --previous client-data/previous.private.json \
+  --current client-data/current.private.json \
+  --out reports/monthly-001 --without-ml
+```
+
+Both snapshots are recalculated with the same deterministic rule version. The current report gains a comparison section and its manifest records both input hashes. Renamed specifications, additions and removals are shown separately without fabricated deltas. A disappearing metadata signal is not evidence of verified remediation. `portfolio_id` is an operator declaration, not customer authentication. The comparison does not claim causal effects, model improvement or financial savings.
 
 ## Public data and file metadata
 
@@ -87,7 +109,7 @@ python -m unittest discover -s tests -v
 python -S -m unittest discover -s tests -v
 ```
 
-The second command exercises the standard-library path and skips ML-dependent tests. `npm ci --ignore-scripts && npm test` runs eight test-only DOM interaction/security checks. See [the verification record](docs/VERIFICATION.md) for exact observed results and environment limitations. The dedicated workflow runs rule, ML and report interaction checks independently of the existing portfolio demos.
+The second command exercises the standard-library path and skips ML-dependent tests. `npm ci --ignore-scripts && npm test` runs eleven test-only DOM interaction/security checks. See [the verification record](docs/VERIFICATION.md) for exact observed results and environment limitations. Dedicated workflows run rule, ML, report interaction, installed-package and CodeQL checks for this repository.
 
 ## Commercial boundary
 

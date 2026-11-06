@@ -24,6 +24,8 @@ Only synthetic demonstrations belong in this repository. Client inputs and repor
 
 The app does not parse PDF/Office/XMP content, run OCR, follow document URLs, execute macros, validate digital signatures, check sanctions or certify mineral origins. A suspicious metadata pattern produces a review task, not an accusation.
 
+Period comparison accepts two raw bundles under the same bounded schema, requires a matching declared portfolio ID and data kind, and rejects nonchronological cuts. This reduces accidental mixing; the ID is not authentication or a tenant access control. Both raw input hashes are retained. Specification-name changes suspend deltas. Signal disappearance never establishes verified remediation. The comparison uses the same local rendering and exclusive output controls and adds no network or runtime dependency.
+
 ## Deployment before a shared service
 
 Before considering a hosted service, design authentication/MFA, per-tenant authorization enforced server-side, encrypted transport/storage, key/secret management, upload isolation and scanning, request quotas, audit events, scoped access, retention/deletion, recovery testing and incident response. Independently test those controls. None are made necessary merely to open the local synthetic demo; none are claimed to exist in this MVP.

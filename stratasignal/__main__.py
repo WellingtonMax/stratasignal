@@ -7,7 +7,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from .analytics import analyze
-from .demo import demo_bundle
+from .comparison import compare_bundles
+from .demo import demo_bundle, demo_previous_bundle
 from .market import import_comex, market_summary
 from .report import write_private, write_report
 from .schema import InputError, read_json
@@ -40,16 +41,21 @@ def digest_file(path):
 def parser():
     root = argparse.ArgumentParser(description="StrataSignal — análise privada de abastecimento de minerais críticos")
     commands = root.add_subparsers(dest="command", required=True)
-    for name in ("demo", "analyze"):
+    for name in ("demo", "analyze", "compare"):
         command = commands.add_parser(name)
         command.add_argument("--out", required=True, help="Diretório novo para o relatório")
         command.add_argument("--without-ml", action="store_true")
         command.add_argument("--shock-country", default="CN")
         command.add_argument("--shock-days", type=int, default=45)
         command.add_argument("--reduction", type=float, default=1.0)
-        if name == "analyze":
+        if name == "demo":
+            command.add_argument("--with-comparison", action="store_true", help="Incluir comparação com um período anterior sintético")
+        elif name == "analyze":
             command.add_argument("--input", required=True)
             command.add_argument("--market", help="Snapshot agregado gerado por import-comex")
+        elif name == "compare":
+            command.add_argument("--previous", required=True, help="Conjunto de entrada anterior, com portfolio_id")
+            command.add_argument("--current", required=True, help="Conjunto de entrada atual, com o mesmo portfolio_id")
     sample = commands.add_parser("sample", help="Gerar conjunto sintético editável")
     sample.add_argument("--out", required=True)
     market = commands.add_parser("import-comex", help="Agregar CSV oficial local; não faz downloads")
@@ -79,14 +85,26 @@ def main(argv=None):
             write_private(args.out, serialized(snapshot))
             print(f"Snapshot criado: {snapshot['source_rows_matched']} linhas selecionadas.")
         else:
+            comparison = None
             if args.command == "demo":
                 data = demo_bundle()
                 raw = serialized(data)
                 fingerprint = hashlib.sha256(raw.encode()).hexdigest()
+                if args.with_comparison:
+                    previous = demo_previous_bundle()
+                    previous_raw = serialized(previous)
+                    previous_fingerprint = hashlib.sha256(previous_raw.encode()).hexdigest()
+                    comparison = compare_bundles(previous, data, previous_fingerprint, fingerprint)
+            elif args.command == "compare":
+                data, fingerprint = read_json(args.current)
+                previous, previous_fingerprint = read_json(args.previous)
+                comparison = compare_bundles(previous, data, previous_fingerprint, fingerprint)
             else:
                 data, fingerprint = read_json(args.input)
             report = analyze(data, fingerprint, shock_country=args.shock_country, duration_days=args.shock_days,
                              reduction=args.reduction, enable_ml=not args.without_ml)
+            if comparison is not None:
+                report["comparison"] = comparison
             if args.command == "analyze" and args.market:
                 snapshot, snapshot_hash = read_json(args.market)
                 report["market_context"] = market_summary(snapshot, data["as_of"])
@@ -94,6 +112,8 @@ def main(argv=None):
             directory = write_report(report, args.out)
             if args.command == "demo":
                 write_private(directory / "input.synthetic.json", raw)
+                if args.with_comparison:
+                    write_private(directory / "input.previous.synthetic.json", previous_raw)
             print(f"Relatório criado em {directory / 'report.html'}")
             print("Natureza dos dados:", report["dataset_kind"], "| Modelo:", report["delay_model"]["status"])
         return 0

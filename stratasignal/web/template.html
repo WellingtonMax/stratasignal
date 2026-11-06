@@ -17,9 +17,10 @@
   <button type="button" data-view="overview" aria-current="page"><span aria-hidden="true">◈</span> Visão geral</button>
   <button type="button" data-view="scenarios"><span aria-hidden="true">↗</span> Simulador</button>
   <button type="button" data-view="evidence"><span aria-hidden="true">◇</span> Evidências</button>
+  <button type="button" data-view="changes" id="changes-nav" hidden><span aria-hidden="true">↔</span> Evolução</button>
   <button type="button" data-view="model"><span aria-hidden="true">≋</span> Modelo e dados</button>
  </nav>
- <div class="sidebar-note"><span class="status-dot"></span>Processamento local<p>Um relatório que acompanha as suas decisões.</p><small>STRATASIGNAL / MVP 0.1</small></div>
+ <div class="sidebar-note"><span class="status-dot"></span>Processamento local<p>Um relatório que acompanha as suas decisões.</p><small>STRATASIGNAL / MVP 0.2</small></div>
 </aside>
 <div class="shell">
  <header class="topbar"><span>INTELIGÊNCIA DE COMPRAS <b>/</b> MINERAIS CRÍTICOS</span><span id="cutoff"></span></header>
@@ -38,6 +39,10 @@
   </section>
   <section id="evidence" class="view" aria-label="Triagem de evidências" hidden>
    <article class="card"><p class="eyebrow">QUALIDADE DOS METADADOS</p><h2>Uma fila de conferência, com motivo</h2><p>Datas, origens declaradas e impressões digitais cruzadas por posição de compra.</p><div class="table-scroll"><table><thead><tr><th>Sinal para conferir</th><th>Material</th><th>Fornecedor</th><th>Evidência</th></tr></thead><tbody id="evidence-table"></tbody></table></div><p class="footnote">Um documento repetido pode ser um modelo compartilhado. Uma divergência exige conferência; estes sinais não são acusações de fraude nem validam a origem física.</p></article>
+  </section>
+  <section id="changes" class="view" aria-label="Comparação entre análises" hidden>
+   <article class="card"><p class="eyebrow">ACOMPANHAMENTO DA CARTEIRA</p><h2>O que mudou entre as análises?</h2><p id="comparison-period"></p><div id="comparison-summary"></div><div class="table-scroll"><table><thead><tr><th>Material</th><th>Comparabilidade</th><th>Δ HHI por país</th><th>Δ Cobertura</th><th>Δ Prioridade</th><th>Sinais novos / ausentes</th></tr></thead><tbody id="comparison-table"></tbody></table></div><p class="footnote" id="comparison-scope"></p></article>
+   <article class="card"><p class="eyebrow">MUDANÇAS DECLARADAS</p><h2>Fornecedores, origens e sinais documentais</h2><div id="comparison-details"></div></article>
   </section>
   <section id="model" class="view" aria-label="Modelo e proveniência" hidden>
    <div class="two-col"><article class="card"><p class="eyebrow">MACHINE LEARNING</p><h2>Estimativas com prestação de contas</h2><div id="model-summary"></div></article><article class="card"><p class="eyebrow">PROVENIÊNCIA</p><h2>O caminho de cada análise</h2><div id="provenance"></div></article></div>

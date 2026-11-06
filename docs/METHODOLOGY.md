@@ -1,6 +1,6 @@
 # Methodology and data contract
 
-Version 0.1.0 — 6 November 2026. Results describe the operator's declared snapshot. The software does not establish physical provenance.
+Version 0.2.0 — 6 November 2026. Results describe the operator's declared snapshot. The software does not establish physical provenance.
 
 ## 1. Operational inputs and units
 
@@ -61,3 +61,13 @@ The MDIC CSV importer follows the [documented raw NCM layout](https://www.gov.br
 Snapshots contain only selected aggregates and provenance declarations, not raw customer records. The operator supplies the file and its claimed source; a hash is not an authenticated government signature. A context added to a report must have an import date no later than the report cut and a selected end month earlier than the report month. Revisions and historical availability cannot be reconstructed from a newly downloaded current file, so the importer is not a historical backtest source without archived as-of versions.
 
 No trade-volume snapshot or live synchronization is included. The initial API research request was rate limited (HTTP 429); it was not bypassed. NCM classification changes, source revisions, low/zero volumes, imports versus exports and product mixtures require review. FOB/kg is not a grade-specific market price. Customs flows cannot identify a firm or prove global supply shares.
+
+## 7. Comparing reporting periods
+
+The comparison consumes two raw input bundles and validates both with the same schema. A stable matching `portfolio_id`, identical `dataset_kind` and strictly increasing `as_of` are required. The ID is a pseudonymous operator declaration; it does not authenticate a customer or verify that two files truly belong together. Ordinary analysis accepts legacy inputs without it.
+
+Both dates are recalculated with the current deterministic rules. ML estimates and market snapshots are not compared. This avoids treating a changed software version, model fit or unavailable baseline prediction as an observed operational improvement. Metrics include country/supplier HHI, days of stock coverage, maximum nominal lead, priority, stock and monthly demand. Differences are arithmetic current-minus-previous; country-share differences are percentage points.
+
+Material IDs and exact specification names must agree for quantitative deltas. A name change suspends deltas and asks for technical review, including when the change might be cosmetic. Additions/removals are recorded without inferring a cause or a baseline value. The operator must also preserve units, origin definitions and the meaning of each ID; the software cannot detect a specification change hidden behind an unchanged name.
+
+Documentary signal identity is `(code, material, supplier, evidence_id)`. New/absent signal counts cover comparable materials only. Disappearance can result from data correction, replacement, omission or a real operational change; it never proves remediation or authenticity. Supplier positions added, removed or changed, and declared country allocations, are reported separately. The report manifest records the hashes of both raw input files.

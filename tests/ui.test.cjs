@@ -117,3 +117,52 @@ test("model tab labels estimates as synthetic and retains evaluation evidence", 
   assert.match(doc.getElementById("market-context").textContent,/Nenhum arquivo público/);
   dom.window.close();
 });
+
+test("comparison navigation stays hidden for a single snapshot", () => {
+  const {dom,doc} = open();
+  assert.equal(doc.getElementById("changes-nav").hidden,true);
+  dom.window.close();
+});
+
+function comparisonReport(specificationChanged=false) {
+  const code = [
+    "import copy",
+    "from stratasignal.demo import demo_bundle",
+    "from stratasignal.analytics import analyze",
+    "from stratasignal.comparison import compare_bundles",
+    "from stratasignal.report import render_html",
+    "old=demo_bundle(); old['as_of']='2026-10-06'",
+    "for e in old['evidence']: e['observed_on']='2026-10-01'",
+    "current=copy.deepcopy(old); current['as_of']='2026-11-06'",
+    "for p in current['positions']:",
+    " if p['material']=='graphite-flake': p['stock_kg']+=6000",
+    ...(specificationChanged ? ["for p in current['positions']:"," if p['material']=='graphite-flake': p['material_name']='</script><script>window.pwned=1</script>'"] : []),
+    "r=analyze(current,'b'*64,enable_ml=False)",
+    "r['comparison']=compare_bundles(old,current,'a'*64,'b'*64)",
+    "print(render_html(r))"
+  ].join("\n");
+  return execFileSync(process.env.PYTHON || "python",["-c",code],{encoding:"utf8"});
+}
+
+test("comparison tab renders period and coverage change for the same portfolio", () => {
+  const {dom,doc,errors} = open(comparisonReport());
+  assert.equal(doc.getElementById("changes-nav").hidden,false);
+  doc.getElementById("changes-nav").click();
+  assert.equal(doc.getElementById("changes").hidden,false);
+  assert.equal(doc.querySelectorAll("#comparison-table tr").length,3);
+  assert.match(doc.getElementById("comparison-period").textContent,/2026-10-06 → 2026-11-06/);
+  assert.match(doc.getElementById("comparison-table").textContent,/\+10 dias/);
+  assert.deepEqual(errors,[]);
+  dom.window.close();
+});
+
+test("changed specification is marked for review and remains inert text", () => {
+  const {dom,doc,window,errors,requests} = open(comparisonReport(true));
+  assert.match(doc.getElementById("comparison-table").textContent,/Conferir especificação/);
+  assert.match(doc.getElementById("comparison-table").textContent,/<script>/);
+  assert.equal(window.pwned,undefined);
+  assert.equal(doc.querySelectorAll("script").length,2);
+  assert.deepEqual(errors,[]);
+  assert.deepEqual(requests,[]);
+  dom.window.close();
+});

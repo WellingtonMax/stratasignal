@@ -41,5 +41,7 @@ def write_report(report, directory):
     manifest = {"product": "StrataSignal", "version": report["version"], "input_sha256": report["input_sha256"],
                 "dataset_kind": report["dataset_kind"], "as_of": report["as_of"], "artifacts": hashes,
                 "note": "Hashes verificam consistência com este manifesto; não são assinatura digital nem prova de origem."}
+    if "comparison" in report:
+        manifest["previous_input_sha256"] = report["comparison"]["previous_input_sha256"]
     write_private(output / "manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
     return output
