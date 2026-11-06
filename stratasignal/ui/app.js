@@ -19,6 +19,7 @@
     if(!["import","overview","scenario","comparison","exports"].includes(view))return;
     document.querySelectorAll(".view").forEach(e=>{e.hidden=e.id!=="view-"+view;});
     document.querySelectorAll("nav [data-view]").forEach(e=>{if(e.dataset.view===view)e.setAttribute("aria-current","page");else e.removeAttribute("aria-current");});
+    if(view==="overview")window.StrataGeo?.refresh();
   }
   function notice(message,error=false) {
     $("feedback").hidden=true;$("error").hidden=true;
@@ -208,7 +209,8 @@
   }
   function renderReport() {
     document.querySelectorAll(".analysis-empty").forEach(e=>{e.hidden=!!report;});document.querySelectorAll(".analysis-content").forEach(e=>{e.hidden=!report;});
-    if(!report){$("comparison-card").hidden=true;$("export-provenance").replaceChildren(node("p","A data de corte e a impressão digital do conjunto aparecem após a análise.","support"));return;}
+    if(!report){window.StrataGeo?.clear();$("comparison-card").hidden=true;$("export-provenance").replaceChildren(node("p","A data de corte e a impressão digital do conjunto aparecem após a análise.","support"));return;}
+    window.StrataGeo?.setReport(report);
     const kpis=$("overview-kpis");kpis.replaceChildren();
     [["Materiais em análise",report.materials.length,"Especificações técnicas distintas"],["Posições de fornecimento",report.materials.reduce((n,m)=>n+m.suppliers.length,0),"Relações material / fornecedor"],["Prioridade alta",report.materials.filter(m=>m.priority==="alta").length,"Regra de triagem, de 0 a 100"],["Sinais para conferência",report.metadata_flags.length,"Metadados documentais"]].forEach(([label,value,caption])=>{const card=node("div",undefined,"kpi");card.append(node("div",label,"kpi-label"),node("strong",value),node("small",caption));kpis.append(card);});
     const select=$("material-choice"),oldValue=select.value;select.replaceChildren();report.materials.forEach(m=>{const option=node("option",m.name);option.value=m.material;select.append(option);});
