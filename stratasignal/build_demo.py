@@ -29,7 +29,9 @@ def build_demo(directory, source_commit=None, enable_ml=True):
     assets["demo/current-report.json"] = json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
     assets["demo/monthly-report.json"] = json.dumps(monthly, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
     assets["demo/current-input.json"] = normalized_json(current)
-    assets["demo/report-template.html"] = render_html(report)
+    # Use the same JSON asset transport as reports: static hosts may normalize
+    # .html paths through redirects, which strict fetch intentionally rejects.
+    assets["demo/report-template.json"] = json.dumps({"html": render_html(report)}, ensure_ascii=True) + "\n"
     assets["source-manifest.json"] = json.dumps({"product": "StrataSignal", "version": __version__,
         "dataset_kind": "synthetic", "private_file_import": False,
         "source_repository": "https://github.com/WellingtonMax/stratasignal", "source_commit": source_commit,

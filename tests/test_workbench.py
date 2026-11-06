@@ -313,6 +313,9 @@ class PublicDemoBuildTests(unittest.TestCase):
             self.assertNotIn('data-mode="local"', (output / "index.html").read_text())
             current = json.loads((output / "demo/current-input.json").read_text())
             self.assertEqual(current, demo_bundle())
+            template = json.loads((output / "demo/report-template.json").read_text())["html"]
+            self.assertIn('<script id="report-data" type="application/json">', template)
+            self.assertFalse((output / "demo/report-template.html").exists())
             self.assertEqual(len(list(output.rglob("*.*"))), 9)
             with self.assertRaises(FileExistsError):
                 build_demo(output, enable_ml=False)

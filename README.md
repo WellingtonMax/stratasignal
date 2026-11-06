@@ -6,6 +6,10 @@
 
 [Market research and business model, in Portuguese](docs/MARKET_RESEARCH_PT.md) · [Sample report](demo/report.html) · [Monthly comparison](demo/monthly/report.html) (download HTML and open locally) · [Methodology](docs/METHODOLOGY.md) · [Security](SECURITY.md) · [Verification](docs/VERIFICATION.md) · [Migration record](docs/MIGRATION.md)
 
+**[Explore the online demonstration](https://stratasignal-workbench.wellingtonl-maxim.chatgpt.site/)** — fictional data only; private imports use the local workbench.
+
+![StrataSignal 0.3 workbench with a fictional procurement portfolio](docs/images/workbench-v03.png)
+
 ## The service a customer receives
 
 An analyst reviews a bounded procurement dataset and delivers a private HTML decision brief, JSON results, an integrity manifest and a prioritized verification queue. A monthly service can repeat that process with updated customer data. The software already performs the calculations; onboarding, technical review and interpretation are human services.

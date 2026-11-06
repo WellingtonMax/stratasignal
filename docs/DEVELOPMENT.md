@@ -8,7 +8,7 @@ Independent repository and CI; strict local procurement analysis; experimental d
 
 | Milestone | Evidence needed before calling it complete |
 |---|---|
-| Broader visual acceptance | Complete rendered desktop/mobile and assistive-technology review. Actual browser navigation, scenario calculation and comparison were exercised; the screenshot API timed out, so no completed visual review is claimed |
+| Broader visual acceptance | The published desktop overview was visually inspected and captured. Complete the remaining desktop/mobile and assistive-technology review; navigation, scenario calculation and comparison have been exercised in Chrome |
 | First real-data pilot | Authorized, minimized procurement files; reviewed field/specification mapping; documented customer question and useful output; no private data committed |
 | Operational model evaluation | Multiple temporal windows, calibration and regime/missingness review, baseline/business-utility comparison and prospective observations |
 | Sustainable service | A bounded paid pilot, measured analyst hours and a recurring customer need; documentary market research does not establish demand |

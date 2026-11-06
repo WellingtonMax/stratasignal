@@ -7,6 +7,7 @@
 - Keep the workspace in memory, invalidate stale results on imports, validate baseline compatibility before mutation, and include the last calculated scenario in exports.
 - Bind the local HTTP service only to IPv4 loopback with per-run bearer access, exact Host/Origin checks, bounded JSON requests, fixed static routes and restrictive response headers.
 - Add a separately generated synthetic-only static online demo with private imports disabled and precomputed experimental ML results.
+- Transport the public HTML report template inside a JSON asset so strict fetch does not depend on static-host HTML path handling; keep the downloaded report self-contained.
 - Add 26 Python import/workspace/live-HTTP/build checks and 11 workbench DOM checks. Runtime dependencies are unchanged.
 
 ## 0.2.0 — 2026-11-06

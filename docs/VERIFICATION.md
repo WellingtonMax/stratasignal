@@ -14,6 +14,7 @@ Local verification used Python 3.12, scikit-learn 1.8.0, NumPy 2.3.5, SciPy 1.17
 | Built distribution | Version 0.3.0 wheel built successfully; installed in a fresh virtual environment; packaged assets generated the rules-only monthly report and static demo, and created a loopback server outside the checkout |
 | Actual local HTTP service | Token-protected reads/writes, exact Host/Origin checks, duplicate headers, size/framing/content-type rejection, static path restrictions, scenario export and reset exercised over loopback sockets |
 | Browser functional inspection | Managed HTTP preview loaded in Chrome; navigation, zero-reduction scenario and monthly comparison exercised in the actual UI; expected zero deficits and +10 days graphite coverage observed |
+| Published demonstration | Native deployment succeeded at [the public synthetic-only demo](https://stratasignal-workbench.wellingtonl-maxim.chatgpt.site/). Desktop overview inspected and [captured](images/workbench-v03.png); a 180-day, 33.3% China-reduction scenario and its actual JSON download retained 15,894.08 kg uncovered graphite demand |
 | Standalone migration | All 30 unchanged source blobs matched their original Git hashes; README setup adapted. Dedicated tests/packaging and CodeQL workflows passed at migration commit `85ee0ea1f363a0b1ba341efb5ba70ba1a6bc0a26` |
 | Static syntax / patch checks | Python compilation, JavaScript syntax and `git diff --check` passed |
 | Python dependency advisory audit | pip-audit 2.10.1 queried the five explicitly pinned optional ML packages; no known vulnerabilities reported at execution time |
@@ -33,9 +34,9 @@ The deterministic fixture produced 556 eligible training records and 195 holdout
 
 ## Known verification limits
 
-- Actual browser functional inspection is now possible through the managed HTTP preview; earlier local-file/launch failures do not describe this preview. The tab screenshot API repeatedly timed out, so no rendered visual acceptance is claimed. DOM/accessibility observations verify content and interactions, not appearance. Desktop/mobile visual layout, assistive technologies and adversarial browser CSP enforcement remain to be reviewed. **jsdom does not render layout or enforce CSP**. Browser console observations contained extension-origin errors; those are not evidence of application security or a clean CSP attack test.
+- The tab screenshot API timed out on the local preview but succeeded on the published page. The desktop overview was visually inspected; broader desktop/mobile layouts, assistive technologies and adversarial browser CSP enforcement remain to be reviewed. **jsdom does not render layout or enforce CSP**. Browser console observations contained extension-origin errors; those are not evidence of application security or a clean CSP attack test.
 - The initial public Comex Stat API POST research request returned HTTP 429. No live trade-volume response was used, no market dataset was fabricated and no automatic synchronization is shipped. CSV adapter tests use a clearly labeled synthetic fixture matching the documented layout.
-- Dedicated hosted CI and CodeQL passed for earlier standalone checkpoints; check the latest published commit's workflows for subsequent changes. The 3.11 matrix environment was not executed locally.
+- Dedicated hosted tests/packaging and CodeQL both passed for product commit `aef99d647cd669884b452149481f993572e531ec`; check the latest published commit's workflows for subsequent changes. The 3.11 matrix environment was not executed locally.
 - No real customer data, paid pilot, multi-customer access boundary, independent penetration test, regulatory certification, physical-origin validation, commodity-price forecast or prospective model study was exercised.
 
 ## Reproduce

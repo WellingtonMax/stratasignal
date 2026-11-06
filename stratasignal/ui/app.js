@@ -123,8 +123,9 @@
         if(!active)throw new Error("Execute a demonstração antes de exportar.");
         if(kind==="json")return new Blob([JSON.stringify(active,null,2)+"\n"],{type:"application/json"});
         if(kind!=="html")throw new Error("Formato inválido.");
-        const response=await fetch("demo/report-template.html",{credentials:"omit",redirect:"error"});if(!response.ok)throw new Error("O relatório não pôde ser preparado.");
-        const template=await response.text();const safe=JSON.stringify(active).replace(/</g,"\\u003c").replace(/>/g,"\\u003e").replace(/&/g,"\\u0026");
+        const response=await fetch("demo/report-template.json",{credentials:"omit",redirect:"error"});if(!response.ok)throw new Error("O relatório não pôde ser preparado.");
+        const envelope=await response.json();if(typeof envelope.html!=="string")throw new Error("Modelo de relatório inválido.");
+        const template=envelope.html;const safe=JSON.stringify(active).replace(/</g,"\\u003c").replace(/>/g,"\\u003e").replace(/&/g,"\\u0026");
         const pattern=/(<script id="report-data" type="application\/json">)[\s\S]*?(<\/script>)/;
         if(!pattern.test(template))throw new Error("Modelo de relatório inválido.");
         return new Blob([template.replace(pattern,(_,start,end)=>start+safe+end)],{type:"text/html;charset=utf-8"});

@@ -39,7 +39,7 @@ async function open({demo=false,fetcher,token="a".repeat(32)}={}) {
   window.fetch=async(url,options={})=>{
     calls.push({url,options});
     if(fetcher)return fetcher(url,options);
-    if(demo){const assets={"demo/current-report.json":current,"demo/monthly-report.json":monthly,"demo/current-input.json":input,"demo/report-template.html":reportTemplate};assert.ok(url in assets);return response(assets[url]);}
+    if(demo){const assets={"demo/current-report.json":current,"demo/monthly-report.json":monthly,"demo/current-input.json":input,"demo/report-template.json":{html:reportTemplate}};assert.ok(url in assets);return response(assets[url]);}
     if(url==="/api/status")return response({status:makeStatus()});
     if(url==="/api/demo"){loaded=true;return response({status:makeStatus(true),review});}
     if(url==="/api/analyze")return response({status:makeStatus(loaded,true),report:monthly});
@@ -134,7 +134,7 @@ test("simulator preserves fractional reductions and JSON and HTML downloads cont
 
 test("malicious material names remain inert text in UI and HTML export",async()=>{
   const malicious=copy(current);malicious.materials[0].name='</script><script>window.pwned=1</script><img src=x onerror=alert(1)>';
-  const ctx=await open({demo:true,fetcher:async url=>response(url==="demo/current-report.json"?malicious:url==="demo/monthly-report.json"?{...malicious,comparison:monthly.comparison}:url==="demo/current-input.json"?input:reportTemplate)});
+  const ctx=await open({demo:true,fetcher:async url=>response(url==="demo/current-report.json"?malicious:url==="demo/monthly-report.json"?{...malicious,comparison:monthly.comparison}:url==="demo/current-input.json"?input:{html:reportTemplate})});
   assert.equal(ctx.window.pwned,undefined);assert.equal(ctx.doc.querySelectorAll("img").length,0);
   assert.match(ctx.doc.getElementById("portfolio-table").textContent,/<script>/);
   ctx.doc.querySelector('.export-action[data-kind="html"]').click();await settle(ctx.doc);
