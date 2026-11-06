@@ -4,11 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data: https://gibs.earthdata.nasa.gov; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="description" content="StrataSignal: um espaço de análise para compreender exposição de abastecimento, conferir evidências e comparar períodos.">
   <title>StrataSignal · Inteligência de abastecimento</title>
   <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="geo-map.css">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <script defer src="geo-map.js"></script>
   <script defer src="app.js"></script>
 </head>
 <body data-mode="local">
@@ -59,7 +61,33 @@
       <section id="view-overview" class="view" aria-labelledby="overview-title" hidden>
         <div class="page-heading compact"><div><p class="eyebrow">VISÃO DA CARTEIRA</p><h1 id="overview-title">Uma leitura clara<br><em>do seu abastecimento.</em></h1><p class="lead">Observe as concentrações e os pontos que merecem uma decisão acompanhada de evidências.</p></div><button type="button" class="button secondary" data-go="import">Atualizar dados <span aria-hidden="true">↑</span></button></div>
         <div class="empty analysis-empty"><div class="empty-symbol" aria-hidden="true">◈</div><h2>Sua análise aparece aqui</h2><p>Carregue os dados ou experimente a carteira fictícia.</p><button type="button" class="button primary demo-load" data-mutates>Experimentar demonstração</button></div>
-        <div class="analysis-content" hidden><div id="overview-kpis" class="kpis"></div><div class="two-col"><article class="card"><div class="card-heading"><div><p class="eyebrow">CONCENTRAÇÃO DE ORIGEM</p><h2>De onde vem a sua oferta?</h2></div><span class="small-tag">ALOCAÇÃO DECLARADA</span></div><label class="field-label" for="material-choice">Especificação do material</label><select id="material-choice"></select><div id="country-bars" class="country-bars"></div><p class="footnote">A origem declarada pode se referir a uma etapa da cadeia. Extração, refino e embarque exigem definições distintas.</p></article><article class="card priority-card"><p class="eyebrow">PRÓXIMAS AÇÕES</p><h2>O que merece atenção primeiro</h2><div id="priorities"></div><p class="footnote">A prioridade combina concentração, cobertura e sinais documentais. É uma regra de triagem, não uma probabilidade de crise.</p></article></div><article class="card"><div class="card-heading"><div><p class="eyebrow">MATERIAIS ACOMPANHADOS</p><h2>Vulnerabilidades, por especificação</h2></div><button type="button" class="text-button" data-go="scenario">Simular uma redução ↗</button></div><div class="table-wrap"><table><thead><tr><th>Material</th><th>Prioridade</th><th>Maior origem</th><th>Cobertura</th><th>Prazo nominal</th><th>Sinais</th></tr></thead><tbody id="portfolio-table"></tbody></table></div></article><div class="two-col"><article class="card"><p class="eyebrow">CONFERÊNCIA DOCUMENTAL</p><h2>Um motivo para cada sinal</h2><div id="evidence-signals"></div><p class="footnote">Metadados e hashes não autenticam certificados nem a origem física. Uma repetição pode ser um modelo compartilhado.</p></article><article class="card"><p class="eyebrow">PADRÕES DE ENTREGA</p><h2>Estimativas com contexto</h2><div id="model-state"></div><details><summary>Ver avaliação do modelo</summary><div id="model-evaluation"></div></details></article></div></div>
+        <div class="analysis-content" hidden><div id="overview-kpis" class="kpis"></div><article class="card geo-card" aria-labelledby="geo-title">
+  <div class="geo-heading"><div><p class="eyebrow">EXPLORADOR GEOESPACIAL · STRATASIGNAL</p><h2 id="geo-title">Abastecimento visto do planeta.</h2><p class="geo-description">Explore a concentração por país da especificação selecionada. A camada de satélite é uma observação geográfica, não uma validação de mina, rota comercial ou origem física.</p></div><span class="small-tag">POSIÇÕES POR PAÍS</span></div>
+  <div class="geo-toolbar" aria-label="Controles de imagens e navegação">
+    <button type="button" id="geo-enable" class="button secondary" aria-pressed="false">Ativar imagens NASA</button>
+    <select id="geo-imagery" aria-label="Camada de satélite" disabled><option value="blue">NASA · Blue Marble (histórica)</option><option value="daily">NASA · Terra/MODIS (observação recente)</option></select>
+    <button type="button" id="geo-zoom-in" class="geo-tool-button" aria-label="Ampliar mapa">+</button>
+    <button type="button" id="geo-zoom-out" class="geo-tool-button" aria-label="Reduzir mapa">−</button>
+    <button type="button" id="geo-reset" class="geo-tool-button" aria-label="Restaurar enquadramento">⌖</button>
+  </div>
+  <div class="geo-layout">
+    <div id="geo-viewport" class="geo-viewport" role="region" tabindex="0" aria-label="Mapa-múndi navegável. Arraste para mover e use setas no teclado.">
+      <div id="geo-land" class="geo-land" aria-hidden="true"><img src="world-land.svg" alt="" draggable="false"></div>
+      <div id="geo-land-copy" class="geo-land" aria-hidden="true"><img src="world-land.svg" alt="" draggable="false"></div>
+      <div id="geo-tiles" class="geo-tiles" aria-hidden="true"></div>
+      <div id="geo-markers" class="geo-markers" aria-label="Países de origem declarados"></div>
+      <div class="geo-corner">Âncoras aproximadas por país · sem coordenadas de instalações</div>
+    </div>
+    <aside class="geo-sidebar" aria-label="Dados de concentração por origem">
+      <label class="field-label" for="geo-material">Especificação monitorada</label><select id="geo-material"></select>
+      <h3>Origens declaradas</h3><div id="geo-origin-list" class="geo-origin-list"></div>
+      <div id="geo-selection" class="geo-selection" aria-live="polite"></div>
+      <button type="button" id="geo-to-scenario" class="button primary" disabled>Simular redução desta origem</button>
+    </aside>
+  </div>
+  <p id="geo-imagery-state" class="geo-source" role="status">Cartografia local · sem transmissão externa</p>
+  <p class="footnote">Mapa local: Natural Earth 1:110m (domínio público). Após consentimento, somente coordenadas dos mosaicos visualizados e a data da camada são solicitadas à NASA GIBS; sua carteira e seus arquivos não são enviados. Blue Marble é uma composição histórica; MODIS é uma observação datada, sujeita a nuvens e atrasos. País não significa mina nem rota verificada.</p>
+</article><div class="two-col"><article class="card"><div class="card-heading"><div><p class="eyebrow">CONCENTRAÇÃO DE ORIGEM</p><h2>De onde vem a sua oferta?</h2></div><span class="small-tag">ALOCAÇÃO DECLARADA</span></div><label class="field-label" for="material-choice">Especificação do material</label><select id="material-choice"></select><div id="country-bars" class="country-bars"></div><p class="footnote">A origem declarada pode se referir a uma etapa da cadeia. Extração, refino e embarque exigem definições distintas.</p></article><article class="card priority-card"><p class="eyebrow">PRÓXIMAS AÇÕES</p><h2>O que merece atenção primeiro</h2><div id="priorities"></div><p class="footnote">A prioridade combina concentração, cobertura e sinais documentais. É uma regra de triagem, não uma probabilidade de crise.</p></article></div><article class="card"><div class="card-heading"><div><p class="eyebrow">MATERIAIS ACOMPANHADOS</p><h2>Vulnerabilidades, por especificação</h2></div><button type="button" class="text-button" data-go="scenario">Simular uma redução ↗</button></div><div class="table-wrap"><table><thead><tr><th>Material</th><th>Prioridade</th><th>Maior origem</th><th>Cobertura</th><th>Prazo nominal</th><th>Sinais</th></tr></thead><tbody id="portfolio-table"></tbody></table></div></article><div class="two-col"><article class="card"><p class="eyebrow">CONFERÊNCIA DOCUMENTAL</p><h2>Um motivo para cada sinal</h2><div id="evidence-signals"></div><p class="footnote">Metadados e hashes não autenticam certificados nem a origem física. Uma repetição pode ser um modelo compartilhado.</p></article><article class="card"><p class="eyebrow">PADRÕES DE ENTREGA</p><h2>Estimativas com contexto</h2><div id="model-state"></div><details><summary>Ver avaliação do modelo</summary><div id="model-evaluation"></div></details></article></div></div>
       </section>
 
       <section id="view-scenario" class="view" aria-labelledby="scenario-title" hidden>

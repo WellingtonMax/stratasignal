@@ -230,9 +230,9 @@ class WorkbenchHTTPTests(unittest.TestCase):
         connection.close()
         return result
 
-    def test_loopback_binding_and_only_four_static_assets_are_served(self):
+    def test_loopback_binding_and_only_allowlisted_static_assets_are_served(self):
         self.assertEqual(self.server.server_address[0], "127.0.0.1")
-        for path in ("/", "/app.css", "/app.js", "/favicon.svg"):
+        for path in ("/", "/app.css", "/app.js", "/geo-map.js", "/geo-map.css", "/world-land.svg", "/favicon.svg"):
             with self.subTest(path=path):
                 code, headers, body = self.request("GET", path, authenticated=False, origin=False)
                 self.assertEqual(code, 200)
@@ -310,13 +310,16 @@ class PublicDemoBuildTests(unittest.TestCase):
             self.assertFalse(manifest["private_file_import"])
             self.assertEqual(manifest["dataset_kind"], "synthetic")
             self.assertIn('data-mode="demo"', (output / "index.html").read_text())
+            self.assertTrue((output / "geo-map.js").exists())
+            self.assertTrue((output / "geo-map.css").exists())
+            self.assertTrue((output / "world-land.svg").exists())
             self.assertNotIn('data-mode="local"', (output / "index.html").read_text())
             current = json.loads((output / "demo/current-input.json").read_text())
             self.assertEqual(current, demo_bundle())
             template = json.loads((output / "demo/report-template.json").read_text())["html"]
             self.assertIn('<script id="report-data" type="application/json">', template)
             self.assertFalse((output / "demo/report-template.html").exists())
-            self.assertEqual(len(list(output.rglob("*.*"))), 9)
+            self.assertEqual(len(list(output.rglob("*.*"))), 12)
             with self.assertRaises(FileExistsError):
                 build_demo(output, enable_ml=False)
 

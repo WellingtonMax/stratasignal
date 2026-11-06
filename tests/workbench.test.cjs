@@ -9,6 +9,7 @@ const {JSDOM, VirtualConsole} = require("jsdom");
 const root = path.join(__dirname,"..");
 const html = fs.readFileSync(path.join(root,"stratasignal/ui/index.html"),"utf8");
 const script = fs.readFileSync(path.join(root,"stratasignal/ui/app.js"),"utf8");
+const geoScript = fs.readFileSync(path.join(root,"stratasignal/ui/geo-map.js"),"utf8");
 const input = JSON.parse(execFileSync(process.env.PYTHON || "python",["-c",
   "import json; from stratasignal.demo import demo_bundle; print(json.dumps(demo_bundle()))"],{cwd:root,encoding:"utf8"}));
 const current = JSON.parse(fs.readFileSync(path.join(root,"demo/report.json"),"utf8"));
@@ -46,7 +47,7 @@ async function open({demo=false,fetcher,token="a".repeat(32)}={}) {
     if(url==="/api/reset"){loaded=false;return response({status:makeStatus()});}
     throw new Error("Unexpected request "+url);
   };
-  window.eval(script);await settle(doc);
+  window.eval(geoScript);window.eval(script);await settle(doc);
   return {dom,window,doc,calls,blobs,downloads,errors};
 }
 function chooseFile(ctx,id,text,name="data.csv") {
@@ -135,7 +136,7 @@ test("simulator preserves fractional reductions and JSON and HTML downloads cont
 test("malicious material names remain inert text in UI and HTML export",async()=>{
   const malicious=copy(current);malicious.materials[0].name='</script><script>window.pwned=1</script><img src=x onerror=alert(1)>';
   const ctx=await open({demo:true,fetcher:async url=>response(url==="demo/current-report.json"?malicious:url==="demo/monthly-report.json"?{...malicious,comparison:monthly.comparison}:url==="demo/current-input.json"?input:{html:reportTemplate})});
-  assert.equal(ctx.window.pwned,undefined);assert.equal(ctx.doc.querySelectorAll("img").length,0);
+  assert.equal(ctx.window.pwned,undefined);assert.equal(ctx.doc.querySelectorAll('img[src="x"]').length,0);
   assert.match(ctx.doc.getElementById("portfolio-table").textContent,/<script>/);
   ctx.doc.querySelector('.export-action[data-kind="html"]').click();await settle(ctx.doc);
   const exported=await ctx.blobs[0].text(),data=exported.match(/<script id="report-data" type="application\/json">([\s\S]*?)<\/script>/)[1];
@@ -186,4 +187,46 @@ test("invalid UTF-8 fails before upload and JSON input preserves its original BO
   assert.equal(imported,null);assert.match(ctx.doc.getElementById("error").textContent,/UTF-8/);
   chooseFile(ctx,"current-file","\ufeff"+JSON.stringify(input));await click(ctx,"import-json");
   assert.equal(imported.data[0],"\ufeff");ctx.dom.window.close();
+});
+
+test("geo explorer renders country origin shares without making external satellite requests",async()=>{
+  const ctx=await open({demo:true});
+  const list=ctx.doc.getElementById("geo-origin-list");
+  assert.ok(list.querySelectorAll("button[data-country]").length>=2);
+  assert.match(list.textContent,/China|Brasil|Chile/);
+  assert.equal(ctx.doc.querySelectorAll("#geo-tiles img").length,0);
+  assert.equal(ctx.doc.getElementById("geo-enable").getAttribute("aria-pressed"),"false");
+  assert.ok(ctx.calls.every(c=>c.url.startsWith("demo/")));
+  assert.ok(ctx.doc.querySelectorAll('.geo-marker[aria-label*="alocação declarada"]').length>=1);
+  assert.deepEqual(ctx.errors,[]);
+  ctx.dom.window.close();
+});
+
+test("satellite opt-in requests only fixed NASA tiles and never includes portfolio data",async()=>{
+  const ctx=await open({demo:true});
+  ctx.doc.getElementById("geo-enable").click();
+  const tiles=[...ctx.doc.querySelectorAll("#geo-tiles img")];
+  assert.ok(tiles.length>0);
+  assert.ok(tiles.length<=35);
+  assert.ok(tiles.every(img=>img.src.startsWith("https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_NextGeneration/default/2004-01-01/")));
+  assert.ok(tiles.every(img=>img.referrerPolicy==="no-referrer"));
+  assert.ok(tiles.every(img=>!img.src.includes(input.portfolio_id)));
+  assert.ok(ctx.calls.every(c=>c.url.startsWith("demo/")));
+  const select=ctx.doc.getElementById("geo-imagery");
+  select.value="daily";select.dispatchEvent(new ctx.window.Event("change"));
+  assert.ok([...ctx.doc.querySelectorAll("#geo-tiles img")].every(img=>img.src.includes("MODIS_Terra_CorrectedReflectance_TrueColor")));
+  ctx.doc.getElementById("geo-enable").click();
+  assert.equal(ctx.doc.querySelectorAll("#geo-tiles img").length,0);
+  assert.deepEqual(ctx.errors,[]);ctx.dom.window.close();
+});
+
+test("map country selection links to simulation without inventing coordinates or routes",async()=>{
+  const ctx=await open({demo:true});
+  const marker=ctx.doc.querySelector(".geo-marker[data-country]");
+  assert.ok(marker);const code=marker.dataset.country;
+  marker.click();ctx.doc.getElementById("geo-to-scenario").click();
+  assert.equal(ctx.doc.getElementById("scenario-country").value,code);
+  assert.equal(ctx.doc.getElementById("view-scenario").hidden,false);
+  assert.match(ctx.doc.getElementById("geo-selection").textContent,/não localização de mina/);
+  assert.deepEqual(ctx.errors,[]);ctx.dom.window.close();
 });

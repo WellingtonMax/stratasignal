@@ -165,7 +165,7 @@ def handler_class(workspace, token):
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("X-Frame-Options", "DENY")
             self.send_header("Referrer-Policy", "no-referrer")
-            self.send_header("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'")
+            self.send_header("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data: https://gibs.earthdata.nasa.gov; base-uri 'none'; frame-ancestors 'none'; form-action 'none'")
             self.send_header("Connection", "close")
             if filename:
                 self.send_header("Content-Disposition", 'attachment; filename="' + filename + '"')
@@ -199,7 +199,10 @@ def handler_class(workspace, token):
             if not self.guard(protected=self.path.startswith("/api/")):
                 return
             assets = {"/": ("index.html", "text/html; charset=utf-8"), "/app.css": ("app.css", "text/css; charset=utf-8"),
-                      "/app.js": ("app.js", "text/javascript; charset=utf-8"), "/favicon.svg": ("favicon.svg", "image/svg+xml")}
+                      "/app.js": ("app.js", "text/javascript; charset=utf-8"),
+                      "/geo-map.js": ("geo-map.js", "text/javascript; charset=utf-8"),
+                      "/geo-map.css": ("geo-map.css", "text/css; charset=utf-8"),
+                      "/world-land.svg": ("world-land.svg", "image/svg+xml"), "/favicon.svg": ("favicon.svg", "image/svg+xml")}
             if self.path in assets:
                 name, mime = assets[self.path]
                 self.send_bytes(200, (UI / name).read_bytes(), mime)
