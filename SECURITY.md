@@ -8,12 +8,16 @@ Customer purchase quantities, supplier links, inventory, unit costs and document
 
 Only synthetic demonstrations belong in this repository. Client inputs and reports belong in ignored private directories with restricted access. The application does not encrypt files, manage accounts, establish lawful processing terms, verify data ownership or configure backup/retention. Output files are readable by the receiving user; share them only through the customer's approved process.
 
+## Opt-in imagery boundary
+
+The geographic explorer displays a bundled local Natural Earth SVG by default. Its NASA GIBS satellite tiles load **only after the operator clicks the activation button**. This reveals the viewer's IP address, access time and geographical viewport tiles to the imagery provider; browser referrers are suppressed. Country codes, purchase amounts, materials, supplier identifiers, documents, model features, API token and private files are not embedded in tile URLs. The map never geocodes private records. A CSP allowlist admits image resources from the NASA GIBS host only; no third-party JavaScript, analytics or remote API connection is introduced. A network-disabled environment still sees the local land outline and country overlays. See [geospatial documentation](docs/GEO_SPATIAL_PT.md).
+
 ## Implemented controls
 
 | Threat | Control | Practical limit |
 |---|---|---|
-| Script injection through document labels or input text | Inert report JSON encodes angle brackets; both UIs render labels with `textContent`; offline reports use script/style CSP hashes; workbench CSP permits its own assets/API only; no `unsafe-inline` or eval | A compromised local template/package or modified HTML can remove these protections |
-| Exfiltration or SSRF through metadata | No remote model, URL resolver or automatic external data download; analysis performs no outbound network calls; report CSP blocks connections and local UI uses fixed relative API paths | Operator-initiated sharing and compromised OS/package behavior are outside this boundary |
+| Script injection through document labels or input text | Inert report JSON encodes angle brackets; both UIs render labels with `textContent`; offline reports use script/style CSP hashes; workbench CSP permits local scripts/API, and explicitly consented images from the fixed NASA GIBS host; no `unsafe-inline` or eval | A compromised local template/package or modified HTML can remove these protections |
+| Exfiltration or SSRF through metadata | No remote model or URL resolver; analytical inputs never trigger an outbound download. The only optional external dependency is user-enabled NASA GIBS satellite images, with fixed host and no portfolio records in the requests. Reports and local API remain self-contained | Operator-initiated sharing and compromised OS/package behavior are outside this boundary |
 | Ambiguous or malformed inputs | Duplicate JSON keys/IDs and unknown fields fail closed; finite bounded numbers, typed dates, referential checks and consistent per-material stock/demand | Input declarations can still be intentionally false |
 | Resource exhaustion | 4 MiB JSON, bounded row counts; 512 MiB/5M-line streaming public CSV importer; max 1,000 logistic iterations; 64 MiB file digest | No sandbox for document parsing is claimed; documents are only read as byte streams |
 | Path injection / overwriting another file | Input IDs never form paths; fixed report filenames; new output directory only; exclusive creation with no symlink following where supported | Explicit parent paths are trusted operator choices; full transactional rollback is not implemented |
