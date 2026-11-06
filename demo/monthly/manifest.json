@@ -1,12 +1,12 @@
 {
   "product": "StrataSignal",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "input_sha256": "ec58dd2aab27df5fbab0ac4cb5c3cd8e59b101bc1aa340c1d3af7a9b9ec6578f",
   "dataset_kind": "synthetic",
   "as_of": "2026-11-06",
   "artifacts": {
-    "report.json": "73b7af91ae2ba18eb8593794b05771e20709697cb45c0b42ea14be863b9217ca",
-    "report.html": "db39c4af29e49ccc91c3b470f488b8cc3c897ffab2314de3339cb2d85f6affca"
+    "report.json": "e9eb66b775725e258f1ceca9265a636fa17a0befd73d00e0c2ce2a593d48dc4a",
+    "report.html": "b24cce579c5b1302b7c03a14093cea444e225098b8ff9b7707f821f010853e7e"
   },
   "note": "Hashes verificam consistência com este manifesto; não são assinatura digital nem prova de origem.",
   "previous_input_sha256": "60b5d2471a20317ccc3ca31adea021057b53b9347f5bfdee2c93d7e1aaee5063"

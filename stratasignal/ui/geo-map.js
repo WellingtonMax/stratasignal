@@ -221,6 +221,7 @@
       if(!selected||!report||!picker)return;
       if([...picker.options].some(option=>option.value===selected)){
         picker.value=selected;
+        picker.dispatchEvent(new Event("change",{bubbles:true}));
         document.querySelector('nav [data-view="scenario"]')?.click();
         picker.focus();
       }

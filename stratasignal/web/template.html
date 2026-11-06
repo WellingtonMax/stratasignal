@@ -15,12 +15,13 @@
  <div class="workspace">ESPAÇO DE ANÁLISE<strong>Segurança do abastecimento</strong></div>
  <nav aria-label="Seções do relatório">
   <button type="button" data-view="overview" aria-current="page"><span aria-hidden="true">◈</span> Visão geral</button>
+  <button type="button" data-view="intelligence"><span aria-hidden="true">◉</span> Inteligência operacional</button>
   <button type="button" data-view="scenarios"><span aria-hidden="true">↗</span> Simulador</button>
   <button type="button" data-view="evidence"><span aria-hidden="true">◇</span> Evidências</button>
   <button type="button" data-view="changes" id="changes-nav" hidden><span aria-hidden="true">↔</span> Evolução</button>
   <button type="button" data-view="model"><span aria-hidden="true">≋</span> Modelo e dados</button>
  </nav>
- <div class="sidebar-note"><span class="status-dot"></span>Processamento local<p>Um relatório que acompanha as suas decisões.</p><small>STRATASIGNAL / MVP 0.3</small></div>
+ <div class="sidebar-note"><span class="status-dot"></span>Processamento local<p>Um relatório que acompanha as suas decisões.</p><small>STRATASIGNAL / MVP 0.4</small></div>
 </aside>
 <div class="shell">
  <header class="topbar"><span>INTELIGÊNCIA DE COMPRAS <b>/</b> MINERAIS CRÍTICOS</span><span id="cutoff"></span></header>
@@ -33,6 +34,7 @@
     <article class="card priority-card"><p class="eyebrow">PRÓXIMA AÇÃO</p><h2>O que merece atenção primeiro</h2><div id="next-actions"></div><p class="footnote">Prioridades explicáveis. A decisão permanece com o responsável por compras.</p></article></div>
    <article class="card table-card"><div class="card-header"><div><p class="eyebrow">CARTEIRA DE MATERIAIS</p><h2>Uma visão das vulnerabilidades</h2></div><span class="tiny-label">ESPECIFICAÇÕES SEPARADAS</span></div><div class="table-scroll"><table><thead><tr><th>Material</th><th>Prioridade¹</th><th>Maior origem</th><th>Cobertura</th><th>Prazo nominal²</th><th>Sinais documentais</th></tr></thead><tbody id="materials-table"></tbody></table></div><p class="footnote">¹ Regra de triagem de 0 a 100; não é probabilidade. ² Maior prazo informado entre fornecedores do material.</p></article>
   </section>
+  <section id="intelligence" class="view" aria-label="Inteligência operacional" hidden><div id="insights-content"></div></section>
   <section id="scenarios" class="view" aria-label="Simulador de abastecimento" hidden>
    <div class="two-col"><article class="card"><p class="eyebrow">CENÁRIO CONDICIONAL</p><h2>E se parte da oferta parar?</h2><p>Escolha uma origem e simule uma redução temporária de fornecimento.</p><label class="label" for="shock-country">Origem afetada</label><select id="shock-country"></select><label class="label" for="shock-days">Duração: <output id="days-value" for="shock-days"></output></label><input id="shock-days" type="range" min="1" max="180" value="45"><label class="label" for="shock-reduction">Redução do fornecimento: <output id="reduction-value" for="shock-reduction"></output></label><input id="shock-reduction" type="range" min="0" max="100" step="any" value="100"><p class="footnote" id="scenario-assumption"></p></article><article class="card"><p class="eyebrow">RESULTADO DO CENÁRIO</p><h2>Quanto o estoque absorve?</h2><div id="scenario-results" aria-live="polite"></div></article></div>
    <p class="footnote">O resultado mede um cenário escolhido por você. Não prevê bloqueios, preços ou decisões governamentais. Homologação e capacidade de fontes alternativas exigem verificação técnica.</p>

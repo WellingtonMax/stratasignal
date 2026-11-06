@@ -8,7 +8,7 @@
 
 **[Explore the online demonstration](https://stratasignal-workbench.wellingtonl-maxim.chatgpt.site/)** — fictional data only; private imports use the local workbench.
 
-![StrataSignal 0.3 workbench with a fictional procurement portfolio](docs/images/workbench-v03.png)
+![StrataSignal 0.4 workbench with a fictional procurement portfolio](docs/images/workbench-v04.png)
 
 ## The service a customer receives
 
@@ -21,12 +21,18 @@ An analyst reviews a bounded procurement dataset and delivers a private HTML dec
 | Conditional scenarios | Change affected country, supply reduction and duration; calculate uncovered demand and stock depletion |
 | Period comparison | Same-portfolio snapshots: concentration, stock coverage, supplier allocations and new/disappearing documentary signals; specification changes suspend deltas |
 | Machine learning | Regularized logistic regression for order lateness; chronological holdout, matured labels, baseline comparison and abstention |
+| Temporal stability | Three additional chronological windows; predictions require at least two valid windows and improvement over their baselines in at least two thirds |
+| Operational intelligence | Descriptive delivery rates and Wilson intervals, completed-delivery P90, overdue orders, cost-based origin dependencies and a bounded stress matrix |
 | Public-data preparation | Streaming importer for the MDIC's documented local CSV layout, with explicit NCM, flow and period |
 | Local workbench | Import JSON or map operational CSV columns; review inputs, run analysis, simulate, compare periods and download reports |
 | Geospatial explorer | Country-level supplier allocation markers on a local world map; opt-in dated NASA GIBS satellite imagery; jump from country to supply shock simulator |
 | Private delivery | Local analysis; loopback-only UI connection; no remote customer-data service, telemetry, external fonts or third-party AI calls |
 
 The demo has **3 fictional material specifications, 6 fictional supplier positions and 780 synthetic orders**. Every report records whether its input is synthetic or customer-declared. Synthetic model metrics demonstrate software behavior only.
+
+Version **0.4** supports **100 material specifications, 500 supplier positions, 20,000 orders and 5,000 evidence records**, within a 16 MiB normalized input. Indexed aggregation avoids repeatedly scanning the entire history. A [measured synthetic capacity run](docs/benchmarks/v0.4-linux.json) exercised all four limits: about 1.63 seconds for deterministic analysis and descriptive intelligence in the recorded environment, without ML. This is a local workload observation, not a multi-user throughput or service-level claim.
+
+Browser analyses run in a separate process with cancellation, a 90-second wall deadline and, on supported POSIX systems, 60 CPU seconds and a 2 GiB address-space limit. The interface remains available while the worker computes. [Architecture, bounds and threat model](docs/ARCHITECTURE.md).
 
 ## Painel local
 
@@ -36,13 +42,15 @@ After installation, open the browser workbench:
 python -m stratasignal serve
 ```
 
-The command opens an address on `127.0.0.1`, with a temporary access credential in its fragment. Keep that complete address private. Use `--no-open` to open the printed address manually or `--port 8766` to choose another local port. The server binds only to IPv4 loopback and is intended for one operator on a trusted machine.
+The command opens an address on `127.0.0.1`, with a temporary access credential in its fragment. Keep that complete address private; it expires after eight hours, requiring a restart. Use `--no-open` to open the printed address manually or `--port 8766` to choose another local port. The server binds only to IPv4 loopback and is intended for one operator on a trusted machine.
 
 1. Choose the built-in fictional portfolio, import a raw procurement JSON bundle, or select **Planilhas CSV** and map your columns.
 2. For CSV, explicitly choose the separator, numeric format, date format and whether supplier participation is a fraction or percentage. Supply positions; order and evidence manifests are optional. See [the CSV guide and fictional samples](docs/CSV_IMPORT_PT.md).
 3. Review the portfolio and run the analysis. Explore country exposure on the **interactive world map**, the documentary queue and experimental delivery estimates when the optional ML dependency is installed. The offline land basemap is bundled; clicking **Ativar imagens NASA** requests dated NASA GIBS satellite tiles, without transmitting portfolio inputs. [Geospatial scope, image dates and privacy](docs/GEO_SPATIAL_PT.md).
 4. Calculate a supply-reduction scenario. Downloads include the **last calculated** scenario, rather than unsent slider changes.
 5. Export HTML, JSON results and the normalized current input. For the next period, import that normalized input as the previous baseline under **Comparar períodos**.
+
+**Inteligência operacional** adds a searchable, paginated delivery-history table and 30/60/90-day country stress cases at 25/50/100% supply reductions. **Usar premissas** fills the simulator; click **Calcular cenário** to update the result. The grid covers up to 12 origins selected by declared monthly reference cost and discloses omitted origins. Scenarios describe separate conditional assumptions and must not be added together. Wilson intervals describe observed rates under binomial assumptions; P90 excludes open orders and requires ten completed deliveries. They are not new operational forecasts.
 
 Uploaded content stays in the local Python process memory. Closing the process clears its state; it does not automatically save your inputs or results. Downloads use your browser's normal download handling. Use approved local storage and sharing practices. The interface has no browser storage or telemetry. The optional imagery layer contacts NASA GIBS only after an explicit user action; the visual tiles do not convey procurement records.
 
@@ -91,7 +99,7 @@ python -m stratasignal analyze \
 
 Generate the full synthetic input for schema exploration with `python -m stratasignal sample --out sample.synthetic.json`. For each material, demand, stock and name must match across supplier rows and allocation shares must sum to one. Quantities are kilograms and cost is USD/kg. Technical grades, product forms and origin definitions must be reviewed before grouping records. `ZZ` explicitly denotes an unknown origin; two-letter country codes are operator-supplied and not independently verified against an ISO registry.
 
-The schema rejects unknown fields, duplicate IDs, orphan records, unsupported dates, non-finite values and inconsistent allocations. Limit: 4 MiB per JSON input, 20 materials, 64 positions, 3,000 orders and 500 documentary records.
+The schema rejects unknown fields, duplicate IDs, orphan records, unsupported dates, non-finite values, invisible/directional control characters and inconsistent allocations. Limits: 16 MiB per input and normalized bundle, 100 materials, 500 positions, 20,000 orders and 5,000 documentary records. The local HTTP body limit is 64 MiB, including encoding overhead.
 
 ## Compare reporting periods
 
@@ -135,7 +143,13 @@ python -m unittest discover -s tests -v
 python -S -m unittest discover -s tests -v
 ```
 
-The second command exercises the standard-library path and skips ML-dependent tests. `npm ci --ignore-scripts && npm test` runs 22 test-only report/workbench DOM interaction and security checks. See [the verification record](docs/VERIFICATION.md) for exact observed results and environment limitations. Dedicated workflows run rule, ML, UI interaction, installed-package and CodeQL checks for this repository.
+The second command exercises the standard-library path and skips ML-dependent tests. `npm ci --ignore-scripts && npm test` runs 29 test-only report/workbench DOM interaction and security checks. See [the verification record](docs/VERIFICATION.md) for exact observed results and environment limitations. Dedicated workflows run rule, ML, UI interaction, installed-package, dependency-advisory and CodeQL checks. GitHub Actions are pinned by commit SHA and checkout credentials are not persisted.
+
+To repeat the capacity measurement into a new output file:
+
+```bash
+python -m stratasignal benchmark --out reports/capacity-001.json
+```
 
 ## Commercial boundary
 

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0 — 2026-11-06
+
+- Index operational aggregation and supplier histories; support 100 specifications, 500 positions, 20,000 orders and 5,000 evidence records within a 16 MiB normalized input.
+- Add descriptive delivery rates with Wilson intervals, received-lead P90, overdue/censored-order counts, origin reference-cost dependencies and up to 108 conditional stress cells. Add paginated/searchable intelligence to the workbench and offline report.
+- Require additional chronological stability windows before publishing ML estimates; preserve matured-label purges and baseline/OOD abstention.
+- Run HTTP analyses in one spawned process with asynchronous status, cancellation, revision-checked publication, JSON result framing, wall deadlines and supported POSIX resource limits.
+- Bound HTTP connections, upload slots, body/header sizes, request quotas and token lifetime; reject compressed bodies, foreign Fetch Metadata and invisible/bidirectional label controls. Add isolation headers.
+- Pin GitHub Actions by commit, disable retained checkout credentials and add dependency-advisory CI. Add installed-wheel process checks, adversarial HTTP/process tests and a reproducible synthetic capacity command.
+- Preserve the opt-in NASA map integration and private local-data boundary. No production multi-tenant service or real-world model validation is claimed.
+
 ## 0.3.0 — 2026-11-06
 
 - Add `serve` with a packaged browser workbench for local JSON/CSV import, column mapping, input review, analysis, scenarios, period comparison and HTML/JSON/normalized-input downloads.

@@ -1,0 +1,15 @@
+{
+  "product": "StrataSignal",
+  "version": "0.4.0",
+  "dataset_kind": "synthetic",
+  "python": "3.12.14",
+  "platform": "Linux",
+  "input_bytes": 6728681,
+  "materials": 100,
+  "positions": 500,
+  "orders": 20000,
+  "evidence": 5000,
+  "elapsed_seconds": 1.6256,
+  "peak_traced_bytes": 39040538,
+  "scope": "Um processo local, regras e inteligência descritiva, sem ML. Tempo inclui tracemalloc; pico rastreia alocações Python, não RSS total. Carga sintética não representa tráfego multiusuário ou SLA."
+}

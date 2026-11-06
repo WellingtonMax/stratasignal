@@ -5,8 +5,10 @@ import http.client
 import io
 import json
 import re
+import socket
 import tempfile
 import threading
+import time
 import unittest
 from pathlib import Path
 
@@ -17,7 +19,7 @@ from stratasignal.importer import (
     parse_json_text, preview_csv,
 )
 from stratasignal.schema import InputError
-from stratasignal.workbench import MAX_REQUEST_BYTES, Workspace, create_server
+from stratasignal.workbench import MAX_REQUEST_BYTES, LocalPolicy, Workspace, create_server
 
 
 def table_spec(table, records, *, comma=False, percent=False, br_dates=False):
@@ -122,7 +124,7 @@ class ImportTests(unittest.TestCase):
         preview = preview_csv(spec["text"], "positions", ";")
         self.assertEqual((preview["row_count"], len(preview["rows"])), (6, 5))
         with self.assertRaises(InputError):
-            preview_csv("a\n" + "value\n" * 65, "positions", ";")
+            preview_csv("a\n" + "value\n" * 501, "positions", ";")
 
     def test_json_import_rejects_duplicate_nonfinite_and_unknown_fields(self):
         raw = normalized_json(self.bundle)
@@ -212,6 +214,7 @@ class WorkbenchHTTPTests(unittest.TestCase):
 
     def setUp(self):
         self.workspace.__init__()
+        self.server.policy = LocalPolicy()
 
     def request(self, method, path, payload=None, *, headers=None, authenticated=True, origin=True):
         connection = http.client.HTTPConnection("127.0.0.1", self.port, timeout=5)
@@ -286,8 +289,16 @@ class WorkbenchHTTPTests(unittest.TestCase):
     def test_complete_http_flow_exports_scenario_then_reset_removes_data(self):
         self.assertEqual(self.request("POST", "/api/demo", {"with_previous": True})[0], 200)
         code, _, raw = self.request("POST", "/api/analyze", {"use_ml": False, "compare_previous": True})
-        self.assertEqual(code, 200)
-        report = json.loads(raw)["report"]
+        self.assertEqual(code, 202)
+        job_id = json.loads(raw)["job"]["id"]
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            result = json.loads(self.request("GET", "/api/jobs/" + job_id)[2])
+            if result["job"]["state"] != "running":
+                break
+            time.sleep(.01)
+        self.assertEqual(result["job"]["state"], "succeeded")
+        report = result["report"]
         self.assertEqual(self.request("POST", "/api/scenario", {"country": "CN", "duration_days": 45,
             "reduction": 0, "input_sha256": report["input_sha256"]})[0], 200)
         code, headers, raw = self.request("GET", "/api/export/json")
@@ -299,6 +310,87 @@ class WorkbenchHTTPTests(unittest.TestCase):
         self.assertEqual(self.request("POST", "/api/reset", {})[0], 200)
         self.assertEqual(self.request("GET", "/api/export/json")[0], 400)
         self.assertIsNone(json.loads(self.request("GET", "/api/status")[2])["status"]["current"])
+
+    def test_fetch_metadata_compressed_payloads_and_oversized_headers_fail_closed(self):
+        self.assertEqual(self.request("GET", "/api/status", headers={"Sec-Fetch-Site":"cross-site"})[0],403)
+        self.assertEqual(self.request("POST", "/api/reset", {}, headers={"Content-Encoding":"gzip"})[0],415)
+        self.assertEqual(self.request("POST", "/api/reset", {}, headers={"Expect":"100-continue"})[0],415)
+        self.assertEqual(self.request("GET", "/api/status", headers={"X-Oversized":"x"*17000})[0],431)
+
+    def test_expired_token_cannot_read_or_modify_existing_workspace(self):
+        self.workspace.load_demo({"with_previous":False})
+        self.server.policy.started -= 8*60*60+1
+        self.assertEqual(self.request("GET", "/api/status")[0],401)
+        self.assertEqual(self.request("POST", "/api/reset", {})[0],401)
+        self.assertIsNotNone(self.workspace.current)
+
+    def test_authentication_failures_are_limited_without_locking_out_valid_access(self):
+        for _ in range(20):
+            self.assertEqual(self.request("GET", "/api/status", authenticated=False)[0],401)
+        code,headers,_=self.request("GET", "/api/status", authenticated=False)
+        self.assertEqual(code,429)
+        self.assertEqual(headers["Retry-After"],"60")
+        self.assertEqual(self.request("GET", "/api/status")[0],200)
+
+    def test_mutation_quota_preserves_authenticated_status_access(self):
+        for _ in range(60):
+            self.assertEqual(self.request("POST", "/api/reset", {})[0],200)
+        self.assertEqual(self.request("POST", "/api/reset", {})[0],429)
+        self.assertEqual(self.request("GET", "/api/status")[0],200)
+
+    def test_duplicate_origin_and_authorization_headers_are_not_combined_or_accepted(self):
+        for header,value,expected in (("Origin",self.origin,403),("Authorization","Bearer "+self.token,401)):
+            connection=http.client.HTTPConnection("127.0.0.1",self.port,timeout=5)
+            connection.putrequest("POST","/api/reset")
+            for name,text in [("Origin",self.origin),("Authorization","Bearer "+self.token),("Content-Type","application/json"),("Content-Length","2"),(header,value)]:
+                connection.putheader(name,text)
+            connection.endheaders(b"{}")
+            response=connection.getresponse();self.assertEqual(response.status,expected);response.read();connection.close()
+
+    def test_status_remains_available_during_analysis_and_cancel_does_not_restore_data(self):
+        from stratasignal.jobs import AnalysisJob
+        from tests.test_jobs import slow_worker
+        self.workspace.jobs.close()
+        self.workspace.jobs=AnalysisJob(worker=slow_worker,wall_seconds=2)
+        self.workspace.load_demo({"with_previous":True})
+        code,_,raw=self.request("POST","/api/analyze",{"use_ml":False,"compare_previous":True})
+        self.assertEqual(code,202);job_id=json.loads(raw)["job"]["id"]
+        self.assertEqual(self.request("GET","/api/status")[0],200)
+        self.assertEqual(json.loads(self.request("GET","/api/jobs/"+job_id)[2])["job"]["state"],"running")
+        self.assertEqual(self.request("POST","/api/analyze",{"use_ml":False,"compare_previous":False})[0],409)
+        self.assertEqual(self.request("POST","/api/cancel",{"job_id":job_id})[0],200)
+        self.workspace.jobs.close()
+        self.assertEqual(json.loads(self.request("GET","/api/jobs/"+job_id)[2])["job"]["state"],"cancelled")
+        self.assertIsNone(self.workspace.report)
+        self.assertEqual(self.request("GET","/api/jobs/"+"0"*32)[0],404)
+
+    def test_connection_pressure_is_bounded_instead_of_creating_unlimited_threads(self):
+        sockets=[]
+        try:
+            for _ in range(8):
+                connection=socket.create_connection(("127.0.0.1",self.port),timeout=3)
+                connection.sendall(b"GET / HTTP/1.0\r\n")
+                sockets.append(connection)
+            deadline=time.monotonic()+2
+            while self.server._connections._value and time.monotonic()<deadline:
+                time.sleep(.01)
+            self.assertEqual(self.request("GET","/api/status")[0],503)
+        finally:
+            for connection in sockets:connection.close()
+
+    def test_two_incomplete_uploads_do_not_block_status_and_reject_a_third_body(self):
+        sockets=[]
+        try:
+            for _ in range(2):
+                connection=socket.create_connection(("127.0.0.1",self.port),timeout=3)
+                headers=f"POST /api/reset HTTP/1.0\r\nHost: 127.0.0.1:{self.port}\r\nOrigin: {self.origin}\r\nAuthorization: Bearer {self.token}\r\nContent-Type: application/json\r\nContent-Length: 100\r\n\r\n{{"
+                connection.sendall(headers.encode());sockets.append(connection)
+            deadline=time.monotonic()+2
+            while self.server.body_slots._value and time.monotonic()<deadline:time.sleep(.01)
+            self.assertEqual(self.request("GET","/api/status")[0],200)
+            self.assertEqual(self.request("POST","/api/reset",{})[0],429)
+        finally:
+            for connection in sockets:connection.close()
 
 
 class PublicDemoBuildTests(unittest.TestCase):
@@ -319,7 +411,7 @@ class PublicDemoBuildTests(unittest.TestCase):
             template = json.loads((output / "demo/report-template.json").read_text())["html"]
             self.assertIn('<script id="report-data" type="application/json">', template)
             self.assertFalse((output / "demo/report-template.html").exists())
-            self.assertEqual(len(list(output.rglob("*.*"))), 12)
+            self.assertEqual(len(list(output.rglob("*.*"))), 13)
             with self.assertRaises(FileExistsError):
                 build_demo(output, enable_ml=False)
 

@@ -8,8 +8,12 @@ import json
 import re
 import secrets
 import socket
+import threading
+import time
 import webbrowser
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from collections import deque
+from functools import wraps
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from . import __version__
@@ -19,9 +23,19 @@ from .demo import demo_bundle, demo_previous_bundle
 from .importer import bundle_from_csv, fingerprint, normalized_json, parse_json_text, preview_csv
 from .report import render_html
 from .schema import InputError, fields, unique_object, validate_bundle
+from .jobs import AnalysisJob, BusyError, compute_report
 
 UI = Path(__file__).with_name("ui")
-MAX_REQUEST_BYTES = 16 * 1024 * 1024
+MAX_REQUEST_BYTES = 64 * 1024 * 1024
+TOKEN_TTL_SECONDS = 8 * 60 * 60
+
+
+def locked(method):
+    @wraps(method)
+    def wrapped(self, *args, **kwargs):
+        with self._lock:
+            return method(self, *args, **kwargs)
+    return wrapped
 
 
 def summary(bundle):
@@ -34,15 +48,21 @@ def summary(bundle):
 
 class Workspace:
     def __init__(self):
+        self._lock = threading.RLock()
+        self.jobs = AnalysisJob()
+        self.revision = 0
+        self.report_job_id = None
         self.current = None
         self.previous = None
         self.report = None
         self.source_hashes = {}
 
+    @locked
     def status(self):
         return {"version": __version__, "mode": "local", "current": summary(self.current), "previous": summary(self.previous),
                 "report_ready": self.report is not None, "ml_available": importlib.util.find_spec("sklearn") is not None}
 
+    @locked
     def import_data(self, payload):
         fields(payload, ("slot", "kind", "data"))
         if payload["slot"] not in ("current", "previous") or payload["kind"] not in ("json", "csv"):
@@ -66,8 +86,12 @@ class Workspace:
             self.previous = None
             self.source_hashes = {"current": hashes}
         self.report = None
+        self.report_job_id = None
+        self.revision += 1
+        self.jobs.cancel()
         return {"status": self.status(), "review": self.review()}
 
+    @locked
     def review(self):
         if self.current is None:
             return None
@@ -76,6 +100,7 @@ class Workspace:
                 "notes": ["Quantidades em kg; custos em USD/kg; alocações somam 100% por especificação.",
                           "Campos e origens são declarados; a validação estrutural não comprova origem física."]}
 
+    @locked
     def load_demo(self, payload):
         fields(payload, ("with_previous",))
         if type(payload["with_previous"]) is not bool:
@@ -84,27 +109,76 @@ class Workspace:
         self.previous = demo_previous_bundle() if payload["with_previous"] else None
         self.source_hashes = {}
         self.report = None
+        self.report_job_id = None
+        self.revision += 1
+        self.jobs.cancel()
         return {"status": self.status(), "review": self.review()}
 
-    def run(self, payload):
+    @locked
+    def analysis_task(self, payload):
         fields(payload, ("use_ml", "compare_previous"))
         if any(type(payload[k]) is not bool for k in payload):
             raise InputError("Opções de análise inválidas")
         if self.current is None:
             raise InputError("Carregue e confira uma carteira antes de analisar")
-        comparison = None
         if payload["compare_previous"]:
             if self.previous is None:
                 raise InputError("Carregue o conjunto anterior para comparar períodos")
-            comparison = compare_bundles(self.previous, self.current, fingerprint(self.previous), fingerprint(self.current))
-        report = analyze(self.current, fingerprint(self.current), enable_ml=payload["use_ml"])
-        if comparison is not None:
-            report["comparison"] = comparison
-        if self.source_hashes:
-            report["source_files_sha256"] = copy.deepcopy(self.source_hashes)
-        self.report = report
-        return {"status": self.status(), "report": report}
+        return copy.deepcopy({"current": self.current, "previous": self.previous if payload["compare_previous"] else None,
+            "source_hashes": self.source_hashes, **payload})
 
+    @locked
+    def run(self, payload):
+        # Synchronous library use only. HTTP analyses always use the bounded process.
+        self.report = compute_report(self.analysis_task(payload))
+        return {"status": self.status(), "report": self.report}
+
+    @locked
+    def submit(self, payload):
+        task = self.analysis_task(payload)
+        revision = self.revision
+        def completed(report):
+            with self._lock:
+                if self.revision != revision:
+                    return False
+                self.report = report
+                self.report_job_id = self.jobs.snapshot(job_id)["id"]
+                return True
+        job = self.jobs.start(task, completed)
+        job_id = job["id"]
+        return {"job": job}
+
+    @locked
+    def job_result(self, job_id):
+        job = self.jobs.snapshot(job_id)
+        value = {"job": job}
+        if job["state"] == "succeeded" and self.report_job_id == job_id and self.report is not None:
+            value.update(status=self.status(), report=self.report)
+        elif job["state"] == "succeeded":
+            value["job"]["state"] = "stale"
+        return value
+
+    @locked
+    def clear(self):
+        self.jobs.cancel()
+        self.revision += 1
+        self.current = self.previous = self.report = None
+        self.report_job_id = None
+        self.source_hashes = {}
+        return {"status": self.status()}
+
+    @locked
+    def cancel_job(self, payload):
+        fields(payload, ("job_id",))
+        if not isinstance(payload["job_id"], str) or not re.fullmatch(r"[0-9a-f]{32}", payload["job_id"]):
+            raise InputError("Identificador de análise inválido")
+        job = self.jobs.snapshot(payload["job_id"])
+        if job["state"] == "running" and self.report_job_id != payload["job_id"]:
+            self.revision += 1
+            self.jobs.cancel()
+        return {"job": self.jobs.snapshot(payload["job_id"])}
+
+    @locked
     def simulate(self, payload):
         fields(payload, ("country", "duration_days", "reduction", "input_sha256"))
         if self.report is None:
@@ -117,6 +191,7 @@ class Workspace:
         self.report["scenario"] = outcome
         return {"scenario": outcome}
 
+    @locked
     def export(self, kind):
         if kind == "input" and self.current is not None:
             return normalized_json(self.current), "application/json", "stratasignal-input.json"
@@ -135,6 +210,63 @@ def parse_request(raw):
                           parse_constant=lambda _: (_ for _ in ()).throw(InputError("Número não finito")))
     except (ValueError, UnicodeError, RecursionError) as exc:
         raise InputError("Requisição JSON inválida") from exc
+
+
+class LocalPolicy:
+    def __init__(self):
+        self.started = time.monotonic()
+        self._lock = threading.Lock()
+        self._windows = {"authentication": deque(), "mutations": deque(), "exports": deque()}
+
+    def allow(self, category):
+        maximum = {"authentication": 20, "mutations": 60, "exports": 40}[category]
+        now = time.monotonic()
+        with self._lock:
+            window = self._windows[category]
+            while window and window[0] <= now - 60:
+                window.popleft()
+            if len(window) >= maximum:
+                return False
+            window.append(now)
+            return True
+
+
+class LocalServer(ThreadingHTTPServer):
+    daemon_threads = True
+    request_queue_size = 8
+
+    def __init__(self, address, handler, workspace):
+        self.workspace = workspace
+        self.policy = LocalPolicy()
+        self._connections = threading.BoundedSemaphore(8)
+        self.body_slots = threading.BoundedSemaphore(2)
+        super().__init__(address, handler)
+
+    def process_request(self, request, client_address):
+        if not self._connections.acquire(blocking=False):
+            try:
+                body = b'{"error":"Limite de conexoes simultaneas"}'
+                request.settimeout(1)
+                request.sendall(b"HTTP/1.0 503 Service Unavailable\r\nConnection: close\r\nCache-Control: no-store\r\nContent-Type: application/json\r\nContent-Length: " + str(len(body)).encode() + b"\r\n\r\n" + body)
+            except OSError:
+                pass
+            self.shutdown_request(request)
+            return
+        try:
+            super().process_request(request, client_address)
+        except BaseException:
+            self._connections.release()
+            raise
+
+    def process_request_thread(self, request, client_address):
+        try:
+            super().process_request_thread(request, client_address)
+        finally:
+            self._connections.release()
+
+    def server_close(self):
+        self.workspace.jobs.close()
+        super().server_close()
 
 
 def handler_class(workspace, token):
@@ -165,8 +297,13 @@ def handler_class(workspace, token):
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("X-Frame-Options", "DENY")
             self.send_header("Referrer-Policy", "no-referrer")
-            self.send_header("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data: https://gibs.earthdata.nasa.gov; base-uri 'none'; frame-ancestors 'none'; form-action 'none'")
+            self.send_header("Cross-Origin-Opener-Policy", "same-origin")
+            self.send_header("Cross-Origin-Resource-Policy", "same-origin")
+            self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+            self.send_header("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data: https://gibs.earthdata.nasa.gov; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'")
             self.send_header("Connection", "close")
+            if status == 429:
+                self.send_header("Retry-After", "60")
             if filename:
                 self.send_header("Content-Disposition", 'attachment; filename="' + filename + '"')
             self.end_headers()
@@ -179,6 +316,9 @@ def handler_class(workspace, token):
             self.send_bytes(status, json.dumps(value, ensure_ascii=True, allow_nan=False))
 
         def guard(self, protected=False, mutation=False):
+            if len(self.path) > 2048 or sum(len(k) + len(v) for k, v in self.headers.items()) > 16384:
+                self.send_json(431, {"error": "Endereço ou cabeçalhos excedem o limite"})
+                return False
             hosts = self.headers.get_all("Host", [])
             if hosts != ["127.0.0.1:" + str(self.server.server_port)]:
                 self.send_json(403, {"error": "Endereço local inválido"})
@@ -187,12 +327,21 @@ def handler_class(workspace, token):
             if (mutation and origins != [self.origin]) or (origins and origins != [self.origin]):
                 self.send_json(403, {"error": "Origem da requisição inválida"})
                 return False
+            fetch_sites = self.headers.get_all("Sec-Fetch-Site", [])
+            if fetch_sites and (len(fetch_sites) != 1 or fetch_sites[0] not in ("same-origin", "none")):
+                self.send_json(403, {"error": "Contexto de navegação inválido"})
+                return False
             if protected:
                 values = self.headers.get_all("Authorization", [])
                 expected = "Bearer " + token
-                if len(values) != 1 or len(values[0]) > 256 or not hmac.compare_digest(values[0].encode("utf-8"), expected.encode("utf-8")):
-                    self.send_json(401, {"error": "Acesso local expirado. Abra o endereço mostrado ao iniciar o painel."})
+                expired = time.monotonic() - self.server.policy.started >= TOKEN_TTL_SECONDS
+                if expired or len(values) != 1 or len(values[0]) > 256 or not hmac.compare_digest(values[0].encode("utf-8"), expected.encode("utf-8")):
+                    code = 401 if self.server.policy.allow("authentication") else 429
+                    self.send_json(code, {"error": "Acesso local inválido ou expirado. Reinicie o painel para renovar o acesso."})
                     return False
+            if mutation and not self.server.policy.allow("mutations"):
+                self.send_json(429, {"error": "Limite de operações por minuto. Aguarde para continuar."})
+                return False
             return True
 
         def do_GET(self):
@@ -200,6 +349,7 @@ def handler_class(workspace, token):
                 return
             assets = {"/": ("index.html", "text/html; charset=utf-8"), "/app.css": ("app.css", "text/css; charset=utf-8"),
                       "/app.js": ("app.js", "text/javascript; charset=utf-8"),
+                      "/insights.js": ("insights.js", "text/javascript; charset=utf-8"),
                       "/geo-map.js": ("geo-map.js", "text/javascript; charset=utf-8"),
                       "/geo-map.css": ("geo-map.css", "text/css; charset=utf-8"),
                       "/world-land.svg": ("world-land.svg", "image/svg+xml"), "/favicon.svg": ("favicon.svg", "image/svg+xml")}
@@ -208,7 +358,15 @@ def handler_class(workspace, token):
                 self.send_bytes(200, (UI / name).read_bytes(), mime)
             elif self.path == "/api/status":
                 self.send_json(200, {"status": workspace.status()})
+            elif re.fullmatch(r"/api/jobs/[0-9a-f]{32}", self.path):
+                try:
+                    self.send_json(200, workspace.job_result(self.path.rsplit("/", 1)[1]))
+                except InputError as exc:
+                    self.send_json(404, {"error": str(exc)})
             elif self.path in ("/api/export/input", "/api/export/json", "/api/export/html"):
+                if not self.server.policy.allow("exports"):
+                    self.send_json(429, {"error": "Limite de exportações por minuto"})
+                    return
                 try:
                     content, mime, name = workspace.export(self.path.rsplit("/", 1)[1])
                     self.send_bytes(200, content, mime, name)
@@ -225,10 +383,16 @@ def handler_class(workspace, token):
                 return
             length = self.headers.get("Content-Length", "")
             if not re.fullmatch(r"[0-9]{1,8}", length) or not 0 < int(length) <= MAX_REQUEST_BYTES:
-                self.send_json(413, {"error": "A requisição deve ter até 16 MiB"})
+                self.send_json(413, {"error": "A requisição deve ter até 64 MiB"})
+                return
+            if self.headers.get_all("Content-Encoding") or self.headers.get_all("Expect"):
+                self.send_json(415, {"error": "Compressão e envio antecipado não são suportados"})
                 return
             if len(self.headers.get_all("Content-Type", [])) != 1 or self.headers.get_content_type() != "application/json":
                 self.send_json(415, {"error": "Envie dados no formato JSON"})
+                return
+            if not self.server.body_slots.acquire(blocking=False):
+                self.send_json(429, {"error": "Há arquivos sendo processados. Aguarde e tente novamente."})
                 return
             try:
                 raw = self.rfile.read(int(length))
@@ -243,21 +407,26 @@ def handler_class(workspace, token):
                 elif self.path == "/api/demo":
                     result = workspace.load_demo(payload)
                 elif self.path == "/api/analyze":
-                    result = workspace.run(payload)
+                    result = workspace.submit(payload)
+                elif self.path == "/api/cancel":
+                    result = workspace.cancel_job(payload)
                 elif self.path == "/api/scenario":
                     result = workspace.simulate(payload)
                 elif self.path == "/api/reset":
                     fields(payload, ())
-                    workspace.__init__()
-                    result = {"status": workspace.status()}
+                    result = workspace.clear()
                 else:
                     self.send_json(404, {"error": "Operação não encontrada"})
                     return
-                self.send_json(200, result)
+                self.send_json(202 if self.path == "/api/analyze" else 200, result)
+            except BusyError as exc:
+                self.send_json(409, {"error": str(exc)})
             except (InputError, ValueError, OverflowError) as exc:
                 self.send_json(400, {"error": str(exc) if isinstance(exc, InputError) else "Dados inválidos"})
             except (TimeoutError, socket.timeout):
                 self.send_json(408, {"error": "Tempo de envio excedido"})
+            finally:
+                self.server.body_slots.release()
 
         def do_OPTIONS(self):
             if self.guard():
@@ -273,7 +442,7 @@ def create_server(port=8765, *, token=None, workspace=None):
     token = token if token is not None else secrets.token_urlsafe(32)
     if not isinstance(token, str) or not re.fullmatch(r"[A-Za-z0-9_-]{32,128}", token):
         raise InputError("Credencial local inválida")
-    server = HTTPServer(("127.0.0.1", port), handler_class(workspace, token))
+    server = LocalServer(("127.0.0.1", port), handler_class(workspace, token), workspace)
     server.timeout = 1
     return server, token, workspace
 
@@ -284,6 +453,7 @@ def serve(port=8765, open_browser=True):
     print("StrataSignal", __version__, "· painel local. Os dados permanecem na memória desta execução.")
     print("Abra este endereço no navegador:", url)
     print("Encerre com Ctrl+C. Nenhum arquivo importado é gravado automaticamente.")
+    print("A credencial desta execução expira em 8 horas; reinicie o painel para renová-la.")
     try:
         if open_browser:
             try:

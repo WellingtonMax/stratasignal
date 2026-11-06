@@ -1,6 +1,6 @@
 # Methodology and data contract
 
-Version 0.3.0 — 6 November 2026. Results describe the operator's declared snapshot. The software does not establish physical provenance.
+Version 0.4.0 — 6 November 2026. Results describe the operator's declared snapshot. The software does not establish physical provenance.
 
 ## 1. Operational inputs and units
 
@@ -12,7 +12,7 @@ Orders record an ID, material, supplier, declared origin, ordered date, promised
 
 Evidence manifests record an ID, material/supplier link, declared origin, observed date, issue/expiration dates or null, and a supplied SHA-256. The standalone `digest` command calculates hash, size and filesystem mtime from a local file without parsing its content. These are different from verified issuer metadata.
 
-Inputs: UTF-8 JSON or explicitly mapped operational CSV in the local workbench, strict duplicate-key/field checks, 4 MiB per file, at most 20 materials, 64 positions, 3,000 orders and 500 evidence records. The combined normalized bundle must also fit 4 MiB. Numeric and date limits are in `schema.py`. Unknown two-letter country codes are accepted as operator declarations; `ZZ` means unknown. No ISO-membership validation is claimed.
+Inputs: UTF-8 JSON or explicitly mapped operational CSV in the local workbench, strict duplicate-key/field checks, 16 MiB per file, at most 100 materials, 500 positions, 20,000 orders and 5,000 evidence records. The combined normalized bundle must also fit 16 MiB. Numeric and date limits are in `schema.py`. Unknown two-letter country codes are accepted as operator declarations; `ZZ` means unknown. No ISO-membership validation is claimed.
 
 The workbench CSV importer is separate from the official MDIC raw-file adapter. It maps the operator's column names to the procurement schema, with explicit decimal, date and fraction/percentage selections; it does not infer units, exchange rates, specifications or physical origin. Orders and evidence are optional, with missing-evidence signals and model abstention where applicable. The review precedes analysis. See [the operational CSV contract](CSV_IMPORT_PT.md).
 
@@ -54,7 +54,11 @@ Minimums: 160 observable outcomes overall, 100 training orders, 40 holdout order
 
 If Brier is not better than the constant baseline, estimates are suppressed. After passing that gate, the model is refit on all observable outcomes for the report snapshot. An estimate describes a hypothetical new order equal to the current monthly allocation and nominal quoted lead. Each position needs 20 previous observable outcomes and the hypothetical quantity/lead must lie inside that position's observed ranges, otherwise the position abstains. This range check is deliberately simple and is not a full drift detector.
 
-The demo's process is deliberately learnable and entirely artificial. Its AUC/Brier values are not evidence about actual critical-mineral logistics. Real-data output is labeled experimental. A single temporal holdout is a development gate, not permission to automate purchases. Required next evaluation: multiple temporal windows, missingness and regime review, calibration, business utility and a prospective pilot.
+After the main holdout gate passes, version 0.4 evaluates three additional chronological windows starting near the 60th, 75th and 90th percentiles of observable order dates. Each test interval ends at the next cutoff or the report cut. Training includes only orders and labels strictly observable before that window's cutoff; window test features still use only outcomes observable before each order. Each window needs 100 train and 40 test orders, with at least 10 examples of each class in both groups. Duplicate date cutoffs are collapsed.
+
+Publication additionally requires at least two valid windows and strictly better Brier than the corresponding constant training-prevalence baseline in at least two thirds of valid windows (rounded up). Otherwise all position estimates abstain. No hyperparameter selection or probability calibration is performed using these windows. The main holdout overlaps later diagnostic windows and training sets overlap; this is a stability gate, not independent replication or a fresh external test. Refit on all observable outcomes happens only after both gates pass.
+
+The demo's process is deliberately learnable and entirely artificial. Its AUC/Brier values are not evidence about actual critical-mineral logistics. Real-data output is labeled experimental. Temporal diagnostics do not authorize automated purchases. Required next evaluation: missingness and regime review, calibration, business utility and a prospective pilot.
 
 Primary methodological references: [scikit-learn common pitfalls](https://scikit-learn.org/stable/common_pitfalls.html), [temporal evaluation](https://scikit-learn.org/stable/modules/cross_validation.html#cross-validation-of-time-series-data), [probability calibration](https://scikit-learn.org/stable/modules/calibration.html). The local verified implementation uses scikit-learn 1.8.0.
 
@@ -75,3 +79,17 @@ Both dates are recalculated with the current deterministic rules. ML estimates a
 Material IDs and exact specification names must agree for quantitative deltas. A name change suspends deltas and asks for technical review, including when the change might be cosmetic. Additions/removals are recorded without inferring a cause or a baseline value. The operator must also preserve units, origin definitions and the meaning of each ID; the software cannot detect a specification change hidden behind an unchanged name.
 
 Documentary signal identity is `(code, material, supplier, evidence_id)`. New/absent signal counts cover comparable materials only. Disappearance can result from data correction, replacement, omission or a real operational change; it never proves remediation or authenticity. Supplier positions added, removed or changed, and declared country allocations, are reported separately. The report manifest records the hashes of both raw input files.
+
+## 8. Descriptive delivery intelligence
+
+For each material/supplier pair, observable outcomes include completed receipts and open orders whose promised date is before the cut. Open orders not yet due are censored. The observed late rate is late outcomes divided by observable outcomes. A 95% Wilson score interval uses `z=1.959963984540054`; zero observations produces no rate or interval. Fewer than 20 outcomes receives a small-sample label. The interval assumes independent binomial observations; correlated shipments, selection bias and changing regimes can invalidate nominal coverage. It is descriptive, not a calibrated probability for a future order.
+
+Completed-delivery lead time is receipt date minus order date. P50/P90 use the nearest-rank definition. P90 is withheld below ten completed deliveries. Open orders do not enter received-time percentiles, including overdue open orders; this can systematically understate the long tail. Their count and maximum overdue days are reported separately. Technical grades remain separate throughout.
+
+Country dependence uses `sum(material monthly kg × supplier allocation × supplier USD/kg)` as a declared monthly reference cost, plus the affected material IDs. It is neither world production share nor loss exposure. Different minerals' kilograms are never added into one portfolio quantity.
+
+## 9. Bounded stress grid and capacity
+
+The stress grid takes the 12 largest origins by declared monthly reference cost (country code breaks ties), durations of 30/60/90 days and reductions of 25/50/100%. All origin dependencies remain in the output; the grid discloses how many were outside its cap. Each cell applies the same steady-state formula as the interactive simulator, lists materials with uncovered demand and sums their reference replacement values in USD. Each cell affects one country independently; results are neither additive nor assigned occurrence probabilities. The UI's **Usar premissas** transfers parameters to the simulator; workbench exports change only after explicit calculation.
+
+Version 0.4 aggregates positions, orders and flags by material once; model prediction histories are also indexed by material/supplier. Comparisons skip the extra intelligence grid when recalculating their two rule snapshots. Limits remain explicit: 100 materials, 500 positions, 20,000 orders, 5,000 evidence records and 16 MiB normalized input. [The measured synthetic workload](benchmarks/v0.4-linux.json) exercises those bounds without ML; it does not validate multi-user operation, a latency SLA or a real procurement workflow.

@@ -1,8 +1,10 @@
 # Product development status
 
-## Implemented in 0.3
+## Implemented in 0.4
 
 Independent repository and CI; strict local procurement analysis; experimental delivery-delay estimates; bounded Comex CSV preparation; metadata review queue; conditional stock scenarios; same-portfolio comparisons with version-consistent recalculation; synthetic single-period and monthly reports; loopback browser workbench with explicit operational CSV mapping, ephemeral workspace and exports; static synthetic-only online demonstration.
+
+Version 0.4 adds indexed 100-material/20,000-order processing, a measured maximum-capacity synthetic fixture, asynchronous spawned analysis with cancellation and resource limits, bounded HTTP concurrency/quotas, expiring access, directional-control rejection, descriptive delivery reliability and P90, cost-based origin dependencies, a bounded country stress grid and additional temporal ML stability gates. The existing local world map and optional NASA imagery remain available. New intelligence appears in both the workbench and standalone HTML reports.
 
 ## Next milestones and acceptance criteria
 
@@ -10,11 +12,11 @@ Independent repository and CI; strict local procurement analysis; experimental d
 |---|---|
 | Broader visual acceptance | The published desktop overview was visually inspected and captured. Complete the remaining desktop/mobile and assistive-technology review; navigation, scenario calculation and comparison have been exercised in Chrome |
 | First real-data pilot | Authorized, minimized procurement files; reviewed field/specification mapping; documented customer question and useful output; no private data committed |
-| Operational model evaluation | Multiple temporal windows, calibration and regime/missingness review, baseline/business-utility comparison and prospective observations |
+| Operational model evaluation | Temporal diagnostic windows and baseline gates are implemented; real-data calibration, regime/missingness review, business-utility assessment and prospective observations remain |
 | Sustainable service | A bounded paid pilot, measured analyst hours and a recurring customer need; documentary market research does not establish demand |
 | Hosted offering, if justified | Design and independently verify authentication, authorization, tenant isolation, upload handling, encryption, retention and recovery before receiving customer files online |
 
-Version 0.3 remains a local MVP for customer data. The online build accepts no customer files. Comparative signals describe declared snapshots; the product does not certify physical provenance, issue regulatory opinions or demonstrate real-world predictive accuracy.
+Version 0.4 remains a local MVP for customer data. The online build accepts no customer files. Comparative signals describe declared snapshots; the product does not certify physical provenance, issue regulatory opinions or demonstrate real-world predictive accuracy.
 
 ## Build the static demonstration
 

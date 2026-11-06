@@ -1,47 +1,52 @@
-# Verification record — 0.3.0, 6 November 2026
+# Verification record — 0.4.0, 6 November 2026
 
-Local verification used Python 3.12, scikit-learn 1.8.0, NumPy 2.3.5, SciPy 1.17.0, joblib 1.5.3 and threadpoolctl 3.6.0. Test-only report interactions used jsdom 26.1.0 and the Node test runner. Exact version pins and the npm lockfile are committed.
+Local verification used Python 3.12.14, scikit-learn 1.8.0, NumPy 2.3.5, SciPy 1.17.0, joblib 1.5.3 and threadpoolctl 3.6.0. Test-only browser orchestration uses jsdom 26.1.0 and the Node test runner. Runtime dependencies are unchanged; exact pins and lockfiles are committed.
 
 ## Observed results
 
 | Check | Observed result |
 |---|---|
-| `python -m unittest discover -s tests -q` | 80 tests passed with optional ML installed |
-| `python -S -m unittest discover -s tests -q` | 74 tests passed; 6 ML-dependent tests explicitly skipped |
-| `npm ci --ignore-scripts` and `npm test` | Fresh installation; 22 report/workbench DOM interaction/security tests passed |
-| Prior portfolio regression suites | The 0.1 verification covered 20 Excel Rescue, 12 Sales Intelligence and 13 API Bridge checks; those projects are outside this product repository |
-| CLI demo with ML | Report generated; synthetic labels retained; 3 materials, 6 positions, 780 synthetic orders |
-| Built distribution | Version 0.3.0 wheel built successfully; installed in a fresh virtual environment; packaged assets generated the rules-only monthly report and static demo, and created a loopback server outside the checkout |
-| Actual local HTTP service | Token-protected reads/writes, exact Host/Origin checks, duplicate headers, size/framing/content-type rejection, static path restrictions, scenario export and reset exercised over loopback sockets |
-| Browser functional inspection | Managed HTTP preview loaded in Chrome; navigation, zero-reduction scenario and monthly comparison exercised in the actual UI; expected zero deficits and +10 days graphite coverage observed |
-| Published demonstration | Native deployment succeeded at [the public synthetic-only demo](https://stratasignal-workbench.wellingtonl-maxim.chatgpt.site/). Desktop overview inspected and [captured](images/workbench-v03.png); a 180-day, 33.3% China-reduction scenario and its actual JSON download retained 15,894.08 kg uncovered graphite demand |
-| Standalone migration | All 30 unchanged source blobs matched their original Git hashes; README setup adapted. Dedicated tests/packaging and CodeQL workflows passed at migration commit `85ee0ea1f363a0b1ba341efb5ba70ba1a6bc0a26` |
-| Static syntax / patch checks | Python compilation, JavaScript syntax and `git diff --check` passed |
-| Python dependency advisory audit | pip-audit 2.10.1 queried the five explicitly pinned optional ML packages; no known vulnerabilities reported at execution time |
-| JavaScript dependency advisory audit | npm audit reported zero known vulnerabilities across the test-only dependency graph (39 dependencies) |
+| Python suite | 104 tests passed with optional ML installed |
+| Standard-library path (`python -S`) | 96 passed; 8 ML-dependent checks explicitly skipped |
+| Report/workbench DOM suite | 29 tests passed, including country map behavior, stress-to-simulator handoff, filtering/pagination and cancellation |
+| Real spawned analysis | Rules, comparison and optional ML completed in a spawned, resource-limited child; malformed results, wall timeout, incomplete pipe frames, cancellation and reset races exercised |
+| Actual loopback HTTP service | Authentication, Host/Origin/Fetch Metadata, duplicate headers, expiry, quotas, compressed/oversized payload rejection, connection/upload pressure and responsive status during a running job exercised |
+| Wheel installation | 0.4.0 wheel built and installed in a fresh virtual environment; packaged map/insight assets, static build, monthly report and real isolated analysis verified outside the checkout |
+| Maximum-capacity fixture | 100 materials, 500 positions, 20,000 orders and 5,000 evidences validated and analyzed without mixing specifications; oversized records rejected |
+| Measured capacity run | 1.6256 seconds for deterministic rules and descriptive intelligence without ML; 6,728,681 input bytes and 39,040,538 peak traced Python allocation bytes; [raw measurement](benchmarks/v0.4-linux.json) |
+| Browser HTTP preview | New intelligence view, 45 synthetic stress cases, supplier filtering and premise handoff exercised in Chrome; desktop presentation inspected and [captured](images/workbench-v04.png) |
+| Python advisory audit | pip-audit 2.10.1, `--disable-pip --no-deps --strict`, queried all five pinned optional ML packages; no known vulnerabilities reported |
+| JavaScript advisory audit | `npm audit --audit-level=high` reported zero known vulnerabilities in the 39-package test-only graph |
+| CI configuration | Actions pinned to upstream commit SHAs, checkout credentials disabled; dedicated dependency-advisory, installed-package and CodeQL checks configured |
 
-The current product suite has 102 checks: 80 Python and 22 DOM tests. Version 0.3 adds 26 Python and 11 workbench DOM checks to the 65-check v0.2 baseline. Dependency versions are unchanged. Advisory audit results above are the observations recorded earlier on the same date for those unchanged pins, not a new audit or certification. The Python audit used `--disable-pip --no-deps` against the complete five-package pinned ML requirements, without installing/executing those packages in the audit environment. Build tools and the entire host environment were not audited.
+The current suite contains 133 checks: 104 Python and 29 DOM. This adds 24 Python and four DOM checks to the map-enabled 0.3 baseline (80 Python / 25 DOM). Advisory checks are time-sensitive observations, not a security certification; the scanner's environment and all build tools were not audited. The recorded capacity run is one local synthetic workload with tracemalloc overhead, not total RSS, concurrent throughput, a percentile latency or a promised SLA.
 
-## Behaviors exercised
+## Analytical behavior verified
 
-Known concentration and coverage calculations; a numerically specified stress scenario; zero/irrelevant shocks; separation of material specifications; missing/conflicting/expired/shared documentary metadata; open overdue orders; right-censoring; order-time historical features; training-label maturity before temporal cutoff; minimum data/class gates; worse-than-baseline abstention; out-of-distribution abstention; duplicate keys/IDs/headers; orphan references; non-finite, boolean, huge and negative numbers; input size limits; future dates; NCM/flow filtering; CSV aggregation; script/markup injection; report navigation; reactive scenario controls; preserving a requested shock country absent from the portfolio and fractional supply reductions; metadata/provenance labels; refusal to overwrite; symlink protection; POSIX output permissions; manifest consistency. New comparison checks cover changed coverage and concentration, supplier changes, new/absent signals, specification changes, additions/removals, mismatched/missing IDs, mixed data kinds, chronology, old-input compatibility, dual-input hashes, CLI refusal before output creation and the monthly demonstration.
+Existing concentration, inventory, metadata, scenario, comparison, temporal maturity/OOD and exclusive-output safeguards remain covered. New checks exercise full declared capacity, per-position delivery outcomes, right-censoring, received-only P90, Wilson interval values, no-history behavior, stress-grid consistency with the existing simulator, independent-specification costs, bounded origin selection, invisible/directional control rejection, failed-worker sanitization and non-resurrection after reset.
 
-Workbench checks cover Brazilian decimals/grouping, percentage units, explicit dates and arbitrary headers; nullable documentary fields; optional orders/evidence; bounded previews; failure atomicity; invalid baseline preservation; invalidation after current imports; stale scenario rejection; original versus normalized hashes; actual HTTP controls; package-only static assets; synthetic-only public builds; unavailable credentials; loading/reset/navigation; private imports disabled in the online build; rejecting non-synthetic assets; fractional scenario/download consistency; malicious labels remaining inert; failed CSV replacements clearing stale source buffers; and strict UTF-8 with original BOM preservation. jsdom's fetch responses are mocked for UI orchestration tests; Python HTTP checks separately exercise the real server.
+The UI tests exercise cancelled jobs, safe labels, bounded history pages, filters and preservation of the last calculated scenario in downloads. They mock fetch for orchestration; actual HTTP/process checks separately exercise the real backend. jsdom does not render layout or enforce CSP. Actual Chrome inspection uses only the hardcoded fictitious demo; no private file was sent to the public Site or NASA.
 
-## Synthetic model observation
+## Synthetic ML observations
 
-The deterministic fixture produced 556 eligible training records and 195 holdout records after purging outcomes unavailable at the cutoff, 2025-11-13. Brier: 0.20716; constant-baseline Brier: 0.23568; ROC AUC: 0.73006. These values exercise the pipeline on an intentionally learnable artificial process. **They do not establish real logistics accuracy, calibration, profitability, risk reduction or a customer outcome.**
+The main chronological holdout retains 556 eligible train / 195 test records, cutoff 2025-11-13, Brier 0.20716 against baseline 0.23568 and AUC 0.73006. Additional windows:
 
-## Known verification limits
+| Cutoff | Train / test | Model Brier | Baseline Brier |
+|---|---:|---:|---:|
+| 2025-06-30 | 441 / 117 | 0.22639 | 0.24227 |
+| 2025-11-13 | 556 / 117 | 0.19708 | 0.23496 |
+| 2026-03-30 | 676 / 78 | 0.22101 | 0.23672 |
 
-- The tab screenshot API timed out on the local preview but succeeded on the published page. The desktop overview was visually inspected; broader desktop/mobile layouts, assistive technologies and adversarial browser CSP enforcement remain to be reviewed. **jsdom does not render layout or enforce CSP**. Browser console observations contained extension-origin errors; those are not evidence of application security or a clean CSP attack test.
-- The initial public Comex Stat API POST research request returned HTTP 429. No live trade-volume response was used, no market dataset was fabricated and no automatic synchronization is shipped. CSV adapter tests use a clearly labeled synthetic fixture matching the documented layout.
-- Dedicated hosted tests/packaging and CodeQL both passed for product commit `aef99d647cd669884b452149481f993572e531ec`; check the latest published commit's workflows for subsequent changes. The 3.11 matrix environment was not executed locally.
-- No real customer data, paid pilot, multi-customer access boundary, independent penetration test, regulatory certification, physical-origin validation, commodity-price forecast or prospective model study was exercised.
+Training labels precede each cutoff. All three artificial windows improve on their respective references. The instability regression forces later failures after a passing main holdout and verifies that predictions are suppressed. Windows/training sets overlap; these are development diagnostics, not independent external validation, calibration or evidence of real logistics accuracy, profitability or customer savings.
+
+## Verification limits
+
+- Broader mobile layouts, assistive technologies and adversarial browser CSP enforcement remain to be reviewed. Current desktop inspection does not establish complete accessibility or visual acceptance across devices.
+- Windows and local Python 3.11 execution were not exercised here. CI covers Python 3.11/3.12; inspect the latest commit's workflow results. POSIX CPU/address-space limits are not claimed on Windows.
+- Loopback request budgets and process limits do not provide a production multi-tenant boundary, OS sandbox, complete slow-client defense or independent penetration-test result.
+- No real customer dataset, paid pilot, prospectively validated model, physical-origin verification, regulatory certification, commodity-price forecast or live trade-volume snapshot was used. Existing NASA imagery remains explicit opt-in visual context; no satellite-derived operational prediction is implemented.
 
 ## Reproduce
-
-From the standalone repository root:
 
 ```bash
 python -m pip install -r requirements-ml.txt
@@ -50,8 +55,8 @@ python -S -m unittest discover -s tests -v
 npm ci --ignore-scripts
 npm test
 mkdir -p reports
-python -m stratasignal demo --out reports/verification-001
+python -m stratasignal benchmark --out reports/capacity-001.json
 python -m stratasignal demo --with-comparison --out reports/comparison-001
 ```
 
-The committed `demo/report.html` remains an offline report. The separate `build_demo` command produces a static workbench demonstration containing only fictional input and precomputed synthetic ML results. Local customer data uses `python -m stratasignal serve`. Use a new output directory for each CLI report/build; overwrites are intentionally refused.
+Use new output paths. Customer processing stays in `python -m stratasignal serve`; the separately built public demo contains only synthetic inputs and precomputed model results. See SECURITY.md and ARCHITECTURE.md for the exact implementation boundary.

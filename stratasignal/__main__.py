@@ -71,6 +71,8 @@ def parser():
     panel = commands.add_parser("serve", help="Abrir o painel local no navegador")
     panel.add_argument("--port", type=int, default=8765)
     panel.add_argument("--no-open", action="store_true", help="Mostrar o endereço sem abrir o navegador")
+    benchmark = commands.add_parser("benchmark", help="Medir regras e inteligência em uma carteira sintética de capacidade máxima")
+    benchmark.add_argument("--out", required=True, help="Arquivo JSON novo para as medidas observadas")
     return root
 
 
@@ -80,6 +82,11 @@ def main(argv=None):
         if args.command == "serve":
             from .workbench import serve
             return serve(args.port, open_browser=not args.no_open)
+        if args.command == "benchmark":
+            from .benchmark import measure_capacity
+            write_private(args.out, serialized(measure_capacity()))
+            print("Medição sintética criada; não representa tráfego multiusuário ou SLA.")
+            return 0
         if args.command == "sample":
             write_private(args.out, serialized(demo_bundle()))
             print("Amostra sintética criada.")

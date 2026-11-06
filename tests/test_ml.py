@@ -34,6 +34,17 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(len(result["predictions"]), 6)
         self.assertLess(result["evaluation"]["latest_train_label_on"], result["evaluation"]["cutoff"])
         self.assertLess(result["evaluation"]["brier"], result["evaluation"]["baseline_brier"])
+        self.assertEqual(result["evaluation"]["stability"]["state"], "passed")
+        for window in result["evaluation"]["temporal_windows"]:
+            if window["state"] == "evaluated":
+                self.assertLess(window["latest_train_label_on"], window["cutoff"])
+
+    def test_temporal_instability_suppresses_estimates_even_after_main_holdout_passes(self):
+        with patch("sklearn.metrics.brier_score_loss", side_effect=[.1,.2,.3,.2,.3,.2,.1,.2]):
+            result = evaluate_delay_model(demo_bundle())
+        self.assertEqual(result["status"], "abstained")
+        self.assertEqual(result["evaluation"]["stability"]["state"], "unstable")
+        self.assertEqual(result["predictions"], [])
 
     def test_insufficient_history_abstains(self):
         data = demo_bundle()

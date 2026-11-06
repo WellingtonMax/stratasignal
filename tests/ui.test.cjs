@@ -32,7 +32,7 @@ test("report initializes with explicit synthetic data and no external resource r
 
 test("all navigation controls reveal the correct report section", () => {
   const {dom,doc} = open();
-  for (const id of ["scenarios","evidence","model","overview"]) {
+  for (const id of ["intelligence","scenarios","evidence","model","overview"]) {
     doc.querySelector(`button[data-view="${id}"]`).click();
     assert.equal(doc.getElementById(id).hidden,false);
     assert.equal([...doc.querySelectorAll(".view")].filter(e=>!e.hidden).length,1);

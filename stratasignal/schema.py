@@ -4,10 +4,15 @@ import hashlib
 import json
 import math
 import re
+import unicodedata
 from datetime import date
 from pathlib import Path
 
-MAX_BYTES = 4 * 1024 * 1024
+MAX_BYTES = 16 * 1024 * 1024
+MAX_MATERIALS = 100
+MAX_POSITIONS = 500
+MAX_ORDERS = 20_000
+MAX_EVIDENCE = 5_000
 ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}\Z")
 
 
@@ -51,7 +56,7 @@ def identifier(value):
 def text_value(value, limit=160):
     if not isinstance(value, str) or not value.strip() or len(value) > limit:
         raise InputError("Texto inválido")
-    if any(ord(c) < 32 or ord(c) == 127 for c in value):
+    if any(unicodedata.category(c) in ("Cc", "Cf", "Cs") for c in value):
         raise InputError("Caractere de controle não permitido")
     return value
 
@@ -98,7 +103,7 @@ def validate_bundle(data):
     if data["dataset_kind"] not in ("synthetic", "client"):
         raise InputError("Natureza do conjunto deve ser synthetic ou client")
     as_of = day(data["as_of"])
-    positions = rows(data["positions"], 64, allow_empty=False)
+    positions = rows(data["positions"], MAX_POSITIONS, allow_empty=False)
     known = {}
     material_settings = {}
     totals = {}
@@ -121,10 +126,10 @@ def validate_bundle(data):
         material_settings[key[0]] = settings
         totals[key[0]] = totals.get(key[0], 0) + p["allocation_share"]
         known[key] = p
-    if len(totals) > 20 or any(abs(v - 1) > 1e-6 for v in totals.values()):
-        raise InputError("Alocações devem somar 1 para cada material; máximo de 20 materiais")
+    if len(totals) > MAX_MATERIALS or any(abs(v - 1) > 1e-6 for v in totals.values()):
+        raise InputError(f"Alocações devem somar 1 para cada material; máximo de {MAX_MATERIALS} materiais")
     seen = set()
-    for o in rows(data["orders"], 3000):
+    for o in rows(data["orders"], MAX_ORDERS):
         fields(o, ("id", "material", "supplier", "origin_country", "ordered_on", "promised_on", "received_on", "quantity_kg"))
         oid = identifier(o["id"])
         if oid in seen:
@@ -140,7 +145,7 @@ def validate_bundle(data):
             raise InputError("Recebimento inválido ou posterior à data de corte")
         number(o["quantity_kg"], positive=True)
     seen = set()
-    for e in rows(data["evidence"], 500):
+    for e in rows(data["evidence"], MAX_EVIDENCE):
         fields(e, ("id", "material", "supplier", "origin_country", "observed_on", "issued_on", "expires_on", "sha256"))
         eid = identifier(e["id"])
         if eid in seen:

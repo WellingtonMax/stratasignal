@@ -9,12 +9,16 @@ from pathlib import Path
 WEB = Path(__file__).with_name("web")
 
 
+def report_script():
+    return (Path(__file__).with_name("ui") / "insights.js").read_text(encoding="utf-8") + "\n" + (WEB / "app.js").read_text(encoding="utf-8")
+
+
 def csp_hash(value):
     return "'sha256-" + base64.b64encode(hashlib.sha256(value.encode()).digest()).decode() + "'"
 
 
 def render_html(report):
-    script = (WEB / "app.js").read_text(encoding="utf-8")
+    script = report_script()
     style = (WEB / "app.css").read_text(encoding="utf-8")
     payload = json.dumps(report, ensure_ascii=True, allow_nan=False).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
     policy = "default-src 'none'; script-src " + csp_hash(script) + "; style-src " + csp_hash(style) + "; connect-src 'none'; img-src data:; object-src 'none'; base-uri 'none'; form-action 'none'"

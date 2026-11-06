@@ -7,14 +7,14 @@ import json
 import re
 from datetime import datetime
 
-from .schema import MAX_BYTES, InputError, fields, identifier, text_value, unique_object, validate_bundle
+from .schema import MAX_BYTES, MAX_POSITIONS, MAX_ORDERS, MAX_EVIDENCE, InputError, fields, identifier, text_value, unique_object, validate_bundle
 
 TABLE_FIELDS = {
     "positions": ("material", "material_name", "supplier", "origin_country", "allocation_share", "monthly_demand_kg", "stock_kg", "nominal_lead_days", "unit_cost_usd"),
     "orders": ("id", "material", "supplier", "origin_country", "ordered_on", "promised_on", "received_on", "quantity_kg"),
     "evidence": ("id", "material", "supplier", "origin_country", "observed_on", "issued_on", "expires_on", "sha256"),
 }
-TABLE_LIMITS = {"positions": 64, "orders": 3000, "evidence": 500}
+TABLE_LIMITS = {"positions": MAX_POSITIONS, "orders": MAX_ORDERS, "evidence": MAX_EVIDENCE}
 NUMERIC = {"allocation_share", "monthly_demand_kg", "stock_kg", "nominal_lead_days", "unit_cost_usd", "quantity_kg"}
 DATES = {"ordered_on", "promised_on", "received_on", "observed_on", "issued_on", "expires_on"}
 NULLABLE = {"received_on", "issued_on", "expires_on"}
@@ -24,7 +24,7 @@ COMMA_NUMBER = re.compile(r"[+-]?(?:\d{1,3}(?:\.\d{3})+|\d+)(?:,\d+)?\Z")
 
 def bounded_text(value):
     if not isinstance(value, str) or not value.strip() or len(value.encode("utf-8")) > MAX_BYTES:
-        raise InputError("Arquivo vazio ou maior que 4 MiB")
+        raise InputError("Arquivo vazio ou maior que 16 MiB")
     return value.lstrip("\ufeff")
 
 
@@ -145,7 +145,7 @@ def bundle_from_csv(payload):
 def normalized_json(bundle):
     raw = json.dumps(bundle, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
     if len(raw.encode("utf-8")) > MAX_BYTES:
-        raise InputError("Conjunto normalizado excede 4 MiB")
+        raise InputError("Conjunto normalizado excede 16 MiB")
     return raw
 
 

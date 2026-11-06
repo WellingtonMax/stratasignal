@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from stratasignal.analytics import analyze
 from stratasignal.demo import demo_bundle
-from stratasignal.report import csp_hash, render_html, write_private, write_report, WEB
+from stratasignal.report import csp_hash, render_html, write_private, write_report, report_script, WEB
 from stratasignal.schema import InputError, number, read_json, validate_bundle
 from stratasignal.__main__ import main
 
@@ -54,7 +54,7 @@ class SecurityTests(unittest.TestCase):
         html = render_html(report)
         self.assertNotIn(attack, html)
         self.assertIn("\\u003c/script\\u003e", html)
-        self.assertIn(csp_hash((WEB / "app.js").read_text()), html)
+        self.assertIn(csp_hash(report_script()), html)
         self.assertIn("connect-src 'none'", html)
         self.assertNotIn("unsafe-inline", html)
         self.assertNotIn("innerHTML", (WEB / "app.js").read_text())

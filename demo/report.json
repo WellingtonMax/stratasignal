@@ -1,6 +1,6 @@
 {
   "product": "StrataSignal",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "schema_version": 1,
   "dataset_kind": "synthetic",
   "as_of": "2026-11-06",
@@ -210,7 +210,53 @@
       ],
       "baseline": "Frequência de atraso no treinamento.",
       "protocol": "Holdout cronológico único de 25%; rótulos de treino observáveis antes do corte; atributos de histórico atualizados sequencialmente.",
-      "calibration": "Não calibrado para uso operacional; bins descritivos. Um único holdout não valida estabilidade."
+      "calibration": "Não calibrado para uso operacional; bins descritivos. Janelas temporais não garantem estabilidade futura ou calibração.",
+      "temporal_windows": [
+        {
+          "cutoff": "2025-06-30",
+          "end_exclusive": "2025-11-13",
+          "train_orders": 441,
+          "test_orders": 117,
+          "state": "evaluated",
+          "latest_train_label_on": "2025-06-29",
+          "brier": 0.22639,
+          "baseline_brier": 0.24227,
+          "roc_auc": 0.64674,
+          "better_than_baseline": true
+        },
+        {
+          "cutoff": "2025-11-13",
+          "end_exclusive": "2026-03-30",
+          "train_orders": 556,
+          "test_orders": 117,
+          "state": "evaluated",
+          "latest_train_label_on": "2025-11-12",
+          "brier": 0.19708,
+          "baseline_brier": 0.23496,
+          "roc_auc": 0.79328,
+          "better_than_baseline": true
+        },
+        {
+          "cutoff": "2026-03-30",
+          "end_exclusive": null,
+          "train_orders": 676,
+          "test_orders": 78,
+          "state": "evaluated",
+          "latest_train_label_on": "2026-03-28",
+          "brier": 0.22101,
+          "baseline_brier": 0.23672,
+          "roc_auc": 0.64931,
+          "better_than_baseline": true
+        }
+      ],
+      "stability": {
+        "state": "passed",
+        "evaluated_windows": 3,
+        "improved_windows": 3,
+        "minimum_evaluated_windows": 2,
+        "required_improved_windows": 2,
+        "scope": "Mínimo de duas janelas temporais válidas e melhora sobre a referência em pelo menos dois terços. Treinos se sobrepõem; isto não substitui validação prospectiva ou calibração."
+      }
     },
     "predictions": [
       {
@@ -292,6 +338,522 @@
         "replacement_reference_usd": 0.0
       }
     ]
+  },
+  "intelligence": {
+    "supplier_performance": [
+      {
+        "material": "graphite-flake",
+        "name": "Grafita natural · flocos 95% (fictícia)",
+        "supplier": "CN-01",
+        "observed_orders": 130,
+        "late_orders": 56,
+        "late_rate": 0.430769,
+        "late_rate_interval_95": [
+          0.348841,
+          0.516672
+        ],
+        "received_orders": 130,
+        "received_lead_p50_days": 39,
+        "received_lead_p90_days": 51,
+        "open_overdue_orders": 0,
+        "not_yet_observable": 0,
+        "maximum_open_overdue_days": 0,
+        "sample_status": "descriptive"
+      },
+      {
+        "material": "graphite-flake",
+        "name": "Grafita natural · flocos 95% (fictícia)",
+        "supplier": "BR-01",
+        "observed_orders": 130,
+        "late_orders": 49,
+        "late_rate": 0.376923,
+        "late_rate_interval_95": [
+          0.298278,
+          0.462633
+        ],
+        "received_orders": 130,
+        "received_lead_p50_days": 25,
+        "received_lead_p90_days": 37,
+        "open_overdue_orders": 0,
+        "not_yet_observable": 0,
+        "maximum_open_overdue_days": 0,
+        "sample_status": "descriptive"
+      },
+      {
+        "material": "ndpr-oxide",
+        "name": "Óxido NdPr · especificação demonstrativa",
+        "supplier": "CN-02",
+        "observed_orders": 130,
+        "late_orders": 51,
+        "late_rate": 0.392308,
+        "late_rate_interval_95": [
+          0.312621,
+          0.478176
+        ],
+        "received_orders": 130,
+        "received_lead_p50_days": 51,
+        "received_lead_p90_days": 63,
+        "open_overdue_orders": 0,
+        "not_yet_observable": 0,
+        "maximum_open_overdue_days": 0,
+        "sample_status": "descriptive"
+      },
+      {
+        "material": "ndpr-oxide",
+        "name": "Óxido NdPr · especificação demonstrativa",
+        "supplier": "MY-01",
+        "observed_orders": 130,
+        "late_orders": 44,
+        "late_rate": 0.338462,
+        "late_rate_interval_95": [
+          0.262799,
+          0.423397
+        ],
+        "received_orders": 130,
+        "received_lead_p50_days": 43,
+        "received_lead_p90_days": 54,
+        "open_overdue_orders": 0,
+        "not_yet_observable": 0,
+        "maximum_open_overdue_days": 0,
+        "sample_status": "descriptive"
+      },
+      {
+        "material": "lithium-carbonate",
+        "name": "Carbonato de lítio · grau industrial (fictício)",
+        "supplier": "CL-01",
+        "observed_orders": 130,
+        "late_orders": 58,
+        "late_rate": 0.446154,
+        "late_rate_interval_95": [
+          0.36347,
+          0.531929
+        ],
+        "received_orders": 130,
+        "received_lead_p50_days": 30,
+        "received_lead_p90_days": 42,
+        "open_overdue_orders": 0,
+        "not_yet_observable": 0,
+        "maximum_open_overdue_days": 0,
+        "sample_status": "descriptive"
+      },
+      {
+        "material": "lithium-carbonate",
+        "name": "Carbonato de lítio · grau industrial (fictício)",
+        "supplier": "AR-01",
+        "observed_orders": 130,
+        "late_orders": 47,
+        "late_rate": 0.361538,
+        "late_rate_interval_95": [
+          0.284021,
+          0.447004
+        ],
+        "received_orders": 130,
+        "received_lead_p50_days": 26,
+        "received_lead_p90_days": 39,
+        "open_overdue_orders": 0,
+        "not_yet_observable": 0,
+        "maximum_open_overdue_days": 0,
+        "sample_status": "descriptive"
+      }
+    ],
+    "origin_dependencies": [
+      {
+        "country": "CN",
+        "materials": [
+          "graphite-flake",
+          "ndpr-oxide"
+        ],
+        "reference_monthly_usd": 117672.0
+      },
+      {
+        "country": "CL",
+        "materials": [
+          "lithium-carbonate"
+        ],
+        "reference_monthly_usd": 36300.0
+      },
+      {
+        "country": "AR",
+        "materials": [
+          "lithium-carbonate"
+        ],
+        "reference_monthly_usd": 32400.0
+      },
+      {
+        "country": "BR",
+        "materials": [
+          "graphite-flake"
+        ],
+        "reference_monthly_usd": 24192.0
+      },
+      {
+        "country": "MY",
+        "materials": [
+          "ndpr-oxide"
+        ],
+        "reference_monthly_usd": 12420.0
+      }
+    ],
+    "stress_matrix": [
+      {
+        "country": "CN",
+        "duration_days": 30,
+        "reduction": 0.25,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "CN",
+        "duration_days": 30,
+        "reduction": 0.5,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "CN",
+        "duration_days": 30,
+        "reduction": 1,
+        "materials_without_coverage": [
+          "ndpr-oxide",
+          "graphite-flake"
+        ],
+        "replacement_reference_usd": 36257.78
+      },
+      {
+        "country": "CN",
+        "duration_days": 60,
+        "reduction": 0.25,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "CN",
+        "duration_days": 60,
+        "reduction": 0.5,
+        "materials_without_coverage": [
+          "ndpr-oxide",
+          "graphite-flake"
+        ],
+        "replacement_reference_usd": 36257.78
+      },
+      {
+        "country": "CN",
+        "duration_days": 60,
+        "reduction": 1,
+        "materials_without_coverage": [
+          "ndpr-oxide",
+          "graphite-flake"
+        ],
+        "replacement_reference_usd": 157178.06
+      },
+      {
+        "country": "CN",
+        "duration_days": 90,
+        "reduction": 0.25,
+        "materials_without_coverage": [
+          "ndpr-oxide"
+        ],
+        "replacement_reference_usd": 7250.75
+      },
+      {
+        "country": "CN",
+        "duration_days": 90,
+        "reduction": 0.5,
+        "materials_without_coverage": [
+          "ndpr-oxide",
+          "graphite-flake"
+        ],
+        "replacement_reference_usd": 96717.92
+      },
+      {
+        "country": "CN",
+        "duration_days": 90,
+        "reduction": 1,
+        "materials_without_coverage": [
+          "ndpr-oxide",
+          "graphite-flake"
+        ],
+        "replacement_reference_usd": 278098.34
+      },
+      {
+        "country": "CL",
+        "duration_days": 30,
+        "reduction": 0.25,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "CL",
+        "duration_days": 30,
+        "reduction": 0.5,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "CL",
+        "duration_days": 30,
+        "reduction": 1,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "CL",
+        "duration_days": 60,
+        "reduction": 0.25,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "CL",
+        "duration_days": 60,
+        "reduction": 0.5,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "CL",
+        "duration_days": 60,
+        "reduction": 1,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "CL",
+        "duration_days": 90,
+        "reduction": 0.25,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "CL",
+        "duration_days": 90,
+        "reduction": 0.5,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "CL",
+        "duration_days": 90,
+        "reduction": 1,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "AR",
+        "duration_days": 30,
+        "reduction": 0.25,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "AR",
+        "duration_days": 30,
+        "reduction": 0.5,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "AR",
+        "duration_days": 30,
+        "reduction": 1,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "AR",
+        "duration_days": 60,
+        "reduction": 0.25,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "AR",
+        "duration_days": 60,
+        "reduction": 0.5,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "AR",
+        "duration_days": 60,
+        "reduction": 1,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "AR",
+        "duration_days": 90,
+        "reduction": 0.25,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "AR",
+        "duration_days": 90,
+        "reduction": 0.5,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "AR",
+        "duration_days": 90,
+        "reduction": 1,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "BR",
+        "duration_days": 30,
+        "reduction": 0.25,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "BR",
+        "duration_days": 30,
+        "reduction": 0.5,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "BR",
+        "duration_days": 30,
+        "reduction": 1,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "BR",
+        "duration_days": 60,
+        "reduction": 0.25,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "BR",
+        "duration_days": 60,
+        "reduction": 0.5,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "BR",
+        "duration_days": 60,
+        "reduction": 1,
+        "materials_without_coverage": [
+          "graphite-flake"
+        ],
+        "replacement_reference_usd": 349.44
+      },
+      {
+        "country": "BR",
+        "duration_days": 90,
+        "reduction": 0.25,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "BR",
+        "duration_days": 90,
+        "reduction": 0.5,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "BR",
+        "duration_days": 90,
+        "reduction": 1,
+        "materials_without_coverage": [
+          "graphite-flake"
+        ],
+        "replacement_reference_usd": 22364.16
+      },
+      {
+        "country": "MY",
+        "duration_days": 30,
+        "reduction": 0.25,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "MY",
+        "duration_days": 30,
+        "reduction": 0.5,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "MY",
+        "duration_days": 30,
+        "reduction": 1,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "MY",
+        "duration_days": 60,
+        "reduction": 0.25,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "MY",
+        "duration_days": 60,
+        "reduction": 0.5,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "MY",
+        "duration_days": 60,
+        "reduction": 1,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "MY",
+        "duration_days": 90,
+        "reduction": 0.25,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "MY",
+        "duration_days": 90,
+        "reduction": 0.5,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      },
+      {
+        "country": "MY",
+        "duration_days": 90,
+        "reduction": 1,
+        "materials_without_coverage": [],
+        "replacement_reference_usd": 0.0
+      }
+    ],
+    "stress_grid": {
+      "countries_evaluated": 5,
+      "countries_outside_grid": 0,
+      "durations_days": [
+        30,
+        60,
+        90
+      ],
+      "reductions": [
+        0.25,
+        0.5,
+        1
+      ],
+      "selection": "Top 12 origens pelo custo mensal declarado de referência."
+    },
+    "data_quality": {
+      "positions": 6,
+      "positions_with_evidence": 5,
+      "positions_flagged": 4,
+      "unknown_origin_positions": 0
+    },
+    "scope": "Taxas e intervalos descrevem o histórico declarado; independência e estabilidade não são garantidas. P90 usa apenas recebimentos concluídos (mínimo 10), exclui pedidos abertos e pode subestimar a cauda. A grade testa uma origem de cada vez; seus cenários não são aditivos, probabilidades ou perdas financeiras."
   },
   "portfolio_id": "demo-industrial-minerals"
 }

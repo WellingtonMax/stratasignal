@@ -54,12 +54,18 @@ def scenario(materials, shock_country="CN", duration_days=45, reduction=1.0):
             "outcomes": outcomes}
 
 
-def analyze(data, input_sha256, *, shock_country="CN", duration_days=45, reduction=1, enable_ml=True):
+def analyze(data, input_sha256, *, shock_country="CN", duration_days=45, reduction=1, enable_ml=True, include_intelligence=True):
     validate_bundle(data)
     flags = metadata_flags(data)
+    by_material, orders_by_material, flags_by_material = defaultdict(list), defaultdict(list), defaultdict(list)
+    for p in data["positions"]:
+        by_material[p["material"]].append(p)
+    for order in data["orders"]:
+        orders_by_material[order["material"]].append(order)
+    for flag in flags:
+        flags_by_material[flag["material"]].append(flag)
     materials = []
-    for material in sorted({p["material"] for p in data["positions"]}):
-        positions = [p for p in data["positions"] if p["material"] == material]
+    for material, positions in sorted(by_material.items()):
         first = positions[0]
         countries = defaultdict(float)
         for p in positions:
@@ -67,10 +73,10 @@ def analyze(data, input_sha256, *, shock_country="CN", duration_days=45, reducti
         hhi = sum(v * v for v in countries.values())
         coverage = first["stock_kg"] / (first["monthly_demand_kg"] / 30)
         lead = max(p["nominal_lead_days"] for p in positions)
-        flagged = {f["supplier"] for f in flags if f["material"] == material}
+        flagged = {f["supplier"] for f in flags_by_material[material]}
         # Operational triage rule, deliberately separate from estimated probabilities.
         score = round(100 * (0.4 * hhi + 0.35 * max(0, 1 - coverage / lead) + 0.25 * len(flagged) / len(positions)))
-        material_orders = [o for o in data["orders"] if o["material"] == material]
+        material_orders = orders_by_material[material]
         settled = [o for o in material_orders if o["received_on"] is not None or o["promised_on"] < data["as_of"]]
         late = sum((o["received_on"] or data["as_of"]) > o["promised_on"] for o in settled)
         suppliers = [{k: p[k] for k in ("supplier", "origin_country", "allocation_share", "nominal_lead_days", "unit_cost_usd")} for p in positions]
@@ -92,7 +98,7 @@ def analyze(data, input_sha256, *, shock_country="CN", duration_days=45, reducti
                           "top_origin_share": round(max(countries.values()), 6),
                           "country_shares": dict(sorted(countries.items())), "priority_score": score,
                           "priority": "alta" if score >= 60 else "moderada" if score >= 35 else "rotina",
-                          "evidence_flags": sum(f["material"] == material for f in flags),
+                          "evidence_flags": len(flags_by_material[material]),
                           "observed_orders": len(settled), "observed_late_orders": late,
                           "observed_late_rate": round(late / len(settled), 4) if settled else None,
                           "suppliers": suppliers, "actions": actions})
@@ -110,6 +116,9 @@ def analyze(data, input_sha256, *, shock_country="CN", duration_days=45, reducti
                               "Simulações condicionais não são previsões de eventos geopolíticos.",
                               "Preços unitários são informados no conjunto; custo de referência não é prejuízo ou economia prevista."]}
     report["scenario"] = scenario(materials, shock_country, duration_days, reduction)
+    if include_intelligence:
+        from .intelligence import decision_support
+        report["intelligence"] = decision_support(data, materials, flags)
     if "portfolio_id" in data:
         report["portfolio_id"] = data["portfolio_id"]
     return report

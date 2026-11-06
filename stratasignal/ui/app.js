@@ -12,11 +12,11 @@
   const flagNames = {missing_evidence:"Evidência não fornecida",unknown_origin:"Origem desconhecida",origin_mismatch:"Origem declarada divergente",missing_issue_date:"Emissão não informada",issue_after_observation:"Emissão posterior à observação",expired_evidence:"Validade expirada",invalid_validity_window:"Janela de validade inconsistente",shared_fingerprint:"Mesmo hash em fornecedores distintos"};
   const labels = {material:"Código da especificação",material_name:"Nome da especificação",supplier:"Código do fornecedor",origin_country:"Origem declarada · duas letras",allocation_share:"Participação do fornecedor",monthly_demand_kg:"Demanda mensal · kg",stock_kg:"Estoque atual · kg",nominal_lead_days:"Prazo nominal · dias",unit_cost_usd:"Custo · USD/kg",id:"Identificador do registro",ordered_on:"Data do pedido",promised_on:"Data prometida",received_on:"Data recebida",quantity_kg:"Quantidade · kg",observed_on:"Data de observação",issued_on:"Data de emissão",expires_on:"Data de validade",sha256:"SHA-256 do documento"};
   const aliases = {material:["sku","codigo_material","material_id"],material_name:["nome_material","especificacao"],supplier:["fornecedor_id","codigo_fornecedor"],origin_country:["pais_origem","origem"],allocation_share:["participacao","alocacao"],monthly_demand_kg:["demanda_mensal_kg"],stock_kg:["estoque_kg"],nominal_lead_days:["prazo_dias"],unit_cost_usd:["custo_usd_kg"],ordered_on:["data_pedido"],promised_on:["data_prometida"],received_on:["data_recebida"],quantity_kg:["quantidade_kg"],observed_on:["data_observacao"],issued_on:["data_emissao"],expires_on:["data_validade"]};
-  let status={current:null,previous:null,report_ready:false,ml_available:true},report=null,review=null,pending=false;
+  let status={current:null,previous:null,report_ready:false,ml_available:true},report=null,review=null,pending=false,activeJobId=null;
   const csvSources = Object.create(null);
 
   function switchView(view) {
-    if(!["import","overview","scenario","comparison","exports"].includes(view))return;
+    if(!["import","overview","intelligence","scenario","comparison","exports"].includes(view))return;
     document.querySelectorAll(".view").forEach(e=>{e.hidden=e.id!=="view-"+view;});
     document.querySelectorAll("nav [data-view]").forEach(e=>{if(e.dataset.view===view)e.setAttribute("aria-current","page");else e.removeAttribute("aria-current");});
     if(view==="overview")window.StrataGeo?.refresh();
@@ -27,6 +27,7 @@
   }
   function controls() {
     document.querySelectorAll("[data-mutates]").forEach(e=>{e.disabled=pending;});
+    $("cancel-analysis").hidden=!activeJobId;
     document.querySelectorAll("input[type=file]").forEach(e=>{e.disabled=pending||isDemo;});
     ["analyze","analyze-comparison"].forEach(id=>{$(id).disabled=pending||!status.current;});
     $("simulate").disabled=pending||!report;
@@ -42,7 +43,7 @@
   async function task(message,fn) {
     if(pending)return;
     pending=true;$("busy-label").textContent=message;$("busy").hidden=false;$("error").hidden=true;controls();
-    try { await fn(); } catch(error) { notice(error instanceof Error?error.message:"Não foi possível concluir a operação.",true); }
+    try { await fn(); } catch(error) { notice(error instanceof Error?error.message:"Não foi possível concluir a operação.",error.name!=="AbortError"); }
     finally {pending=false;$("busy").hidden=true;controls();}
   }
   const metric=(target,label,value)=>{const e=node("div",undefined,"metric-row");e.append(node("span",label),node("strong",value));target.append(e);};
@@ -73,7 +74,7 @@
     const validToken=typeof token==="string"&&/^[A-Za-z0-9_-]{32,128}$/.test(token)&&location.hostname==="127.0.0.1";
     async function request(path,data,raw=false) {
       if(!validToken)throw new Error("Abra o painel pelo endereço completo mostrado ao iniciar o StrataSignal nesta máquina.");
-      if(!/^\/api\/[a-z/-]+$/.test(path))throw new Error("Operação local inválida.");
+      if(!/^\/api\/[a-z0-9/-]+$/.test(path))throw new Error("Operação local inválida.");
       const headers={"Authorization":"Bearer "+token};
       const options={method:data===undefined?"GET":"POST",headers,credentials:"omit",cache:"no-store",redirect:"error"};
       if(data!==undefined){headers["Content-Type"]="application/json";options.body=JSON.stringify(data);}
@@ -85,7 +86,14 @@
       demo:()=>request("/api/demo",{with_previous:true}),
       preview:payload=>request("/api/preview-csv",payload),
       import:payload=>request("/api/import",payload),
-      analyze:payload=>request("/api/analyze",payload),
+      analyze:async payload=>{
+        const start=await request("/api/analyze",payload);
+        if(!/^[0-9a-f]{32}$/.test(start.job?.id))throw new Error("Resposta de análise inválida.");
+        activeJobId=start.job.id;controls();const deadline=Date.now()+95000;
+        try{while(Date.now()<deadline){const result=await request("/api/jobs/"+activeJobId);if(result.job.state==="succeeded"&&result.report)return result;if(["cancelled","stale"].includes(result.job.state)){const error=new Error("Análise cancelada ou substituída. O último resultado válido foi preservado.");error.name="AbortError";throw error;}if(["failed","timed_out"].includes(result.job.state))throw new Error(result.job.error||"Não foi possível concluir a análise isolada.");$("busy-label").textContent="Analisando em processo isolado. Você pode cancelar esta operação.";await new Promise(resolve=>setTimeout(resolve,250));}throw new Error("A análise não respondeu no tempo esperado. Reinicie o painel se necessário.");}
+        finally{activeJobId=null;controls();}
+      },
+      cancel:()=>activeJobId?request("/api/cancel",{job_id:activeJobId}):Promise.resolve(),
       simulate:payload=>request("/api/scenario",payload),
       reset:()=>request("/api/reset",{}),
       export:kind=>request("/api/export/"+kind,undefined,true)};
@@ -105,7 +113,7 @@
       return assets;
     }
     const describe=b=>({as_of:b.as_of,portfolio_id:b.portfolio_id,dataset_kind:"synthetic",materials:new Set(b.positions.map(p=>p.material)).size,positions:b.positions.length,orders:b.orders.length,evidence:b.evidence.length});
-    const state=()=>({version:assets?assets.current.version:"0.3.0",mode:"demo",current:loaded?describe(assets.input):null,
+    const state=()=>({version:assets?assets.current.version:"0.4.0",mode:"demo",current:loaded?describe(assets.input):null,
       previous:loaded?{...describe(assets.input),as_of:assets.monthly.comparison.previous_as_of}:null,report_ready:!!active,ml_available:!!assets&&assets.current.delay_model.status==="synthetic_demo"});
     return {status:async()=>{await load();return state();},
       demo:async()=>{await load();loaded=true;active=null;return {status:state(),review:{summary:describe(assets.input),positions:assets.input.positions.slice(0,5),metadata_flags:assets.current.metadata_flags,notes:["Conjunto demonstrativo; todos os registros e resultados pertencem a dados fictícios.","A importação dos seus arquivos está disponível no aplicativo local."]}};},
@@ -137,7 +145,7 @@
   async function readFile(input) {
     const file=input.files&&input.files[0];
     if(!file)throw new Error("Escolha um arquivo antes de carregar.");
-    if(file.size===0||file.size>4*1024*1024)throw new Error("Cada arquivo deve ter conteúdo e até 4 MiB.");
+    if(file.size===0||file.size>16*1024*1024)throw new Error("Cada arquivo deve ter conteúdo e até 16 MiB.");
     try { return new TextDecoder("utf-8",{fatal:true,ignoreBOM:true}).decode(await file.arrayBuffer()); }
     catch {throw new Error("O arquivo deve estar em UTF-8. Exporte novamente nesse formato.");}
   }
@@ -194,7 +202,7 @@
     if(isDemo&&model.status==="synthetic_demo")area.append(node("p","O modelo desta demonstração foi calculado previamente no conjunto fictício.","footnote"));
     const predictions=node("div",undefined,"model-predictions");
     (model.predictions||[]).slice(0,6).forEach(p=>metric(predictions,p.supplier,pct(p.estimated_delay_probability)));area.append(predictions);
-    if(model.evaluation){const e=model.evaluation;[["Pedidos de treino / teste",e.train_orders+" / "+e.test_orders],["Brier do modelo",fmt(e.brier,5)],["Brier da referência",fmt(e.baseline_brier,5)],["AUC no teste",fmt(e.roc_auc,3)]].forEach(([label,value])=>metric(evaluation,label,value));evaluation.append(node("p",e.calibration,"footnote"));}
+    if(model.evaluation){const e=model.evaluation;[["Pedidos de treino / teste",e.train_orders+" / "+e.test_orders],["Brier do modelo",fmt(e.brier,5)],["Brier da referência",fmt(e.baseline_brier,5)],["AUC no teste",fmt(e.roc_auc,3)]].forEach(([label,value])=>metric(evaluation,label,value));if(e.stability)metric(evaluation,"Janelas melhores que a referência",e.stability.improved_windows+" / "+e.stability.evaluated_windows);(e.temporal_windows||[]).forEach(w=>evaluation.append(node("p",w.cutoff+": "+(w.state==="evaluated"?"Brier "+fmt(w.brier,5)+" · referência "+fmt(w.baseline_brier,5):"amostra insuficiente"),"footnote")));evaluation.append(node("p",e.calibration,"footnote"));}
     else evaluation.append(node("p",model.reason,"footnote"));
   }
   function renderComparison() {
@@ -208,6 +216,7 @@
     $("comparison-note").textContent=comparison.scope;
   }
   function renderReport() {
+    window.StrataInsights?.render(report,scenario=>{$("scenario-country").value=scenario.country;$("scenario-days").value=scenario.duration_days;$("scenario-reduction").value=scenario.reduction*100;rangeLabels();switchView("scenario");notice("Premissas selecionadas. Use Calcular cenário para atualizar o resultado e as exportações.");});
     document.querySelectorAll(".analysis-empty").forEach(e=>{e.hidden=!!report;});document.querySelectorAll(".analysis-content").forEach(e=>{e.hidden=!report;});
     if(!report){window.StrataGeo?.clear();$("comparison-card").hidden=true;$("export-provenance").replaceChildren(node("p","A data de corte e a impressão digital do conjunto aparecem após a análise.","support"));return;}
     window.StrataGeo?.setReport(report);
@@ -226,10 +235,11 @@
     const provenance=$("export-provenance");provenance.replaceChildren();metric(provenance,"Carteira",report.portfolio_id||"Não identificada");metric(provenance,"Data de corte",report.as_of);metric(provenance,"Natureza do conjunto",report.dataset_kind==="synthetic"?"Fictício":"Declarado pelo cliente");provenance.append(node("p","Impressão digital do conjunto normalizado","support"),node("div",report.input_sha256,"hash"));
     if(report.comparison)provenance.append(node("p","Impressão digital da base anterior","footnote"),node("div",report.comparison.previous_input_sha256,"hash"));
   }
-  function rangeLabels() {$("scenario-days-value").textContent=$("scenario-days").value+" dias";$("scenario-reduction-value").textContent=pct(Number($("scenario-reduction").value)/100);}
+  function rangeLabels() {$("scenario-days-value").textContent=$("scenario-days").value+" dias";$("scenario-reduction-value").textContent=pct(Number($("scenario-reduction").value)/100);if(report){const last=report.scenario,current=last.country===$("scenario-country").value&&last.duration_days===Number($("scenario-days").value)&&Math.abs(last.reduction-Number($("scenario-reduction").value)/100)<1e-10;$("scenario-state").dataset.current=String(current);$("scenario-state").textContent=(current?"Resultado calculado: ":"Resultados e exportações ainda usam: ")+countryName(last.country)+" · "+last.duration_days+" dias · redução de "+pct(last.reduction)+"."+(current?"":" Calcule novamente para aplicar as premissas alteradas.");}}
   function download(blob,kind) {const url=URL.createObjectURL(blob),a=node("a");a.href=url;a.download={html:"stratasignal-report.html",json:"stratasignal-report.json",input:"stratasignal-input.json"}[kind];a.hidden=true;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 
   document.querySelectorAll("nav [data-view]").forEach(button=>button.addEventListener("click",()=>switchView(button.dataset.view)));
+  $("cancel-analysis").addEventListener("click",async()=>{if(!activeJobId)return;try{await adapter.cancel();}catch(error){notice(error.message,true);}});
   document.querySelectorAll("[data-go]").forEach(button=>button.addEventListener("click",()=>switchView(button.dataset.go)));
   document.querySelector(".brand").addEventListener("click",event=>{event.preventDefault();switchView(report?"overview":"import");});
   document.querySelectorAll(".demo-load").forEach(button=>button.addEventListener("click",()=>task("Preparando a carteira fictícia…",async()=>{const value=await adapter.demo();updateStatus(value.status);renderReview(value.review);$("compare-previous").checked=true;await runAnalysis(false);})));
@@ -248,8 +258,9 @@
   $("analyze").addEventListener("click",()=>task("Calculando a análise da carteira…",()=>runAnalysis($("compare-previous").checked)));
   $("analyze-comparison").addEventListener("click",()=>task("Comparando os dois períodos…",()=>runAnalysis(true)));
   $("material-choice").addEventListener("change",renderOrigins);
+  $("scenario-country").addEventListener("change",rangeLabels);
   ["scenario-days","scenario-reduction"].forEach(id=>$(id).addEventListener("input",rangeLabels));
-  $("simulate").addEventListener("click",()=>task("Calculando o cenário escolhido…",async()=>{if(!report)throw new Error("Execute uma análise antes de simular.");const value=await adapter.simulate({country:$("scenario-country").value,duration_days:Number($("scenario-days").value),reduction:Number($("scenario-reduction").value)/100,input_sha256:report.input_sha256});report.scenario=value.scenario;renderScenario(value.scenario);notice("Cenário atualizado. As exportações incluem estas premissas.");}));
+  $("simulate").addEventListener("click",()=>task("Calculando o cenário escolhido…",async()=>{if(!report)throw new Error("Execute uma análise antes de simular.");const value=await adapter.simulate({country:$("scenario-country").value,duration_days:Number($("scenario-days").value),reduction:Number($("scenario-reduction").value)/100,input_sha256:report.input_sha256});report.scenario=value.scenario;renderScenario(value.scenario);rangeLabels();notice("Cenário atualizado. As exportações incluem estas premissas.");}));
   document.querySelectorAll(".export-action").forEach(button=>button.addEventListener("click",()=>task("Preparando o arquivo…",async()=>{const blob=await adapter.export(button.dataset.kind);download(blob,button.dataset.kind);notice("Arquivo preparado para download. Guarde os dados pelo processo aprovado da sua organização.");})));
   $("reset").addEventListener("click",()=>task("Limpando os dados desta execução…",async()=>{const value=await adapter.reset();updateStatus(value.status);renderReview(null);document.querySelectorAll("input[type=file]").forEach(e=>{e.value="";});for(const key of Object.keys(csvSources))delete csvSources[key];["positions","orders","evidence"].forEach(t=>$("mapping-"+t).replaceChildren());$("current-file-label").textContent="Nenhum arquivo selecionado";switchView("import");notice("Espaço de trabalho limpo. Os arquivos originais não foram alterados.");}));
   $("as-of").value=new Date().toLocaleDateString("sv-SE");

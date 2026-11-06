@@ -19,8 +19,8 @@ def compare_bundles(previous, current, previous_sha256, current_sha256):
         raise InputError("Não é permitido comparar dados sintéticos com dados de cliente")
     if day(previous["as_of"]) >= day(current["as_of"]):
         raise InputError("A data do conjunto anterior deve preceder a do conjunto atual")
-    old_report = analyze(previous, previous_sha256, enable_ml=False)
-    new_report = analyze(current, current_sha256, enable_ml=False)
+    old_report = analyze(previous, previous_sha256, enable_ml=False, include_intelligence=False)
+    new_report = analyze(current, current_sha256, enable_ml=False, include_intelligence=False)
     old = {m["material"]: m for m in old_report["materials"]}
     new = {m["material"]: m for m in new_report["materials"]}
 

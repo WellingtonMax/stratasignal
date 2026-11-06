@@ -24,7 +24,7 @@ def build_demo(directory, source_commit=None, enable_ml=True):
     monthly = dict(report)
     monthly["comparison"] = compare_bundles(previous, current, fingerprint(previous), fingerprint(current))
     ui = Path(__file__).with_name("ui")
-    assets = {name: (ui / name).read_text(encoding="utf-8") for name in ("index.html", "app.css", "app.js", "geo-map.css", "geo-map.js", "world-land.svg", "favicon.svg")}
+    assets = {name: (ui / name).read_text(encoding="utf-8") for name in ("index.html", "app.css", "app.js", "insights.js", "geo-map.css", "geo-map.js", "world-land.svg", "favicon.svg")}
     assets["index.html"] = assets["index.html"].replace('data-mode="local"', 'data-mode="demo"')
     assets["demo/current-report.json"] = json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
     assets["demo/monthly-report.json"] = json.dumps(monthly, ensure_ascii=False, indent=2, allow_nan=False) + "\n"

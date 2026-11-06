@@ -10,6 +10,7 @@ const root = path.join(__dirname,"..");
 const html = fs.readFileSync(path.join(root,"stratasignal/ui/index.html"),"utf8");
 const script = fs.readFileSync(path.join(root,"stratasignal/ui/app.js"),"utf8");
 const geoScript = fs.readFileSync(path.join(root,"stratasignal/ui/geo-map.js"),"utf8");
+const insightsScript = fs.readFileSync(path.join(root,"stratasignal/ui/insights.js"),"utf8");
 const input = JSON.parse(execFileSync(process.env.PYTHON || "python",["-c",
   "import json; from stratasignal.demo import demo_bundle; print(json.dumps(demo_bundle()))"],{cwd:root,encoding:"utf8"}));
 const current = JSON.parse(fs.readFileSync(path.join(root,"demo/report.json"),"utf8"));
@@ -43,11 +44,12 @@ async function open({demo=false,fetcher,token="a".repeat(32)}={}) {
     if(demo){const assets={"demo/current-report.json":current,"demo/monthly-report.json":monthly,"demo/current-input.json":input,"demo/report-template.json":{html:reportTemplate}};assert.ok(url in assets);return response(assets[url]);}
     if(url==="/api/status")return response({status:makeStatus()});
     if(url==="/api/demo"){loaded=true;return response({status:makeStatus(true),review});}
-    if(url==="/api/analyze")return response({status:makeStatus(loaded,true),report:monthly});
+    if(url==="/api/analyze")return response({job:{id:"b".repeat(32),state:"running"}});
+    if(url==="/api/jobs/"+"b".repeat(32))return response({job:{id:"b".repeat(32),state:"succeeded"},status:makeStatus(loaded,true),report:monthly});
     if(url==="/api/reset"){loaded=false;return response({status:makeStatus()});}
     throw new Error("Unexpected request "+url);
   };
-  window.eval(geoScript);window.eval(script);await settle(doc);
+  window.eval(geoScript);window.eval(insightsScript);window.eval(script);await settle(doc);
   return {dom,window,doc,calls,blobs,downloads,errors};
 }
 function chooseFile(ctx,id,text,name="data.csv") {
@@ -187,6 +189,67 @@ test("invalid UTF-8 fails before upload and JSON input preserves its original BO
   assert.equal(imported,null);assert.match(ctx.doc.getElementById("error").textContent,/UTF-8/);
   chooseFile(ctx,"current-file","\ufeff"+JSON.stringify(input));await click(ctx,"import-json");
   assert.equal(imported.data[0],"\ufeff");ctx.dom.window.close();
+});
+
+test("operational intelligence shows bounded stress rows and filters supplier history",async()=>{
+  const ctx=await open({demo:true});
+  ctx.doc.querySelector('nav [data-view="intelligence"]').click();
+  assert.equal(ctx.doc.getElementById("view-intelligence").hidden,false);
+  assert.match(ctx.doc.getElementById("insights-content").textContent,/Cenários condicionais/);
+  const stress=ctx.doc.querySelectorAll("#insights-content article")[1];
+  assert.equal(stress.querySelectorAll("tbody tr").length,9);
+  const search=ctx.doc.getElementById("insights-search");search.value="CN-01";search.dispatchEvent(new ctx.window.Event("input"));
+  const history=ctx.doc.querySelectorAll("#insights-content article")[2];
+  assert.equal(history.querySelectorAll("tbody tr").length,1);
+  assert.match(history.querySelector("tbody").textContent,/CN-01/);
+  assert.match(history.textContent,/Intervalo descritivo 95%/);ctx.dom.window.close();
+});
+
+test("using stress premises changes controls and requires calculation before exports change",async()=>{
+  const ctx=await open({demo:true});
+  const original=current.scenario;
+  ctx.doc.querySelector("#insights-content article:nth-of-type(2) tbody button").click();
+  assert.equal(ctx.doc.getElementById("view-scenario").hidden,false);
+  assert.equal(ctx.doc.getElementById("scenario-days").value,"30");
+  assert.equal(ctx.doc.getElementById("scenario-reduction").value,"25");
+  assert.equal(ctx.doc.getElementById("scenario-state").dataset.current,"false");
+  assert.match(ctx.doc.getElementById("scenario-state").textContent,/ainda usam/);
+  ctx.doc.querySelector('.export-action[data-kind="json"]').click();await settle(ctx.doc);
+  assert.equal(JSON.parse(await ctx.blobs[0].text()).scenario.duration_days,original.duration_days);
+  await click(ctx,"simulate");ctx.doc.querySelector('.export-action[data-kind="json"]').click();await settle(ctx.doc);
+  assert.equal(JSON.parse(await ctx.blobs[1].text()).scenario.duration_days,30);
+  assert.equal(ctx.doc.getElementById("scenario-state").dataset.current,"true");ctx.dom.window.close();
+});
+
+test("history pagination bounds the rendered rows and preserves hostile labels as text",async()=>{
+  const large=copy(current);large.intelligence.supplier_performance=Array.from({length:45},(_,i)=>({...large.intelligence.supplier_performance[0],supplier:"F"+String(i).padStart(2,"0"),name:'<img src=x onerror="window.pwned=1">'}));
+  const ctx=await open({demo:true,fetcher:async url=>response(url==="demo/current-report.json"?large:url==="demo/monthly-report.json"?{...large,comparison:monthly.comparison}:url==="demo/current-input.json"?input:{html:reportTemplate})});
+  const history=ctx.doc.querySelectorAll("#insights-content article")[2];
+  assert.equal(history.querySelectorAll("tbody tr").length,20);
+  history.querySelectorAll(".insight-toolbar button")[1].click();history.querySelectorAll(".insight-toolbar button")[1].click();
+  assert.equal(history.querySelectorAll("tbody tr").length,5);
+  assert.equal(history.querySelectorAll(".insight-toolbar button")[1].disabled,true);
+  assert.equal(ctx.window.pwned,undefined);assert.match(history.querySelector("tbody").textContent,/<img/);ctx.dom.window.close();
+});
+
+test("pending isolated analysis can be cancelled from the UI",async()=>{
+  let cancelled=false;
+  const jobId="c".repeat(32);
+  const ctx=await open({fetcher:async(url,options)=>{
+    if(url==="/api/status")return response({status:makeStatus()});
+    if(url==="/api/demo")return response({status:makeStatus(true),review});
+    if(url==="/api/analyze")return response({job:{id:jobId,state:"running"}});
+    if(url==="/api/jobs/"+jobId)return response({job:{id:jobId,state:cancelled?"cancelled":"running"}});
+    if(url==="/api/cancel"){assert.equal(JSON.parse(options.body).job_id,jobId);cancelled=true;return response({job:{id:jobId,state:"cancelled"}});}
+    throw new Error(url);
+  }});
+  ctx.doc.querySelector(".demo-load").click();
+  for(let i=0;i<15&&ctx.doc.getElementById("cancel-analysis").hidden;i++)await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(ctx.doc.getElementById("cancel-analysis").hidden,false);
+  ctx.doc.getElementById("cancel-analysis").click();
+  await new Promise(resolve=>setTimeout(resolve,300));await settle(ctx.doc);
+  assert.equal(cancelled,true);assert.equal(ctx.doc.getElementById("cancel-analysis").hidden,true);
+  assert.match(ctx.doc.getElementById("feedback").textContent,/cancelada/);ctx.dom.window.close();
 });
 
 test("geo explorer renders country origin shares without making external satellite requests",async()=>{

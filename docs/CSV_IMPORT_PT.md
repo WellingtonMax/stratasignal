@@ -27,7 +27,7 @@ O formato de número é explícito: no formato brasileiro, `1.234` significa mil
 
 ## Conferência e continuidade
 
-Confira os campos mapeados e carregue os arquivos. O painel aplica as mesmas regras do motor: até 4 MiB por arquivo e por conjunto normalizado, 20 materiais, 64 posições, 3.000 pedidos e 500 evidências. Cabeçalhos duplicados, números não finitos, referências inexistentes e alocações inconsistentes são rejeitados.
+Confira os campos mapeados e carregue os arquivos. O painel aplica as mesmas regras do motor: até 16 MiB por arquivo e por conjunto normalizado, 100 materiais, 500 posições, 20.000 pedidos e 5.000 evidências. Cabeçalhos duplicados, números não finitos, referências inexistentes e alocações inconsistentes são rejeitados.
 
 Após analisar, exporte **Conjunto normalizado** e guarde-o de forma privada. No próximo acompanhamento, carregue os novos dados como carteira atual e importe aquele JSON como período anterior. Uma importação atual bem-sucedida limpa a base anterior e os resultados, evitando misturar versões. Uma importação inválida preserva a última carteira válida.
 

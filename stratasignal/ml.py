@@ -82,14 +82,50 @@ def evaluate_delay_model(data):
                   "baseline_brier": round(baseline_brier, 5), "roc_auc": round(float(roc_auc_score(labels, probabilities)), 5),
                   "reliability_bins": bins, "baseline": "Frequência de atraso no treinamento.",
                   "protocol": "Holdout cronológico único de 25%; rótulos de treino observáveis antes do corte; atributos de histórico atualizados sequencialmente.",
-                  "calibration": "Não calibrado para uso operacional; bins descritivos. Um único holdout não valida estabilidade."}
+                  "calibration": "Não calibrado para uso operacional; bins descritivos. Janelas temporais não garantem estabilidade futura ou calibração."}
     if brier >= baseline_brier:
         return abstain("Modelo não superou a referência no holdout; estimativas suprimidas.", evaluation=evaluation)
+    # Repeated chronological windows expose regime instability; no hyperparameter
+    # selection, reweighting or probability calibration is done on these windows.
+    ordered_dates = sorted(r["order"]["ordered_on"] for r in known)
+    cutoffs = sorted({ordered_dates[int(len(known) * fraction)] for fraction in (.60, .75, .90)})
+    windows = []
+    for index, start in enumerate(cutoffs):
+        end = cutoffs[index+1] if index+1 < len(cutoffs) else None
+        fit_rows = [r for r in known if r["order"]["ordered_on"] < start and r["known_on"].isoformat() < start]
+        check_rows = [r for r in known if r["order"]["ordered_on"] >= start and (end is None or r["order"]["ordered_on"] < end)]
+        window = {"cutoff": start, "end_exclusive": end, "train_orders": len(fit_rows), "test_orders": len(check_rows), "state": "insufficient"}
+        if len(fit_rows) >= 100 and len(check_rows) >= 40 and all(sum(r["y"] == value for r in rows) >= 10 for rows in (fit_rows, check_rows) for value in (0, 1)):
+            pipeline.fit([r["x"] for r in fit_rows], [r["y"] for r in fit_rows])
+            estimates = pipeline.predict_proba([r["x"] for r in check_rows])[:, 1]
+            check_labels = [r["y"] for r in check_rows]
+            reference = sum(r["y"] for r in fit_rows) / len(fit_rows)
+            score = float(brier_score_loss(check_labels, estimates))
+            baseline_score = float(brier_score_loss(check_labels, [reference] * len(check_rows)))
+            window.update(state="evaluated", latest_train_label_on=max(r["known_on"] for r in fit_rows).isoformat(),
+                brier=round(score, 5), baseline_brier=round(baseline_score, 5),
+                roc_auc=round(float(roc_auc_score(check_labels, estimates)), 5), better_than_baseline=score < baseline_score)
+        windows.append(window)
+    evaluated = [w for w in windows if w["state"] == "evaluated"]
+    improved = sum(w["better_than_baseline"] for w in evaluated)
+    required = math.ceil(len(evaluated) * 2 / 3)
+    stable = len(evaluated) >= 2 and improved >= required
+    evaluation["temporal_windows"] = windows
+    evaluation["stability"] = {"state": "passed" if stable else "insufficient" if len(evaluated) < 2 else "unstable",
+        "evaluated_windows": len(evaluated), "improved_windows": improved, "minimum_evaluated_windows": 2,
+        "required_improved_windows": required,
+        "scope": "Mínimo de duas janelas temporais válidas e melhora sobre a referência em pelo menos dois terços. Treinos se sobrepõem; isto não substitui validação prospectiva ou calibração."}
+    if not stable:
+        return abstain("Estabilidade temporal insuficiente ou inconsistente; estimativas suprimidas.", evaluation=evaluation)
     # Refit after evaluation for the as-of snapshot. No pickle or external model files.
     pipeline.fit([r["x"] for r in known], [r["y"] for r in known])
+    position_history = defaultdict(list)
+    for row in known:
+        if row["known_on"] < as_of:
+            position_history[(row["order"]["material"], row["order"]["supplier"])].append(row)
     predictions = []
     for p in data["positions"]:
-        own = [r for r in known if r["order"]["supplier"] == p["supplier"] and r["order"]["material"] == p["material"] and r["known_on"] < as_of]
+        own = position_history[(p["material"], p["supplier"])]
         if len(own) < 20:
             predictions.append({"supplier": p["supplier"], "material": p["material"], "estimated_delay_probability": None,
                                 "reason": "Menos de 20 desfechos anteriores para esta posição."})

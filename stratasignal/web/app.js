@@ -72,6 +72,8 @@
   if (metrics) {
     [["Treino / teste temporal",metrics.train_orders + " / " + metrics.test_orders],["Corte do holdout",metrics.cutoff],["Brier do modelo (menor é melhor)",fmt(metrics.brier,5)],["Brier da referência",fmt(metrics.baseline_brier,5)],["AUC no holdout",fmt(metrics.roc_auc,3)]].forEach(([label,value]) => metric($("model-summary"),label,value));
     $("model-summary").append(node("p",metrics.calibration));
+    if(metrics.stability)metric($("model-summary"),"Janelas melhores que a referência",metrics.stability.improved_windows+" / "+metrics.stability.evaluated_windows);
+    (metrics.temporal_windows||[]).forEach(w=>$("model-summary").append(node("p",w.cutoff+": "+(w.state==="evaluated"?"Brier "+fmt(w.brier,5)+" · referência "+fmt(w.baseline_brier,5):"amostra insuficiente"))));
   }
   (model.predictions || []).forEach(p => { const tr = node("tr"); [names[p.material],p.supplier,pct(p.estimated_delay_probability),p.reason || (synthetic ? "Demonstração sintética" : "Experimental; validar localmente")].forEach(v => tr.append(node("td",v))); $("predictions-table").append(tr); });
   if (!(model.predictions || []).length) { const tr = node("tr"); const td = node("td",model.reason); td.colSpan = 4; tr.append(td); $("predictions-table").append(tr); }
@@ -123,5 +125,6 @@
     }
     $("comparison-scope").textContent = comparison.scope + " Versão das regras: " + comparison.rule_version + ".";
   }
+  window.StrataInsights.render(report,scenario=>{$("shock-country").value=scenario.country;$("shock-days").value=scenario.duration_days;$("shock-reduction").value=scenario.reduction*100;simulate();document.querySelector('nav [data-view="scenarios"]').click();});
   $("download").addEventListener("click", () => { const blob = new Blob([JSON.stringify(report,null,2)], {type:"application/json"}); const url = URL.createObjectURL(blob); const a = node("a"); a.href = url; a.download = "stratasignal-analysis.json"; a.click(); setTimeout(() => URL.revokeObjectURL(url),1000); });
 })();
