@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stratasignal"
-version = "0.2.0"
+version = "0.3.0"
 description = "Private critical-mineral procurement intelligence and metadata triage"
 requires-python = ">=3.11"
 dependencies = []
@@ -19,4 +19,4 @@ stratasignal = "stratasignal.__main__:main"
 include = ["stratasignal*"]
 
 [tool.setuptools.package-data]
-stratasignal = ["web/*.html", "web/*.css", "web/*.js"]
+stratasignal = ["web/*.html", "web/*.css", "web/*.js", "ui/*.html", "ui/*.css", "ui/*.js", "ui/*.svg"]

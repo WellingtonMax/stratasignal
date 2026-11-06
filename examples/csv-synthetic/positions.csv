@@ -1,0 +1,7 @@
+material;material_name;supplier;origin_country;allocation_share;monthly_demand_kg;stock_kg;nominal_lead_days;unit_cost_usd
+graphite-flake;Grafita natural · flocos 95% (fictícia);CN-01;CN;72%;18000;10000;38;4,2
+graphite-flake;Grafita natural · flocos 95% (fictícia);BR-01;BR;28%;18000;10000;24;4,8
+ndpr-oxide;Óxido NdPr · especificação demonstrativa;CN-02;CN;85%;1200;650;50;62
+ndpr-oxide;Óxido NdPr · especificação demonstrativa;MY-01;MY;15%;1200;650;42;69
+lithium-carbonate;Carbonato de lítio · grau industrial (fictício);CL-01;CL;55%;6000;18000;28;11
+lithium-carbonate;Carbonato de lítio · grau industrial (fictício);AR-01;AR;45%;6000;18000;25;12

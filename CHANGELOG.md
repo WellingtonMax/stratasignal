@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0 — 2026-11-06
+
+- Add `serve` with a packaged browser workbench for local JSON/CSV import, column mapping, input review, analysis, scenarios, period comparison and HTML/JSON/normalized-input downloads.
+- Support explicit Brazilian decimal/date conventions and percentage allocation; preserve original source-file and normalized-input hashes separately.
+- Keep the workspace in memory, invalidate stale results on imports, validate baseline compatibility before mutation, and include the last calculated scenario in exports.
+- Bind the local HTTP service only to IPv4 loopback with per-run bearer access, exact Host/Origin checks, bounded JSON requests, fixed static routes and restrictive response headers.
+- Add a separately generated synthetic-only static online demo with private imports disabled and precomputed experimental ML results.
+- Add 26 Python import/workspace/live-HTTP/build checks and 11 workbench DOM checks. Runtime dependencies are unchanged.
+
 ## 0.2.0 — 2026-11-06
 
 - Move the product into `WellingtonMax/stratasignal` with root-level installation, dedicated tests/packaging CI and Python/JavaScript CodeQL scanning.

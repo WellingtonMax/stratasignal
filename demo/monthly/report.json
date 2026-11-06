@@ -1,6 +1,6 @@
 {
   "product": "StrataSignal",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "schema_version": 1,
   "dataset_kind": "synthetic",
   "as_of": "2026-11-06",
@@ -301,7 +301,7 @@
     "elapsed_days": 31,
     "previous_input_sha256": "60b5d2471a20317ccc3ca31adea021057b53b9347f5bfdee2c93d7e1aaee5063",
     "current_input_sha256": "ec58dd2aab27df5fbab0ac4cb5c3cd8e59b101bc1aa340c1d3af7a9b9ec6578f",
-    "rule_version": "0.2.0",
+    "rule_version": "0.3.0",
     "summary": {
       "comparable_materials": 3,
       "added_materials": 0,

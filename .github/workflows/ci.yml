@@ -69,3 +69,5 @@ jobs:
           /tmp/stratasignal-installed/bin/python -m pip install --no-deps /tmp/stratasignal-wheels/stratasignal-*.whl
           cd /tmp
           /tmp/stratasignal-installed/bin/python -m stratasignal demo --with-comparison --out /tmp/stratasignal-package-demo --without-ml
+          /tmp/stratasignal-installed/bin/python -m stratasignal.build_demo --out /tmp/stratasignal-package-ui --without-ml
+          /tmp/stratasignal-installed/bin/python -c "from stratasignal.workbench import create_server; s, _, _ = create_server(0); assert s.server_address[0] == '127.0.0.1'; s.server_close()"

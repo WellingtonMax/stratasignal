@@ -1,0 +1,7 @@
+id;material;supplier;origin_country;ordered_on;promised_on;received_on;quantity_kg
+graphite-flake-CN-01-000;graphite-flake;CN-01;CN;03/01/2024;12/02/2024;08/02/2024;10770,23
+graphite-flake-BR-01-000;graphite-flake;BR-01;BR;01/01/2024;26/01/2024;28/01/2024;8225,3
+ndpr-oxide-CN-02-000;ndpr-oxide;CN-02;CN;04/01/2024;23/02/2024;20/02/2024;526,54
+ndpr-oxide-MY-01-000;ndpr-oxide;MY-01;MY;04/01/2024;20/02/2024;20/02/2024;129,3
+lithium-carbonate-CL-01-000;lithium-carbonate;CL-01;CL;03/01/2024;27/01/2024;13/02/2024;3910,75
+lithium-carbonate-AR-01-000;lithium-carbonate;AR-01;AR;04/01/2024;26/01/2024;24/01/2024;1176,01

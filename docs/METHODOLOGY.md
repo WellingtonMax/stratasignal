@@ -1,6 +1,6 @@
 # Methodology and data contract
 
-Version 0.2.0 — 6 November 2026. Results describe the operator's declared snapshot. The software does not establish physical provenance.
+Version 0.3.0 — 6 November 2026. Results describe the operator's declared snapshot. The software does not establish physical provenance.
 
 ## 1. Operational inputs and units
 
@@ -12,7 +12,11 @@ Orders record an ID, material, supplier, declared origin, ordered date, promised
 
 Evidence manifests record an ID, material/supplier link, declared origin, observed date, issue/expiration dates or null, and a supplied SHA-256. The standalone `digest` command calculates hash, size and filesystem mtime from a local file without parsing its content. These are different from verified issuer metadata.
 
-Inputs: UTF-8 JSON, strict duplicate-key/field checks, 4 MiB limit, at most 20 materials, 64 positions, 3,000 orders and 500 evidence records. Numeric and date limits are in `schema.py`. Unknown two-letter country codes are accepted as operator declarations; `ZZ` means unknown. No ISO-membership validation is claimed.
+Inputs: UTF-8 JSON or explicitly mapped operational CSV in the local workbench, strict duplicate-key/field checks, 4 MiB per file, at most 20 materials, 64 positions, 3,000 orders and 500 evidence records. The combined normalized bundle must also fit 4 MiB. Numeric and date limits are in `schema.py`. Unknown two-letter country codes are accepted as operator declarations; `ZZ` means unknown. No ISO-membership validation is claimed.
+
+The workbench CSV importer is separate from the official MDIC raw-file adapter. It maps the operator's column names to the procurement schema, with explicit decimal, date and fraction/percentage selections; it does not infer units, exchange rates, specifications or physical origin. Orders and evidence are optional, with missing-evidence signals and model abstention where applicable. The review precedes analysis. See [the operational CSV contract](CSV_IMPORT_PT.md).
+
+Workbench report `input_sha256` identifies the pretty-printed normalized UTF-8 bundle (including a final newline); `source_files_sha256` separately identifies the original submitted file bytes, including a UTF-8 BOM if present. CLI reports retain their original raw-file hash behavior. Workbench comparisons use normalized hashes for both periods and retain uploaded-source hashes separately. Hashes identify consistency, not authenticity. The static demo uses the same normalized fixture hashes.
 
 ## 2. Concentration and priority rule
 

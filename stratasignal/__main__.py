@@ -68,12 +68,18 @@ def parser():
     digest = commands.add_parser("digest", help="Calcular metadados básicos e hash de arquivo local")
     digest.add_argument("--input", required=True)
     digest.add_argument("--out", required=True)
+    panel = commands.add_parser("serve", help="Abrir o painel local no navegador")
+    panel.add_argument("--port", type=int, default=8765)
+    panel.add_argument("--no-open", action="store_true", help="Mostrar o endereço sem abrir o navegador")
     return root
 
 
 def main(argv=None):
     args = parser().parse_args(argv)
     try:
+        if args.command == "serve":
+            from .workbench import serve
+            return serve(args.port, open_browser=not args.no_open)
         if args.command == "sample":
             write_private(args.out, serialized(demo_bundle()))
             print("Amostra sintética criada.")
