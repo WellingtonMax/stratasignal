@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stratasignal"
+version = "0.1.0"
+description = "Private critical-mineral procurement intelligence and metadata triage"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+ml = ["scikit-learn==1.8.0"]
+
+[project.scripts]
+stratasignal = "stratasignal.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["stratasignal*"]
+
+[tool.setuptools.package-data]
+stratasignal = ["web/*.html", "web/*.css", "web/*.js"]

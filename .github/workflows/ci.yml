@@ -1,0 +1,71 @@
+name: StrataSignal - tests and packaging
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -S -m unittest discover -s tests -v
+
+  ml:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install -r requirements-ml.txt
+      - run: python -m unittest discover -s tests -v
+      - run: python -m stratasignal demo --out /tmp/stratasignal-ci-demo
+
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm test
+
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip wheel . --no-deps --wheel-dir /tmp/stratasignal-wheels
+      - run: python -m venv /tmp/stratasignal-installed
+      - name: Install and run packaged assets outside the checkout
+        run: |
+          /tmp/stratasignal-installed/bin/python -m pip install --no-deps /tmp/stratasignal-wheels/stratasignal-*.whl
+          cd /tmp
+          /tmp/stratasignal-installed/bin/python -m stratasignal demo --out /tmp/stratasignal-package-demo --without-ml

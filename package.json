@@ -1,0 +1,12 @@
+{
+  "name": "stratasignal-report-tests",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DOM regression tests for the local StrataSignal report; no runtime JavaScript dependencies",
+  "scripts": {
+    "test": "node --test tests/ui.test.cjs"
+  },
+  "devDependencies": {
+    "jsdom": "26.1.0"
+  }
+}

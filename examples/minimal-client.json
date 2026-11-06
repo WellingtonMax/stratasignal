@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "dataset_kind": "client",
+  "as_of": "2026-11-06",
+  "positions": [
+    {
+      "material": "my-graphite-spec",
+      "material_name": "SUBSTITUIR: especificação técnica homogênea",
+      "supplier": "SUP-001",
+      "origin_country": "ZZ",
+      "allocation_share": 1.0,
+      "monthly_demand_kg": 1000,
+      "stock_kg": 500,
+      "nominal_lead_days": 30,
+      "unit_cost_usd": 1
+    }
+  ],
+  "orders": [],
+  "evidence": []
+}
