@@ -434,3 +434,23 @@ test("supplier filter excludes other suppliers in the same country across map, c
   assert.deepEqual(ctx.errors, []);
   ctx.dom.window.close();
 });
+
+test("monthly order history uses the same cohort counts in chart and table and survives reanalysis", async () => {
+  const ctx = await open({demo: true});
+  const {doc, window} = ctx;
+  doc.querySelector('nav [data-view="intelligence"]').click();
+  const source = monthly.intelligence.delivery_months.at(-1);
+  const select = doc.getElementById("delivery-month");
+  assert.match(doc.getElementById("delivery-month-summary").textContent, /780 pedidos/);
+  select.value = source.month;
+  select.dispatchEvent(new window.Event("change"));
+  const expected = [source.received_on_time, source.received_late, source.open_overdue, source.open_pending];
+  const values = () => [...doc.querySelectorAll("#delivery-monthly progress")].map(bar => bar.value);
+  assert.deepEqual(values(), expected);
+  assert.deepEqual([...doc.querySelectorAll("#delivery-monthly tbody td:last-child")].map(cell => Number(cell.textContent)), expected);
+  await click(ctx, "analyze-comparison");
+  assert.equal(doc.getElementById("delivery-month").value, source.month);
+  assert.deepEqual(values(), expected);
+  assert.deepEqual(ctx.errors, []);
+  ctx.dom.window.close();
+});

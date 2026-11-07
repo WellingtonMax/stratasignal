@@ -34,7 +34,12 @@ class IntelligenceTests(unittest.TestCase):
         for oid, promised in (("overdue", "2026-08-01"), ("pending", "2026-12-01")):
             data["orders"].append({"id": oid, "material": "M", "supplier": "S", "origin_country": "CN",
                 "ordered_on": "2026-07-01", "promised_on": promised, "received_on": None, "quantity_kg": 10})
-        result = analyze(data, "a"*64, enable_ml=False)["intelligence"]["supplier_performance"][0]
+        intelligence = analyze(data, "a"*64, enable_ml=False)["intelligence"]
+        self.assertEqual(intelligence["delivery_months"], [
+            {"month": "2026-01", "received_on_time": 3, "received_late": 7, "open_overdue": 0, "open_pending": 0},
+            {"month": "2026-07", "received_on_time": 0, "received_late": 0, "open_overdue": 1, "open_pending": 1},
+        ])
+        result = intelligence["supplier_performance"][0]
         self.assertEqual((result["observed_orders"], result["late_orders"], result["not_yet_observable"]), (11, 8, 1))
         self.assertEqual((result["received_lead_p90_days"], result["open_overdue_orders"]), (90, 1))
         self.assertEqual(result["sample_status"], "small_sample")
@@ -42,6 +47,7 @@ class IntelligenceTests(unittest.TestCase):
     def test_no_orders_yields_no_estimate_or_percentile_and_serializes_finitely(self):
         result = analyze(small_bundle(), "a"*64, enable_ml=False)
         position = result["intelligence"]["supplier_performance"][0]
+        self.assertEqual(result["intelligence"]["delivery_months"], [])
         self.assertIsNone(position["late_rate"])
         self.assertIsNone(position["received_lead_p90_days"])
         json.dumps(result, allow_nan=False)

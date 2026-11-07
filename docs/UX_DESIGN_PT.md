@@ -64,12 +64,16 @@ A exploração combina uma especificação, uma origem e um código de fornecedo
 
 Uma combinação vazia informa a ausência de posições e permite ampliar o recorte pelos seletores de origem e fornecedor. Origens sem âncora cartográfica permanecem legíveis no gráfico e na tabela. “Restaurar seleção inicial” volta à primeira especificação, a todas as origens e a todos os fornecedores. O filtro abrange as três visualizações de origem. Indicadores e downloads abrangem a carteira completa.
 
+## Recorte mensal do histórico de pedidos
+
+Em Inteligência operacional, a seção Situação dos pedidos por mês filtra pelo mês da data do pedido. A situação de entrega reflete a data de corte informada. Gráfico e tabela compartilham quatro contagens de pedidos, com cobertura e fonte declaradas. A escolha persiste ao navegar e reanalisar a carteira enquanto o mês existir. Carteira sem pedidos e relatório anterior à série mensal têm mensagens distintas. As demais análises usam seu próprio escopo.
+
 ## Backlog de entregas verificáveis
 
 | Ordem | Entrega | Critério de aceitação | Estado |
 | --- | --- | --- | --- |
 | UX-01 | Fundação visual e recorte único | Paleta em tokens; um seletor mantém mapa/gráfico/tabela coerentes; navegação, reanálise e restauração testadas; exports de carteira completa claramente identificados. | Implementado nesta etapa. |
-| UX-02 | Contexto e filtros compartilhados | Mineral, período, país/região e empresa com contagens, filtros ativos e limpeza; explicação quando filtro não se aplica a uma fonte; estado vazio; preservação por navegação. Proibir agregação entre especificações incompatíveis. | Especificação, origem e fornecedor declarado entregues. Período e identificação de empresas seguem no backlog. |
+| UX-02 | Contexto e filtros compartilhados | Mineral, período, país/região e empresa com contagens, filtros ativos e limpeza; explicação quando filtro não se aplica a uma fonte; estado vazio; preservação por navegação. Proibir agregação entre especificações incompatíveis. | Especificação, origem e fornecedor declarado entregues. Mês do pedido entregue para contagens do histórico. Identificação de empresas e períodos de outras fontes seguem no backlog. |
 | UX-03 | Satélite temporal | Verificar documentação oficial, disponibilidade e uso da fonte escolhida; seletor de área/data e comparação onde houver suporte; origem, aquisição, resolução, nuvens/cobertura e falhas explícitas. Nenhum ponto inventado de instalação. | Planejado; camada NASA datada existente preservada. |
 | UX-04 | Notícias conectadas | Feed/API permitido, títulos e resumos próprios, links originais e datas; deduplicação, associação revisável a mineral/país/empresa, filtro, atualização e estados de erro/sem resultado. Conteúdo externo tratado como não confiável. | Planejado; não inserir notícias fictícias como atuais. |
 | UX-05 | Relatório consolidado do recorte | Uma seleção reproduz mapa, indicadores, evidências e notícias disponíveis na visão e exportação; registrar fontes, filtros, unidades, data de geração, lacunas e divergências. Separar fato/inferência/previsão, alinhar períodos e evitar dupla contagem. | Planejado; HTML/JSON atuais preservados. |

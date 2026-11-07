@@ -25,8 +25,15 @@ def nearest_rank(values, percentile):
 def decision_support(data, materials, flags):
     as_of = day(data["as_of"])
     orders = defaultdict(list)
+    monthly = defaultdict(lambda: dict(received_on_time=0, received_late=0, open_overdue=0, open_pending=0))
     for order in data["orders"]:
         orders[(order["material"], order["supplier"])].append(order)
+        month = monthly[order["ordered_on"][:7]]
+        if order["received_on"]:
+            status = "received_late" if order["received_on"] > order["promised_on"] else "received_on_time"
+        else:
+            status = "open_overdue" if order["promised_on"] < data["as_of"] else "open_pending"
+        month[status] += 1
     names = {m["material"]: m["name"] for m in materials}
     performance = []
     for position in data["positions"]:
@@ -74,6 +81,7 @@ def decision_support(data, materials, flags):
     covered = {(e["material"], e["supplier"]) for e in data["evidence"]}
     flagged = {(f["material"], f["supplier"]) for f in flags}
     return {"supplier_performance": performance, "origin_dependencies": dependencies,
+        "delivery_months": [{"month": month, **monthly[month]} for month in sorted(monthly)],
         "stress_matrix": matrix, "stress_grid": {"countries_evaluated": min(12, len(dependencies)),
             "countries_outside_grid": max(0, len(dependencies) - 12), "durations_days": [30, 60, 90],
             "reductions": [.25, .5, 1], "selection": "Top 12 origens pelo custo mensal declarado de referência."},

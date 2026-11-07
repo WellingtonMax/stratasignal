@@ -94,3 +94,9 @@ Existing report integrity manifests remain valid because their generated report 
 - A suíte Python aprovou 104 testes. O caminho com `python -S` aprovou 96 e ignorou 8 dependentes de ML.
 - Os 34 testes DOM passaram. O novo caso divide uma origem entre dois fornecedores fictícios e verifica que a seleção de um deles mantém sua participação original de 35% no mapa, no gráfico e na tabela. O caso cobre reanálise, combinação vazia e restauração.
 - No Chromium a 337 pixels CSS via zoom, o seletor respondeu ao teclado, a combinação vazia anunciou zero posições e Enter na restauração devolveu o foco à especificação. A página mediu 337 pixels de largura útil e de rolagem.
+
+## Histórico mensal de pedidos em 7 de novembro de 2026
+
+- Passaram 104 testes Python e 35 testes DOM. Com `python -S`, passaram 96 testes e 8 dependentes de ML foram ignorados.
+- Os exemplos estáticos foram regenerados. As contagens mensais somam 780 pedidos em 30 meses com registros. Os hashes dos arquivos coincidem com os manifestos e as métricas anteriores coincidem com as da versão precedente.
+- No Chromium, junho de 2026 exibiu 24 pedidos, com 16 recebidos no prazo e 8 em atraso. A tabela abriu por Enter. A 337 pixels CSS via zoom, o seletor respondeu às setas e gráfico e página couberam na largura disponível.

@@ -103,3 +103,8 @@ The workbench uses one specification selector for the country allocation map, ch
 ### Origin and supplier filters in the workbench
 
 The workbench groups matching positions by declared country within one specification. The origin and supplier filters intersect before aggregation, and the resulting allocation values drive the map, chart and table. Each displayed share uses the total declared allocation of that specification as its denominator. An empty intersection means the portfolio has no position matching that specification, origin and supplier selection. Position counts describe material–supplier records. Portfolio indicators, scenario calculations and exported reports cover the full portfolio.
+
+
+### Monthly order history in the workbench
+
+The delivery-month series groups each order once by the month of `ordered_on`. At the report cutoff, received orders are on time when receipt is on or before the promised date. Open orders are overdue only after their promised date. Counts use orders as their unit, with one of four mutually exclusive states per order. Empty months are absent from the available coverage. The selector filters the chart and equivalent table in this section. The allocation map and existing supplier performance metrics retain their respective scopes.
