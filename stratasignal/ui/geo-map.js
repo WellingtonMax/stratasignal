@@ -20,7 +20,7 @@
     NG:"Nigéria",NO:"Noruega",PE:"Peru",PH:"Filipinas",PK:"Paquistão",PL:"Polônia",PT:"Portugal",
     RU:"Rússia",SA:"Arábia Saudita",SE:"Suécia",TH:"Tailândia",TR:"Turquia",TW:"Taiwan",
     TZ:"Tanzânia",UA:"Ucrânia",US:"Estados Unidos",UZ:"Uzbequistão",VN:"Vietnã",
-    ZA:"África do Sul",ZM:"Zâmbia",ZW:"Zimbábue"});
+    ZA:"África do Sul",ZM:"Zâmbia",ZW:"Zimbábue",ZZ:"Desconhecida"});
   const NASA = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/";
   const $ = id => document.getElementById(id);
   const make = (tag,text,cls) => {
@@ -36,58 +36,114 @@
     const phi=clamp(lat,-85.05,85.05)*Math.PI/180;
     return [size(zoom)*(lon+180)/360,size(zoom)*(1-Math.log(Math.tan(Math.PI/4+phi/2))/Math.PI)/2];
   };
-  const recentDate = () => {
-    const now=new Date();
-    // MODIS granules may appear after acquisition; choose a dated observation, never label as real-time.
-    now.setUTCDate(now.getUTCDate()-5);
-    return now.toISOString().slice(0,10);
+  // GIBS DescribeDomains snapshot, queried 2026-11-07 (EPSG:3857, Terra/MODIS true color).
+  const modisPeriods = [
+    ["2000-02-24", "2000-04-25"],
+    ["2000-04-28", "2000-08-06"],
+    ["2000-08-18", "2001-06-15"],
+    ["2001-07-03", "2002-03-19"],
+    ["2002-03-28", "2003-12-16"],
+    ["2003-12-24", "2008-12-20"],
+    ["2008-12-23", "2016-02-18"],
+    ["2016-02-27", "2022-10-10"],
+    ["2022-10-23", "2025-08-08"],
+    ["2025-08-10", "2025-11-08"],
+    ["2025-11-10", "2026-11-07"],
+  ];
+  const isoDate = date => date.toISOString().slice(0, 10);
+  const suggestedDate = new Date();
+  suggestedDate.setUTCDate(suggestedDate.getUTCDate() - 5);
+  const suggested = isoDate(suggestedDate);
+  let modisDate = modisPeriods.reduce((chosen, [start, end]) => {
+    return start <= suggested ? (end < suggested ? end : suggested) : chosen;
+  }, modisPeriods[0][0]);
+  const displayDate = date => date.split("-").reverse().join("/");
+  const comparisonDay = new Intl.DateTimeFormat("pt-BR", {dateStyle: "long", timeZone: "UTC"});
+  const validModisDate = value => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const parsed = new Date(value + "T00:00:00Z");
+    return Number.isFinite(parsed.getTime()) && isoDate(parsed) === value &&
+      modisPeriods.some(([start, end]) => start <= value && value <= end);
   };
-  let report=null,material=null,selected=null,enabled=false,layer="blue",zoom=2;
-  let center=project(5,17,zoom),drag=null,tileErrors=0,tilesLoaded=0;
+  let scopeName=null,origins=[],selected=null,enabled=false,layer="blue",zoom=2;
+  let center=project(5,17,zoom),drag=null;
+  let comparisonDate = null;
   const sources={blue:{label:"NASA Blue Marble · composição histórica",id:"BlueMarble_NextGeneration",
     date:"2004-01-01",matrix:"GoogleMapsCompatible_Level8",extension:"jpeg",maxZoom:7},
     daily:{label:"NASA Terra/MODIS · observação datada",id:"MODIS_Terra_CorrectedReflectance_TrueColor",
-    date:recentDate(),matrix:"GoogleMapsCompatible_Level9",extension:"jpg",maxZoom:8}};
-  let oldTileKey="";
-  const viewport = () => $("geo-viewport");
+    matrix:"GoogleMapsCompatible_Level9",extension:"jpg",maxZoom:8}};
+  const mapView = prefix => ({
+    view: $(prefix + "-viewport"),
+    land: $(prefix + "-land"),
+    landCopy: $(prefix + "-land-copy"),
+    tiles: $(prefix + "-tiles"),
+    markers: $(prefix + "-markers"),
+    meta: $(prefix + "-imagery-meta"),
+    status: $(prefix + "-imagery-state"),
+    tileKey: "",
+  });
+  const referenceMap = mapView("geo"), comparisonMap = mapView("geo-compare");
   function dimensions() {
-    const v=viewport();
+    const v=referenceMap.view;
     return [v.clientWidth||960,v.clientHeight||440];
   }
   function limitCenter() {
-    const [w,h]=dimensions(),world=size(zoom);
+    const [,h]=dimensions(),world=size(zoom);
     // Horizontal wrapping is supported. Vertical panning is clipped to the Web Mercator world.
     center[1]=clamp(center[1],Math.min(h/2,world/2),Math.max(world-h/2,world/2));
     if(!Number.isFinite(center[0]))center[0]=world/2;
     if(Math.abs(center[0])>world*8)center[0]=((center[0]%world)+world)%world;
   }
-  function point(lon,lat) {
-    const [w,h]=dimensions(),[x,y]=project(lon,lat,zoom),world=size(zoom);
+  function point(lon,lat,w,h) {
+    const [x,y]=project(lon,lat,zoom),world=size(zoom);
     let dx=x-center[0];dx=((dx+world/2)%world+world)%world-world/2;
     return [w/2+dx,h/2+y-center[1]];
   }
-  function drawLand() {
-    const [w,h]=dimensions(),world=size(zoom),land=$("geo-land");
-    const left=w/2-center[0],top=h/2-center[1];
-    land.style.width=world+"px";land.style.height=world+"px";
-    land.style.transform="translate("+left+"px,"+top+"px)";
+  function drawLand(map, left, top) {
+    const world = size(zoom);
+    map.land.style.width = map.land.style.height = world + "px";
+    map.land.style.transform = "translate(" + (-left) + "px," + (-top) + "px)";
     // On a wrapped view the land outline is duplicated to avoid blank seams.
-    const copy=$("geo-land-copy");
-    copy.style.width=world+"px";copy.style.height=world+"px";
-    copy.style.transform="translate("+(left+(center[0]<world/2?world:-world))+"px,"+top+"px)";
+    const wrappedLeft = -left + (center[0] < world / 2 ? world : -world);
+    map.landCopy.style.width = map.landCopy.style.height = world + "px";
+    map.landCopy.style.transform = "translate(" + wrappedLeft + "px," + (-top) + "px)";
   }
-  function drawTiles() {
-    const target=$("geo-tiles");
-    if(!enabled){target.replaceChildren();oldTileKey="";return;}
-    const config=sources[layer],date=config.date,[w,h]=dimensions(),world=size(zoom);
-    const left=center[0]-w/2,top=center[1]-h/2;
-    const xmin=Math.floor(left/256),xmax=Math.floor((left+w)/256);
-    const ymin=Math.max(0,Math.floor(top/256)),ymax=Math.min(Math.pow(2,zoom)-1,Math.floor((top+h)/256));
+  function clearTiles(map) {
+    if (map.tileKey) map.tiles.replaceChildren();
+    map.tileKey = "";
+  }
+  function drawTiles(map, date, w, h, left, top) {
+    if (!enabled) {
+      clearTiles(map);
+      return;
+    }
+    const target = map.tiles;
+    const config = sources[layer];
+    const xmin=Math.floor(left/256),xmax=Math.ceil((left+w)/256)-1;
+    const ymin=Math.max(0,Math.floor(top/256)),ymax=Math.min(Math.pow(2,zoom)-1,Math.ceil((top+h)/256)-1);
     const key=[zoom,layer,date,xmin,xmax,ymin,ymax].join("/");
     // Reuse the tile DOM when only panning within the same visible tile grid.
-    if(key!==oldTileKey){
-      oldTileKey=key;tileErrors=0;tilesLoaded=0;
+    if(key!==map.tileKey){
+      map.tileKey = key;
+      let tileErrors = 0, tilesLoaded = 0;
+      const sourceLabel = config.label + " · data solicitada " + displayDate(date);
+      const imageMeta = layer === "daily"
+        ? "Produto nominal de 250 m/pixel no equador. O zoom do painel exibe mosaicos mais agregados. Nuvens, áreas sem dados e atraso de publicação podem limitar a cobertura."
+        : "Composição histórica. A data identifica a camada no serviço.";
+      map.meta.textContent = sourceLabel + ". " + imageMeta;
       target.replaceChildren();
+      map.status.textContent = "Solicitando mosaicos à NASA…";
+      function settleTile(img, loaded) {
+        if (!target.contains(img)) return;
+        img.onload = img.onerror = null;
+        if (loaded) tilesLoaded++;
+        else tileErrors++;
+        if (tilesLoaded + tileErrors !== target.childElementCount) return;
+        let status = tilesLoaded + " mosaicos recebidos.";
+        if (!tilesLoaded) status = "Imagens indisponíveis para esta vista e data. Cartografia local disponível.";
+        else if (tileErrors) status += " Falha em " + tileErrors + " mosaicos. A imagem está parcial.";
+        map.status.textContent = status;
+      }
       const n=Math.pow(2,zoom);
       for(let x=xmin;x<=xmax;x++)for(let y=ymin;y<=ymax;y++){
         const tx=((x%n)+n)%n;
@@ -95,13 +151,10 @@
         img.alt="";img.decoding="async";img.referrerPolicy="no-referrer";
         img.draggable=false;
         img.dataset.tileX=String(x);img.dataset.tileY=String(y);
-        img.src=NASA+config.id+"/default/"+date+"/"+config.matrix+"/"+zoom+"/"+y+"/"+tx+"."+config.extension;
-        img.addEventListener("load",()=>{tilesLoaded++;if(tilesLoaded===1)$("geo-imagery-state").textContent=config.label+" · "+date;});
-        img.addEventListener("error",()=>{
-          tileErrors++;
-          if(tileErrors>=2&&tilesLoaded===0)$("geo-imagery-state").textContent="Imagens indisponíveis. O mapa geográfico continua operante.";
-        });
+        img.onload = () => settleTile(img, true);
+        img.onerror = () => settleTile(img, false);
         target.append(img);
+        img.src=NASA+config.id+"/default/"+date+"/"+config.matrix+"/"+zoom+"/"+y+"/"+tx+"."+config.extension;
       }
     }
     for(const tile of target.children){
@@ -109,33 +162,46 @@
       tile.style.transform="translate("+(x*256-left)+"px,"+(y*256-top)+"px)";
     }
   }
-  function currentMaterial() {
-    return report?.materials?.find(m=>m.material===material)||null;
-  }
-  function positionOrigins() {
-    const holder=$("geo-markers");holder.replaceChildren();
-    const current=currentMaterial();if(!current)return;
-    for(const [code,share] of Object.entries(current.country_shares||{})){
+  function renderMarkers(map, w, h, interactive) {
+    const holder = map.markers;
+    holder.replaceChildren();
+    for(const [code,share] of origins){
       const ll=anchors[code];if(!ll||!Number.isFinite(share)||share<=0)continue;
-      const [x,y]=point(ll[0],ll[1]);
-      const marker=make("button",code,"geo-marker");
-      marker.type="button";marker.dataset.country=code;
+      const [x,y]=point(ll[0],ll[1],w,h);
+      const marker = make(interactive ? "button" : "span", code, "geo-marker");
       marker.style.left=x+"px";marker.style.top=y+"px";
       marker.style.setProperty("--marker-size",(17+36*Math.sqrt(share))+"px");
-      marker.setAttribute("aria-label",(names[code]||code)+": "+pct(share)+" da alocação declarada");
-      marker.title=(names[code]||code)+" · "+pct(share);
-      marker.setAttribute("aria-pressed",String(selected===code));
-      marker.addEventListener("click",()=>chooseCountry(code));
+      if (interactive) {
+        marker.type = "button";
+        marker.dataset.country = code;
+        marker.setAttribute("aria-label",(names[code]||code)+": "+pct(share)+" da alocação declarada");
+        marker.title=(names[code]||code)+" · "+pct(share);
+        marker.setAttribute("aria-pressed",String(selected===code));
+        marker.addEventListener("click",()=>chooseCountry(code));
+      } else {
+        marker.classList.add("geo-marker-static");
+        marker.classList.toggle("is-selected", selected === code);
+      }
       holder.append(marker);
     }
   }
+  function positionOrigins() {
+    const [w,h] = dimensions();
+    renderMarkers(referenceMap, w, h, true);
+    if (comparisonDate) renderMarkers(comparisonMap, w, h, false);
+  }
   function showSelected() {
     const target=$("geo-selection");target.replaceChildren();
-    const current=currentMaterial();
-    const share=current?.country_shares?.[selected];
+    const share = origins.find(([code]) => code === selected)?.[1];
     const canSelect=typeof share==="number"&&share>0;
     $("geo-to-scenario").disabled=!canSelect;
-    if(!canSelect){target.append(make("p","Selecione uma origem destacada para examinar sua participação.","geo-hint"));return;}
+    if (!canSelect) {
+      const message = origins.length
+        ? "Origens sem posição no mapa. Consulte o gráfico ou a tabela."
+        : "Nenhuma origem neste recorte.";
+      target.append(make("p", message, "geo-hint"));
+      return;
+    }
     target.append(make("strong",names[selected]||selected));
     target.append(make("p",pct(share)+" da alocação declarada desta especificação."));
     target.append(make("p","Ponto aproximado do país, não localização de mina, porto, fornecedor ou rota logística.","geo-hint"));
@@ -149,12 +215,9 @@
     showSelected();
   }
   function renderOriginList() {
-    const current=currentMaterial(),list=$("geo-origin-list");
-    list.replaceChildren();selected=null;
-    if(!current){showSelected();return;}
-    const entries=Object.entries(current.country_shares||{}).sort((a,b)=>b[1]-a[1]);
-    const available=entries.filter(([code])=>!!anchors[code]);
-    for(const [code,share] of entries){
+    const list = $("geo-origin-list");
+    list.replaceChildren();
+    for (const [code, share] of origins) {
       const button=make("button",undefined,"geo-origin-item");
       button.type="button";button.dataset.country=code;
       const name=make("span",(names[code]||code)+(anchors[code]?"":" · sem posição"));
@@ -163,11 +226,26 @@
       if(anchors[code])button.addEventListener("click",()=>chooseCountry(code));
       list.append(button);
     }
-    selected=available[0]?.[0]||null;
-    chooseCountry(selected);
+    chooseCountry(origins.find(([code]) => anchors[code])?.[0] || null);
+  }
+  function renderHeading(id, date) {
+    const time = $(id);
+    if (time.dateTime === date) return;
+    time.dateTime = date;
+    time.textContent = comparisonDay.format(new Date(date));
   }
   function draw() {
-    limitCenter();drawLand();drawTiles();positionOrigins();
+    limitCenter();
+    const [w,h] = dimensions(), left = center[0] - w / 2, top = center[1] - h / 2;
+    drawLand(referenceMap, left, top);
+    drawTiles(referenceMap, layer === "daily" ? modisDate : sources[layer].date, w, h, left, top);
+    if (comparisonDate) {
+      renderHeading("geo-reference-day", modisDate);
+      renderHeading("geo-compare-day", comparisonDate);
+      drawLand(comparisonMap, left, top);
+      drawTiles(comparisonMap, comparisonDate, w, h, left, top);
+    }
+    positionOrigins();
   }
   function changeZoom(next) {
     const value=clamp(next,1,Math.min(6,sources[layer].maxZoom));
@@ -175,50 +253,111 @@
     const lon=center[0]/size(zoom)*360-180;
     const merc=center[1]/size(zoom),lat=Math.atan(Math.sinh(Math.PI*(1-2*merc)))*180/Math.PI;
     zoom=value;center=project(lon,lat,zoom);
-    oldTileKey="";draw();
+    draw();
   }
-  function setReport(value) {
-    report=value&&Array.isArray(value.materials)?value:null;
-    const picker=$("geo-material");
-    if(!picker)return;
-    const previous=material;
-    picker.replaceChildren();
-    if(!report){material=null;selected=null;$("geo-origin-list").replaceChildren();$("geo-markers").replaceChildren();showSelected();return;}
-    for(const item of report.materials){
-      const option=make("option",item.name);
-      option.value=item.material;picker.append(option);
+  function setScope(name, entries) {
+    scopeName = name;
+    origins = entries;
+    $("geo-material-name").textContent = name || "Origens declaradas";
+    renderOriginList();
+  }
+  function refresh() { if (scopeName) draw(); }
+  function clear() { setScope(null, []); }
+  function setComparisonDate(value) {
+    comparisonDate = value;
+    const active = value !== null;
+    $("geo-layout").classList.toggle("is-comparing", active);
+    $("geo-reference-title").hidden = !active;
+    $("geo-compare-pane").hidden = !active;
+    if (!active) clearTiles(comparisonMap);
+  }
+  function setComparisonControls(open) {
+    const toggle = $("geo-compare-toggle");
+    toggle.setAttribute("aria-expanded", String(open));
+    toggle.textContent = open ? "Encerrar comparação" : "Comparar duas datas";
+    $("geo-compare-controls").hidden = !open;
+    const date = $("geo-compare-date");
+    date.disabled = !open;
+    $("geo-apply-comparison").disabled = !open;
+    if (!open) {
+      date.value = "";
+      date.removeAttribute("aria-invalid");
+      $("geo-compare-feedback").textContent = "";
+      setComparisonDate(null);
     }
-    material=report.materials.some(m=>m.material===previous)?previous:report.materials[0]?.material||null;
-    picker.value=material||"";
-    renderOriginList();draw();
   }
-  function refresh() {if(report)draw();}
-  function clear() {setReport(null);}
-  function activate() {
-    enabled=!enabled;
-    $("geo-enable").textContent=enabled?"Desativar imagens externas":"Ativar imagens NASA";
-    $("geo-enable").setAttribute("aria-pressed",String(enabled));
-    $("geo-imagery").disabled=!enabled;
-    $("geo-imagery-state").textContent=enabled?"Solicitando imagens à NASA…":"Cartografia local · sem transmissão externa";
-    tileErrors=0;tilesLoaded=0;oldTileKey="";draw();
+  function syncDateControls() {
+    const showDate = enabled && layer === "daily";
+    $("geo-date-controls").hidden = !showDate;
+    $("geo-date").disabled = !showDate;
+    $("geo-apply-date").disabled = !showDate;
+    $("geo-compare-toggle").disabled = !showDate;
+    $("geo-date").value = modisDate;
+    $("geo-date").removeAttribute("aria-invalid");
+    $("geo-date-feedback").textContent = "";
+    $("geo-imagery-meta").hidden = !enabled;
+    if (!showDate) setComparisonControls(false);
   }
-  function init() {
-    if(!viewport())return;
-    const view=viewport();
-    $("geo-enable").addEventListener("click",activate);
-    $("geo-imagery").addEventListener("change",event=>{
-      if(event.target.value!=="blue"&&event.target.value!=="daily")return;
-      layer=event.target.value;oldTileKey="";zoom=Math.min(zoom,6);
-      $("geo-imagery-state").textContent=enabled?"Carregando camada "+sources[layer].label+"…":"Cartografia local · sem transmissão externa";
+  function bindDateControl(inputId, buttonId, feedbackId, otherDate, apply) {
+    const date = $(inputId);
+    const button = $(buttonId);
+    const feedback = $(feedbackId);
+    date.min = modisPeriods[0][0];
+    date.max = modisPeriods.at(-1)[1];
+    function clearFeedback() {
+      date.removeAttribute("aria-invalid");
+      feedback.textContent = "";
+    }
+    date.addEventListener("input", clearFeedback);
+    button.addEventListener("click", () => {
+      if (button.disabled) return;
+      const value = date.value;
+      const matchesOther = value === otherDate();
+      if (!validModisDate(value) || matchesOther) {
+        feedback.textContent = matchesOther
+          ? "Escolha uma data diferente da outra vista."
+          : "Data fora dos períodos publicados neste catálogo. Escolha outro dia.";
+        date.setAttribute("aria-invalid", "true");
+        date.focus();
+        return;
+      }
+      clearFeedback();
+      apply(value);
       draw();
     });
-    $("geo-material").addEventListener("change",event=>{material=event.target.value;renderOriginList();draw();});
+  }
+  function activate() {
+    enabled = !enabled;
+    $("geo-enable").textContent = enabled ? "Desativar imagens externas" : "Ativar imagens NASA";
+    $("geo-enable").setAttribute("aria-pressed", String(enabled));
+    $("geo-imagery").disabled = !enabled;
+    if (!enabled) $("geo-imagery-state").textContent = "Cartografia local · sem transmissão externa";
+    syncDateControls();
+    draw();
+  }
+  function init() {
+    if (!referenceMap.view) return;
+    bindDateControl("geo-date", "geo-apply-date", "geo-date-feedback", () => comparisonDate, value => { modisDate = value; });
+    bindDateControl("geo-compare-date", "geo-apply-comparison", "geo-compare-feedback", () => modisDate, setComparisonDate);
+    syncDateControls();
+    $("geo-enable").addEventListener("click", activate);
+    $("geo-imagery").addEventListener("change", event => {
+      if (!enabled || !Object.hasOwn(sources, event.target.value)) return;
+      layer = event.target.value;
+      syncDateControls();
+      draw();
+    });
+    $("geo-compare-toggle").addEventListener("click", event => {
+      if (event.currentTarget.disabled) return;
+      setComparisonControls($("geo-compare-controls").hidden);
+      draw();
+    });
     $("geo-zoom-in").addEventListener("click",()=>changeZoom(zoom+1));
     $("geo-zoom-out").addEventListener("click",()=>changeZoom(zoom-1));
-    $("geo-reset").addEventListener("click",()=>{zoom=2;center=project(5,17,zoom);oldTileKey="";draw();});
+    $("geo-reset").addEventListener("click",()=>{zoom=2;center=project(5,17,zoom);draw();});
     $("geo-to-scenario").addEventListener("click",()=>{
       const picker=$("scenario-country");
-      if(!selected||!report||!picker)return;
+      if(!selected||!picker)return;
       if([...picker.options].some(option=>option.value===selected)){
         picker.value=selected;
         picker.dispatchEvent(new Event("change",{bubbles:true}));
@@ -226,26 +365,32 @@
         picker.focus();
       }
     });
-    view.addEventListener("pointerdown",event=>{
-      if(event.target.closest("button")||event.button!==0)return;
-      drag={x:event.clientX,y:event.clientY,startX:center[0],startY:center[1]};
-      try{view.setPointerCapture(event.pointerId);}catch(_){}
-    });
-    view.addEventListener("pointermove",event=>{
-      if(!drag)return;
-      center=[drag.startX-(event.clientX-drag.x),drag.startY-(event.clientY-drag.y)];
-      draw();
-    });
-    for(const name of ["pointerup","pointercancel","lostpointercapture"])view.addEventListener(name,()=>{drag=null;});
-    view.addEventListener("keydown",event=>{
-      const deltas={ArrowLeft:[-90,0],ArrowRight:[90,0],ArrowUp:[0,-90],ArrowDown:[0,90]};
-      if(!deltas[event.key])return;
-      event.preventDefault();
-      const [dx,dy]=deltas[event.key];center[0]+=dx;center[1]+=dy;draw();
-    });
+    bindPan(referenceMap.view);
+    bindPan(comparisonMap.view);
     window.addEventListener("resize",refresh);
     draw();
   }
+  function bindPan(view) {
+    view.addEventListener("pointerdown",event=>{
+      if(drag||event.target.closest("button")||event.button!==0)return;
+      drag={pointerId:event.pointerId,x:event.clientX,y:event.clientY,startX:center[0],startY:center[1]};
+      try{view.setPointerCapture(event.pointerId);}catch(_){}
+    });
+    view.addEventListener("pointermove",event=>{
+      if(!drag||event.pointerId!==drag.pointerId)return;
+      center=[drag.startX-(event.clientX-drag.x),drag.startY-(event.clientY-drag.y)];
+      draw();
+    });
+    for(const name of ["pointerup","pointercancel","lostpointercapture"])view.addEventListener(name,event=>{
+      if (drag?.pointerId === event.pointerId) drag = null;
+    });
+    view.addEventListener("keydown",event=>{
+      const deltas={ArrowLeft:[-90,0],ArrowRight:[90,0],ArrowUp:[0,-90],ArrowDown:[0,90]};
+      if(event.target!==view||!deltas[event.key])return;
+      event.preventDefault();
+      const [dx,dy]=deltas[event.key];center[0]+=dx;center[1]+=dy;draw();
+    });
+  }
   document.addEventListener("DOMContentLoaded",init);
-  window.StrataGeo={setReport,refresh,clear};
+  window.StrataGeo={setScope,refresh,clear};
 })();

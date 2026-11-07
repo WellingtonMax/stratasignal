@@ -494,6 +494,218 @@
         "reference_monthly_usd": 12420.0
       }
     ],
+    "delivery_months": [
+      {
+        "month": "2024-01",
+        "received_on_time": 18,
+        "received_late": 10,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2024-02",
+        "received_on_time": 13,
+        "received_late": 13,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2024-03",
+        "received_on_time": 12,
+        "received_late": 12,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2024-04",
+        "received_on_time": 18,
+        "received_late": 7,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2024-05",
+        "received_on_time": 13,
+        "received_late": 16,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2024-06",
+        "received_on_time": 12,
+        "received_late": 12,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2024-07",
+        "received_on_time": 15,
+        "received_late": 14,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2024-08",
+        "received_on_time": 19,
+        "received_late": 6,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2024-09",
+        "received_on_time": 12,
+        "received_late": 14,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2024-10",
+        "received_on_time": 18,
+        "received_late": 10,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2024-11",
+        "received_on_time": 14,
+        "received_late": 10,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2024-12",
+        "received_on_time": 19,
+        "received_late": 9,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2025-01",
+        "received_on_time": 16,
+        "received_late": 10,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2025-02",
+        "received_on_time": 14,
+        "received_late": 10,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2025-03",
+        "received_on_time": 20,
+        "received_late": 8,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2025-04",
+        "received_on_time": 18,
+        "received_late": 5,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2025-05",
+        "received_on_time": 17,
+        "received_late": 10,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2025-06",
+        "received_on_time": 18,
+        "received_late": 9,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2025-07",
+        "received_on_time": 15,
+        "received_late": 12,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2025-08",
+        "received_on_time": 17,
+        "received_late": 7,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2025-09",
+        "received_on_time": 15,
+        "received_late": 11,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2025-10",
+        "received_on_time": 14,
+        "received_late": 14,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2025-11",
+        "received_on_time": 15,
+        "received_late": 9,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2025-12",
+        "received_on_time": 18,
+        "received_late": 11,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2026-01",
+        "received_on_time": 18,
+        "received_late": 7,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2026-02",
+        "received_on_time": 15,
+        "received_late": 9,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2026-03",
+        "received_on_time": 14,
+        "received_late": 14,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2026-04",
+        "received_on_time": 16,
+        "received_late": 10,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2026-05",
+        "received_on_time": 16,
+        "received_late": 8,
+        "open_overdue": 0,
+        "open_pending": 0
+      },
+      {
+        "month": "2026-06",
+        "received_on_time": 16,
+        "received_late": 8,
+        "open_overdue": 0,
+        "open_pending": 0
+      }
+    ],
     "stress_matrix": [
       {
         "country": "CN",

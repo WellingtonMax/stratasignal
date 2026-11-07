@@ -93,3 +93,18 @@ Country dependence uses `sum(material monthly kg × supplier allocation × suppl
 The stress grid takes the 12 largest origins by declared monthly reference cost (country code breaks ties), durations of 30/60/90 days and reductions of 25/50/100%. All origin dependencies remain in the output; the grid discloses how many were outside its cap. Each cell applies the same steady-state formula as the interactive simulator, lists materials with uncovered demand and sums their reference replacement values in USD. Each cell affects one country independently; results are neither additive nor assigned occurrence probabilities. The UI's **Usar premissas** transfers parameters to the simulator; workbench exports change only after explicit calculation.
 
 Version 0.4 aggregates positions, orders and flags by material once; model prediction histories are also indexed by material/supplier. Comparisons skip the extra intelligence grid when recalculating their two rule snapshots. Limits remain explicit: 100 materials, 500 positions, 20,000 orders, 5,000 evidence records and 16 MiB normalized input. [The measured synthetic workload](benchmarks/v0.4-linux.json) exercises those bounds without ML; it does not validate multi-user operation, a latency SLA or a real procurement workflow.
+
+
+## Workbench exploration scope
+
+The workbench uses one specification selector for the country allocation map, chart and equivalent accessible table. This visual selection is preserved during navigation and reanalysis where the specification remains available. It does not subset portfolio KPIs, scenario calculations, comparisons or exported reports. The interface discloses that full-portfolio scope beside the selector and the downloads. A reset clears the visual selection and its derived country state. The imagery layer remains separately opt-in and dated; choosing a specification does not authorize external requests. Analytical formulas, input hashes and standalone report data are unchanged by this UX increment.
+
+
+### Origin and supplier filters in the workbench
+
+The workbench groups matching positions by declared country within one specification. The origin and supplier filters intersect before aggregation, and the resulting allocation values drive the map, chart and table. Each displayed share uses the total declared allocation of that specification as its denominator. An empty intersection means the portfolio has no position matching that specification, origin and supplier selection. Position counts describe material–supplier records. Portfolio indicators, scenario calculations and exported reports cover the full portfolio.
+
+
+### Monthly order history in the workbench
+
+The delivery-month series groups each order once by the month of `ordered_on`. At the report cutoff, received orders are on time when receipt is on or before the promised date. Open orders are overdue only after their promised date. Counts use orders as their unit, with one of four mutually exclusive states per order. Empty months are absent from the available coverage. The selector filters the chart and equivalent table in this section. The allocation map and existing supplier performance metrics retain their respective scopes.

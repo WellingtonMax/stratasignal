@@ -17,7 +17,7 @@
 <body data-mode="local">
   <a href="#main" class="skip">Pular para o conteúdo</a>
   <aside class="sidebar">
-    <a class="brand" href="#" aria-label="StrataSignal, início"><span class="brand-symbol" aria-hidden="true"><i></i><i></i><i></i></span><span>strata<b>signal</b><small>INTELIGÊNCIA DE ABASTECIMENTO</small></span></a>
+    <a class="brand" href="#" aria-label="StrataSignal, início"><span class="brand-symbol" aria-hidden="true"><i></i><i></i><i></i></span><span>strata<b>signal</b><small>INTELIGÊNCIA MINERAL</small></span></a>
     <div class="sidebar-caption">ESPAÇO DE TRABALHO</div>
     <nav aria-label="Áreas do painel">
       <button type="button" data-view="import" aria-current="page"><span aria-hidden="true">01</span> Importar dados</button>
@@ -63,33 +63,101 @@
       <section id="view-overview" class="view" aria-labelledby="overview-title" hidden>
         <div class="page-heading compact"><div><p class="eyebrow">VISÃO DA CARTEIRA</p><h1 id="overview-title">Uma leitura clara<br><em>do seu abastecimento.</em></h1><p class="lead">Observe as concentrações e os pontos que merecem uma decisão acompanhada de evidências.</p></div><button type="button" class="button secondary" data-go="import">Atualizar dados <span aria-hidden="true">↑</span></button></div>
         <div class="empty analysis-empty"><div class="empty-symbol" aria-hidden="true">◈</div><h2>Sua análise aparece aqui</h2><p>Carregue os dados ou experimente a carteira fictícia.</p><button type="button" class="button primary demo-load" data-mutates>Experimentar demonstração</button></div>
-        <div class="analysis-content" hidden><div id="overview-kpis" class="kpis"></div><article class="card geo-card" aria-labelledby="geo-title">
+        <div class="analysis-content" hidden><div id="overview-kpis" class="kpis"></div>
+        <div class="exploration-filter" role="region" aria-labelledby="exploration-title">
+          <div class="exploration-heading">
+            <p class="eyebrow">RECORTE DE EXPLORAÇÃO</p>
+            <h2 id="exploration-title">Explore as posições de fornecimento</h2>
+            <p id="exploration-help" class="support">Os percentuais se referem à alocação total da especificação. O recorte vale para o mapa, o gráfico e a tabela de origens. Indicadores, cenários e relatórios abrangem a carteira completa.</p>
+          </div>
+          <div class="exploration-control">
+            <div class="exploration-fields">
+              <div>
+                <label class="field-label" for="material-choice">Especificação em foco</label>
+                <select id="material-choice" aria-describedby="exploration-help exploration-summary"></select>
+              </div>
+              <div>
+                <label class="field-label" for="origin-choice">Origem declarada</label>
+                <select id="origin-choice" aria-describedby="exploration-help exploration-summary">
+                  <option value="">Todas as origens</option>
+                </select>
+              </div>
+              <div>
+                <label class="field-label" for="supplier-choice">Fornecedor declarado</label>
+                <select id="supplier-choice" aria-describedby="exploration-help exploration-summary">
+                  <option value="">Todos os fornecedores</option>
+                </select>
+              </div>
+            </div>
+            <div class="exploration-status">
+              <p id="exploration-summary" role="status"></p>
+              <button id="reset-material" type="button" class="text-button" disabled>Restaurar seleção inicial</button>
+            </div>
+          </div>
+        </div>
+        <article class="card geo-card" aria-labelledby="geo-title">
   <div class="geo-heading"><div><p class="eyebrow">EXPLORADOR GEOESPACIAL · STRATASIGNAL</p><h2 id="geo-title">Abastecimento visto do planeta.</h2><p class="geo-description">Explore a concentração por país da especificação selecionada. A camada de satélite é uma observação geográfica, não uma validação de mina, rota comercial ou origem física.</p></div><span class="small-tag">POSIÇÕES POR PAÍS</span></div>
   <div class="geo-toolbar" aria-label="Controles de imagens e navegação">
     <button type="button" id="geo-enable" class="button secondary" aria-pressed="false">Ativar imagens NASA</button>
-    <select id="geo-imagery" aria-label="Camada de satélite" disabled><option value="blue">NASA · Blue Marble (histórica)</option><option value="daily">NASA · Terra/MODIS (observação recente)</option></select>
+    <select id="geo-imagery" aria-label="Camada de satélite" disabled><option value="blue">NASA · Blue Marble (histórica)</option><option value="daily">NASA · Terra/MODIS (imagem diária)</option></select>
     <button type="button" id="geo-zoom-in" class="geo-tool-button" aria-label="Ampliar mapa">+</button>
     <button type="button" id="geo-zoom-out" class="geo-tool-button" aria-label="Reduzir mapa">−</button>
     <button type="button" id="geo-reset" class="geo-tool-button" aria-label="Restaurar enquadramento">⌖</button>
   </div>
-  <div class="geo-layout">
-    <div id="geo-viewport" class="geo-viewport" role="region" tabindex="0" aria-label="Mapa-múndi navegável. Arraste para mover e use setas no teclado.">
-      <div id="geo-land" class="geo-land" aria-hidden="true"><img src="world-land.svg" alt="" draggable="false"></div>
-      <div id="geo-land-copy" class="geo-land" aria-hidden="true"><img src="world-land.svg" alt="" draggable="false"></div>
-      <div id="geo-tiles" class="geo-tiles" aria-hidden="true"></div>
-      <div id="geo-markers" class="geo-markers" aria-label="Países de origem declarados"></div>
-      <div class="geo-corner">Âncoras aproximadas por país · sem coordenadas de instalações</div>
+  <div id="geo-date-controls" class="geo-date-controls" hidden>
+    <div class="geo-date-field">
+      <label class="field-label" for="geo-date">Data da imagem Terra/MODIS (UTC)</label>
+      <input id="geo-date" type="date" aria-describedby="geo-date-coverage geo-date-feedback" disabled>
+    </div>
+    <button type="button" id="geo-apply-date" class="button secondary" disabled>Aplicar data</button>
+    <button type="button" id="geo-compare-toggle" class="button secondary" aria-expanded="false" aria-controls="geo-compare-controls" disabled>Comparar duas datas</button>
+    <p id="geo-date-coverage" class="geo-source">Catálogo NASA consultado em 07/11/2026. Datas entre 24/02/2000 e 07/11/2026, com lacunas.</p>
+    <p id="geo-date-feedback" class="geo-source" role="status"></p>
+  </div>
+  <div id="geo-compare-controls" class="geo-date-controls geo-compare-controls" hidden>
+    <div class="geo-date-field">
+      <label class="field-label" for="geo-compare-date">Segunda data Terra/MODIS (UTC)</label>
+      <input id="geo-compare-date" type="date" aria-describedby="geo-date-coverage geo-compare-feedback" disabled>
+    </div>
+    <button type="button" id="geo-apply-comparison" class="button primary" disabled>Aplicar comparação</button>
+    <p id="geo-compare-help" class="geo-source">As duas vistas compartilham a mesma área e o mesmo zoom. Arraste ou use as setas no mapa para mover ambas. Nuvens e lacunas podem mudar a aparência entre datas.</p>
+    <p id="geo-compare-feedback" class="geo-source" role="status"></p>
+  </div>
+  <div id="geo-layout" class="geo-layout">
+    <div class="geo-maps">
+      <div class="geo-pane">
+        <h3 id="geo-reference-title" class="geo-pane-title" hidden>A · Referência <time id="geo-reference-day"></time></h3>
+        <div id="geo-viewport" class="geo-viewport" role="region" tabindex="0" aria-label="Mapa-múndi navegável. Arraste para mover e use setas no teclado.">
+          <div id="geo-land" class="geo-land" aria-hidden="true"><img src="world-land.svg" alt="" draggable="false"></div>
+          <div id="geo-land-copy" class="geo-land" aria-hidden="true"><img src="world-land.svg" alt="" draggable="false"></div>
+          <div id="geo-tiles" class="geo-tiles" aria-hidden="true"></div>
+          <div id="geo-markers" class="geo-markers" aria-label="Países de origem declarados"></div>
+          <div class="geo-corner">Âncoras aproximadas por país · sem coordenadas de instalações</div>
+        </div>
+        <p id="geo-imagery-meta" class="geo-source" hidden></p>
+        <p id="geo-imagery-state" class="geo-source" role="status" aria-label="Carregamento da imagem de referência">Cartografia local · sem transmissão externa</p>
+      </div>
+      <div id="geo-compare-pane" class="geo-pane" hidden>
+        <h3 id="geo-compare-title" class="geo-pane-title">B · Comparação <time id="geo-compare-day"></time></h3>
+        <div id="geo-compare-viewport" class="geo-viewport" role="region" tabindex="0" aria-labelledby="geo-compare-title" aria-describedby="geo-compare-help">
+          <div id="geo-compare-land" class="geo-land" aria-hidden="true"><img src="world-land.svg" alt="" draggable="false"></div>
+          <div id="geo-compare-land-copy" class="geo-land" aria-hidden="true"><img src="world-land.svg" alt="" draggable="false"></div>
+          <div id="geo-compare-tiles" class="geo-tiles" aria-hidden="true"></div>
+          <div id="geo-compare-markers" class="geo-markers" aria-hidden="true"></div>
+          <div class="geo-corner">Âncoras aproximadas por país · sem coordenadas de instalações</div>
+        </div>
+        <p id="geo-compare-imagery-meta" class="geo-source"></p>
+        <p id="geo-compare-imagery-state" class="geo-source" role="status" aria-label="Carregamento da segunda imagem"></p>
+      </div>
     </div>
     <aside class="geo-sidebar" aria-label="Dados de concentração por origem">
-      <label class="field-label" for="geo-material">Especificação monitorada</label><select id="geo-material"></select>
-      <h3>Origens declaradas</h3><div id="geo-origin-list" class="geo-origin-list"></div>
+      <h3 id="geo-material-name">Origens declaradas</h3><div id="geo-origin-list" class="geo-origin-list"></div>
       <div id="geo-selection" class="geo-selection" aria-live="polite"></div>
       <button type="button" id="geo-to-scenario" class="button primary" disabled>Simular redução desta origem</button>
     </aside>
   </div>
-  <p id="geo-imagery-state" class="geo-source" role="status">Cartografia local · sem transmissão externa</p>
   <p class="footnote">Mapa local: Natural Earth 1:110m (domínio público). Após consentimento, somente coordenadas dos mosaicos visualizados e a data da camada são solicitadas à NASA GIBS; sua carteira e seus arquivos não são enviados. Blue Marble é uma composição histórica; MODIS é uma observação datada, sujeita a nuvens e atrasos. País não significa mina nem rota verificada.</p>
-</article><div class="two-col"><article class="card"><div class="card-heading"><div><p class="eyebrow">CONCENTRAÇÃO DE ORIGEM</p><h2>De onde vem a sua oferta?</h2></div><span class="small-tag">ALOCAÇÃO DECLARADA</span></div><label class="field-label" for="material-choice">Especificação do material</label><select id="material-choice"></select><div id="country-bars" class="country-bars"></div><p class="footnote">A origem declarada pode se referir a uma etapa da cadeia. Extração, refino e embarque exigem definições distintas.</p></article><article class="card priority-card"><p class="eyebrow">PRÓXIMAS AÇÕES</p><h2>O que merece atenção primeiro</h2><div id="priorities"></div><p class="footnote">A prioridade combina concentração, cobertura e sinais documentais. É uma regra de triagem, não uma probabilidade de crise.</p></article></div><article class="card"><div class="card-heading"><div><p class="eyebrow">MATERIAIS ACOMPANHADOS</p><h2>Vulnerabilidades, por especificação</h2></div><button type="button" class="text-button" data-go="scenario">Simular uma redução ↗</button></div><div class="table-wrap"><table><thead><tr><th>Material</th><th>Prioridade</th><th>Maior origem</th><th>Cobertura</th><th>Prazo nominal</th><th>Sinais</th></tr></thead><tbody id="portfolio-table"></tbody></table></div></article><div class="two-col"><article class="card"><p class="eyebrow">CONFERÊNCIA DOCUMENTAL</p><h2>Um motivo para cada sinal</h2><div id="evidence-signals"></div><p class="footnote">Metadados e hashes não autenticam certificados nem a origem física. Uma repetição pode ser um modelo compartilhado.</p></article><article class="card"><p class="eyebrow">PADRÕES DE ENTREGA</p><h2>Estimativas com contexto</h2><div id="model-state"></div><details><summary>Ver avaliação do modelo</summary><div id="model-evaluation"></div></details></article></div></div>
+</article><div class="two-col"><article class="card"><div class="card-heading"><div><p class="eyebrow">CONCENTRAÇÃO DE ORIGEM</p><h2>De onde vem a sua oferta?</h2></div><span class="small-tag">ALOCAÇÃO DECLARADA</span></div><div id="country-bars" class="country-bars"></div><details class="origin-data"><summary>Ver dados do gráfico em tabela</summary><div class="table-wrap"><table><caption>Alocação declarada da especificação em foco</caption><thead><tr><th scope="col">Origem</th><th scope="col">Participação</th></tr></thead><tbody id="origin-table"></tbody></table></div></details><p class="footnote">A origem declarada pode se referir a uma etapa da cadeia. Extração, refino e embarque exigem definições distintas.</p></article><article class="card priority-card"><p class="eyebrow">PRÓXIMAS AÇÕES</p><h2>O que merece atenção primeiro</h2><div id="priorities"></div><p class="footnote">A prioridade combina concentração, cobertura e sinais documentais. É uma regra de triagem, não uma probabilidade de crise.</p></article></div><article class="card"><div class="card-heading"><div><p class="eyebrow">MATERIAIS ACOMPANHADOS</p><h2>Vulnerabilidades, por especificação</h2></div><button type="button" class="text-button" data-go="scenario">Simular uma redução ↗</button></div><div class="table-wrap"><table><thead><tr><th>Material</th><th>Prioridade</th><th>Maior origem</th><th>Cobertura</th><th>Prazo nominal</th><th>Sinais</th></tr></thead><tbody id="portfolio-table"></tbody></table></div></article><div class="two-col"><article class="card"><p class="eyebrow">CONFERÊNCIA DOCUMENTAL</p><h2>Um motivo para cada sinal</h2><div id="evidence-signals"></div><p class="footnote">Metadados e hashes não autenticam certificados nem a origem física. Uma repetição pode ser um modelo compartilhado.</p></article><article class="card"><p class="eyebrow">PADRÕES DE ENTREGA</p><h2>Estimativas com contexto</h2><div id="model-state"></div><details><summary>Ver avaliação do modelo</summary><div id="model-evaluation"></div></details></article></div></div>
       </section>
 
       <section id="view-intelligence" class="view" aria-labelledby="intelligence-title" hidden>
@@ -106,7 +174,7 @@
       </section>
 
       <section id="view-exports" class="view" aria-labelledby="exports-title" hidden>
-        <div class="page-heading compact"><div><p class="eyebrow">DA ANÁLISE À ENTREGA</p><h1 id="exports-title">Leve as evidências<br><em>para a conversa.</em></h1><p class="lead">Exporte a leitura da carteira e mantenha uma base para o próximo acompanhamento.</p></div></div><div class="export-grid"><article class="card export-card"><span class="document-icon" aria-hidden="true">↗</span><span class="small-tag">HTML INTERATIVO</span><h2>Relatório para compartilhar</h2><p>Resultados, premissas do cenário, documentos e avaliação experimental do modelo em um arquivo que abre no navegador.</p><button type="button" class="button primary export-action" data-kind="html" data-mutates>Baixar relatório HTML <span aria-hidden="true">↓</span></button></article><article class="card export-card"><span class="document-icon" aria-hidden="true">≋</span><span class="small-tag">JSON</span><h2>Resultados estruturados</h2><p>As métricas e a proveniência da análise, incluindo a comparação de períodos quando ela tiver sido executada.</p><button type="button" class="button secondary export-action" data-kind="json" data-mutates>Baixar resultados <span aria-hidden="true">↓</span></button></article><article class="card export-card"><span class="document-icon" aria-hidden="true">◈</span><span class="small-tag">BASE PARA O PRÓXIMO PERÍODO</span><h2>Conjunto normalizado</h2><p>Os dados da carteira atual em um formato que pode ser importado novamente, sem refazer o mapeamento dos arquivos.</p><button type="button" class="button secondary export-action" data-kind="input" data-mutates>Guardar conjunto <span aria-hidden="true">↓</span></button></article></div><article class="card"><p class="eyebrow">REGISTRO DA ANÁLISE</p><div id="export-provenance"><p class="support">A data de corte e a impressão digital do conjunto aparecem após a análise.</p></div></article>
+        <div class="page-heading compact"><div><p class="eyebrow">DA ANÁLISE À ENTREGA</p><h1 id="exports-title">Leve as evidências<br><em>para a conversa.</em></h1><p class="lead">Exporte a leitura da carteira e mantenha uma base para o próximo acompanhamento.</p></div></div><p class="export-scope">Escopo dos arquivos: carteira completa. A seleção de especificação no mapa e no gráfico é um recorte visual e não reduz o conteúdo exportado.</p><div class="export-grid"><article class="card export-card"><span class="document-icon" aria-hidden="true">↗</span><span class="small-tag">HTML INTERATIVO</span><h2>Relatório para compartilhar</h2><p>Resultados, premissas do cenário, documentos e avaliação experimental do modelo em um arquivo que abre no navegador.</p><button type="button" class="button primary export-action" data-kind="html" data-mutates>Baixar relatório HTML <span aria-hidden="true">↓</span></button></article><article class="card export-card"><span class="document-icon" aria-hidden="true">≋</span><span class="small-tag">JSON</span><h2>Resultados estruturados</h2><p>As métricas e a proveniência da análise, incluindo a comparação de períodos quando ela tiver sido executada.</p><button type="button" class="button secondary export-action" data-kind="json" data-mutates>Baixar resultados <span aria-hidden="true">↓</span></button></article><article class="card export-card"><span class="document-icon" aria-hidden="true">◈</span><span class="small-tag">BASE PARA O PRÓXIMO PERÍODO</span><h2>Conjunto normalizado</h2><p>Os dados da carteira atual em um formato que pode ser importado novamente, sem refazer o mapeamento dos arquivos.</p><button type="button" class="button secondary export-action" data-kind="input" data-mutates>Guardar conjunto <span aria-hidden="true">↓</span></button></article></div><article class="card"><p class="eyebrow">REGISTRO DA ANÁLISE</p><div id="export-provenance"><p class="support">A data de corte e a impressão digital do conjunto aparecem após a análise.</p></div></article>
       </section>
       <footer><strong>STRATASIGNAL</strong><span>Dados declarados → evidências → decisão</span><a href="https://github.com/WellingtonMax/stratasignal" target="_blank" rel="noopener noreferrer">Sobre o produto ↗</a></footer>
     </main>

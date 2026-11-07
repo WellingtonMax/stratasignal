@@ -60,3 +60,57 @@ python -m stratasignal demo --with-comparison --out reports/comparison-001
 ```
 
 Use new output paths. Customer processing stays in `python -m stratasignal serve`; the separately built public demo contains only synthetic inputs and precomputed model results. See SECURITY.md and ARCHITECTURE.md for the exact implementation boundary.
+
+
+## UX-01 exploration foundation — 6 November 2026
+
+This increment changes the workbench presentation and visual selection, without changing analytical formulas, customer input schema or standalone report artifacts. Architecture, journeys, visual tokens and the next acceptance criteria are recorded in [the UX backlog](UX_DESIGN_PT.md).
+
+| Check | Observed result |
+| --- | --- |
+| Python suite | 104 tests passed; optional ML available. |
+| Standard-library path | 104 tests ran; 96 passed and 8 ML-dependent tests skipped. |
+| Dependency installation and DOM suite | `npm ci --ignore-scripts`; all 32 DOM tests passed. Three additional cases cover shared map/chart/table selection, navigation/reanalysis/export scope and reset of stale material/country context. |
+| Synthetic static build | Built successfully with the existing synthetic-only builder and optional ML; private-file inputs remain disabled. Final publication is built again from the committed canonical source with its source SHA. |
+| Desktop browser inspection | Blue/white shell, green action, yellow selected map marker, readable type, linked lithium selection and the expanded origin table inspected in Chromium. |
+| Narrow-layout inspection | 674 and 337 CSS px via 200% and 400% browser zoom. At 337 px each of the six workbench areas had document `scrollWidth === clientWidth`; navigation and tables scroll within their own regions. Shared selection and visible keyboard focus inspected. |
+| Keyboard | Native specification select and Tab to the restore action exercised; focus is visibly blue. Native expandable origin table exercised. |
+| Visual evidence | [Workbench map after selecting synthetic lithium](images/workbench-ux01.png). |
+
+Limitations: this is focused visual and DOM verification, not a complete accessibility audit, assistive-technology test or physical-mobile-device test. Device emulation through DevTools was unavailable under browser policy; no policy was changed. Responsive reflow was inspected using browser zoom instead. No new live satellite source, acquisition-date control, news feed or cross-source report was implemented in this increment. The existing opt-in NASA imagery behavior is covered by unchanged regression tests; imagery availability was not revalidated against NASA during this UX-only change. News and satellite source contracts must be checked when those backlog items are implemented.
+
+Existing report integrity manifests remain valid because their generated report assets were not changed. The public workbench receives a fresh `source-manifest.json` recording the exact canonical source commit; its dataset stays synthetic.
+
+## Filtro de origem declarada em 7 de novembro de 2026
+
+- A suíte Python aprovou 104 testes. O caminho com `python -S` aprovou 96 e ignorou 8 dependentes de ML.
+- `npm ci --ignore-scripts` e `npm test` concluíram com 33 testes DOM aprovados. O novo caso cobre participação preservada, passagem ao simulador, reanálise, interseção vazia e restauração do foco.
+- Na prévia do Chromium, carbonato de lítio e Chile mostraram 55% na tabela. A troca para grafita com Chile selecionado exibiu o estado vazio. Enter na ação de restaurar levou o foco à especificação.
+- A 337 pixels CSS via zoom, a seleção de origem respondeu ao teclado. A página mediu 337 pixels de largura útil e de rolagem, com os controles empilhados. Esta inspeção usou Chromium em desktop.
+- O build estático usa a carteira fictícia e registra o commit de origem em seu manifesto. Os relatórios de carteira completa usam os mesmos dados e cálculos.
+
+## Filtro de fornecedor declarado em 7 de novembro de 2026
+
+- A suíte Python aprovou 104 testes. O caminho com `python -S` aprovou 96 e ignorou 8 dependentes de ML.
+- Os 34 testes DOM passaram. O novo caso divide uma origem entre dois fornecedores fictícios e verifica que a seleção de um deles mantém sua participação original de 35% no mapa, no gráfico e na tabela. O caso cobre reanálise, combinação vazia e restauração.
+- No Chromium a 337 pixels CSS via zoom, o seletor respondeu ao teclado, a combinação vazia anunciou zero posições e Enter na restauração devolveu o foco à especificação. A página mediu 337 pixels de largura útil e de rolagem.
+
+## Histórico mensal de pedidos em 7 de novembro de 2026
+
+- Passaram 104 testes Python e 35 testes DOM. Com `python -S`, passaram 96 testes e 8 dependentes de ML foram ignorados.
+- Os exemplos estáticos foram regenerados. As contagens mensais somam 780 pedidos em 30 meses com registros. Os hashes dos arquivos coincidem com os manifestos e as métricas anteriores coincidem com as da versão precedente.
+- No Chromium, junho de 2026 exibiu 24 pedidos, com 16 recebidos no prazo e 8 em atraso. A tabela abriu por Enter. A 337 pixels CSS via zoom, o seletor respondeu às setas e gráfico e página couberam na largura disponível.
+
+## Data da imagem Terra/MODIS em 7 de novembro de 2026
+
+- O catálogo oficial `DescribeDomains` da NASA GIBS retornou 11 intervalos diários, com lacunas. As requisições diretas ao serviço WMTS para o mosaico de nível 2, linha 1 e coluna 2 em 06 e 07/06/2025 retornaram HTTP 200 e imagens JPEG.
+- Passaram 104 testes Python e 36 testes DOM após `npm ci --ignore-scripts`. Com `python -S`, passaram 96 testes e 8 dependentes de ML foram ignorados. O novo caso cobre consentimento, lacuna no catálogo, falha total, carregamento parcial, preservação da data aplicada e descarte de eventos de mosaicos anteriores.
+- No Chromium, Enter em **Aplicar data** solicitou a imagem de 06/06/2025 e recebeu 12 mosaicos no enquadramento inicial. O campo marcou 09/08/2025 como inválida e o mapa conservou a imagem aplicada. A 337 pixels CSS via zoom, Enter aplicou 07/06/2025, os controles couberam na tela e a página permaneceu com 337 pixels de largura útil e de rolagem.
+- O catálogo local foi consultado em 07/11/2026. Datas futuras dependem de atualização desse recorte. Contagens de mosaicos indicam o resultado do carregamento. A observação pode conter nuvens ou lacunas.
+
+## Comparação de imagens Terra/MODIS em 7 de novembro de 2026
+
+- Conferidas a documentação WMTS e as orientações de uso e crédito da NASA GIBS. A consulta oficial confirmou os 11 intervalos do catálogo local. Para o mesmo mosaico no nível 3, linha 4 e coluna 2, as datas 06 e 07/06/2025 retornaram HTTP 200, JPEG de 256 × 256 pixels e hashes distintos.
+- Passaram 104 testes Python e 37 testes DOM após `npm ci --ignore-scripts`. Com `python -S`, passaram 96 testes e 8 dependentes de ML foram ignorados. O novo caso verifica datas iguais e lacunas, mesmas coordenadas e posições dos mosaicos, erro isolado na segunda vista, navegação conjunta e retirada da camada quando desativada.
+- No Chromium, as duas vistas de 480 × 360 pixels CSS receberam quatro mosaicos cada em 06 e 07/06/2025. Arrastar ou usar as setas na vista B moveu ambas. Ampliar manteve o mesmo conjunto de coordenadas para as duas datas. Os títulos mostram o mês por extenso para reduzir ambiguidade quando o campo nativo segue outra localidade.
+- A 337 pixels CSS via zoom no Chromium, as duas vistas empilharam com 267 pixels de largura e sem rolagem horizontal na página. As setas mantiveram o foco no mapa B, a tabela de alocação abriu por Enter e encerrar a comparação manteve 06/06/2025 na vista de referência. A inspeção foi em desktop com zoom.

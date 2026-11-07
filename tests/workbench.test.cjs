@@ -293,3 +293,309 @@ test("map country selection links to simulation without inventing coordinates or
   assert.match(ctx.doc.getElementById("geo-selection").textContent,/não localização de mina/);
   assert.deepEqual(ctx.errors,[]);ctx.dom.window.close();
 });
+
+test("one exploration selection keeps map, chart and accessible origin table on the same specification",async()=>{
+  const ctx=await open({demo:true}),select=ctx.doc.getElementById("material-choice");
+  select.value="lithium-carbonate";select.dispatchEvent(new ctx.window.Event("change"));
+  assert.match(ctx.doc.getElementById("geo-material-name").textContent,/lítio/i);
+  assert.deepEqual([...ctx.doc.querySelectorAll("#geo-origin-list [data-country]")].map(e=>e.dataset.country),["CL","AR"]);
+  assert.deepEqual([...ctx.doc.querySelectorAll("#geo-markers [data-country]")].map(e=>e.dataset.country).sort(),["AR","CL"]);
+  assert.deepEqual([...ctx.doc.querySelectorAll("#country-bars progress")].map(e=>e.value),[.55,.45]);
+  assert.deepEqual([...ctx.doc.querySelectorAll("#origin-table tr")].map(e=>e.textContent),["Chile55%","Argentina45%"]);
+  assert.match(ctx.doc.getElementById("exploration-summary").textContent,/2 origens · 2 posições · corte/);
+  assert.match(select.getAttribute("aria-describedby"),/exploration-help/);
+  assert.ok(ctx.calls.every(c=>c.url.startsWith("demo/"))); // A filter never opts into satellite requests.
+  assert.deepEqual(ctx.errors,[]);ctx.dom.window.close();
+});
+
+test("exploration survives navigation and reanalysis, while full-portfolio exports disclose their scope",async()=>{
+  const ctx=await open({demo:true}),select=ctx.doc.getElementById("material-choice");
+  select.value="lithium-carbonate";select.dispatchEvent(new ctx.window.Event("change"));
+  for(const view of ["intelligence","scenario","exports","overview"]){
+    ctx.doc.querySelector(`nav [data-view="${view}"]`).click();
+    assert.equal(select.value,"lithium-carbonate");
+  }
+  await click(ctx,"analyze-comparison");
+  assert.equal(select.value,"lithium-carbonate");
+  assert.match(ctx.doc.getElementById("geo-material-name").textContent,/lítio/i);
+  ctx.doc.querySelector('nav [data-view="exports"]').click();
+  assert.match(ctx.doc.querySelector(".export-scope").textContent,/carteira completa/);
+  ctx.doc.querySelector('.export-action[data-kind="json"]').click();await settle(ctx.doc);
+  const exported=JSON.parse(await ctx.blobs[0].text());
+  assert.equal(exported.materials.length,current.materials.length);
+  assert.equal(ctx.doc.querySelectorAll("#portfolio-table tr").length,current.materials.length);
+  assert.deepEqual(ctx.errors,[]);ctx.dom.window.close();
+});
+
+test("restoring or clearing exploration removes stale material and origin selection",async()=>{
+  const ctx=await open({demo:true}),select=ctx.doc.getElementById("material-choice"),initial=select.value;
+  select.value="lithium-carbonate";select.dispatchEvent(new ctx.window.Event("change"));
+  ctx.doc.querySelector('#geo-origin-list [data-country="AR"]').click();
+  assert.match(ctx.doc.getElementById("geo-selection").textContent,/Argentina/);
+  assert.equal(ctx.doc.getElementById("reset-material").disabled,false);
+  await click(ctx,"reset-material");
+  assert.equal(select.value,initial);
+  assert.equal(ctx.doc.getElementById("reset-material").disabled,true);
+  assert.doesNotMatch(ctx.doc.getElementById("geo-selection").textContent,/Argentina/);
+  assert.ok(ctx.doc.querySelectorAll("#origin-table tr").length>0);
+  await click(ctx,"reset");
+  assert.equal(select.options.length,0);
+  assert.equal(ctx.doc.querySelectorAll("#origin-table tr").length,0);
+  assert.equal(ctx.doc.querySelectorAll("#geo-markers button").length,0);
+  assert.equal(ctx.doc.getElementById("geo-to-scenario").disabled,true);
+  assert.equal(ctx.doc.getElementById("reset-material").disabled,true);
+  assert.deepEqual(ctx.errors,[]);ctx.dom.window.close();
+});
+
+test("country filter preserves allocation shares, survives reanalysis and clears an empty intersection", async () => {
+  const ctx = await open({demo:true});
+  const {doc, window} = ctx;
+  const material = doc.getElementById("material-choice");
+  const origin = doc.getElementById("origin-choice");
+  const choose = (control, value) => {
+    control.value = value;
+    control.dispatchEvent(new window.Event("change"));
+  };
+  const markerCountries = () => [...doc.querySelectorAll("#geo-markers [data-country]")].map(marker => marker.dataset.country);
+  choose(material, "lithium-carbonate");
+  choose(origin, "CL");
+  assert.deepEqual(markerCountries(), ["CL"]);
+  assert.equal(doc.querySelector("#country-bars progress").value, .55);
+  assert.equal(doc.getElementById("origin-table").textContent, "Chile55%");
+  assert.match(doc.getElementById("exploration-summary").textContent, /1 origem · 1 posição.*carteira fictícia/);
+
+  doc.getElementById("geo-to-scenario").click();
+  assert.equal(doc.getElementById("scenario-country").value, "CL");
+  await click(ctx, "analyze-comparison");
+  doc.querySelector('nav [data-view="overview"]').click();
+  assert.equal(origin.value, "CL");
+  assert.deepEqual(markerCountries(), ["CL"]);
+
+  choose(material, "graphite-flake");
+  assert.equal(origin.value, "CL");
+  assert.deepEqual(markerCountries(), []);
+  assert.match(doc.getElementById("country-bars").textContent, /Nenhuma posição/);
+  assert.match(doc.getElementById("origin-table").textContent, /Nenhuma posição/);
+  assert.equal(doc.getElementById("geo-to-scenario").disabled, true);
+  assert.match(doc.getElementById("exploration-summary").textContent, /0 origens · 0 posições/);
+
+  choose(origin, "");
+  assert.ok(markerCountries().length > 0);
+  choose(origin, "BR");
+  await click(ctx, "reset-material");
+  assert.equal(origin.value, "");
+  assert.equal(doc.activeElement, material);
+  assert.ok(ctx.calls.every(call => call.url.startsWith("demo/")));
+  assert.deepEqual(ctx.errors, []);
+  ctx.dom.window.close();
+});
+
+test("supplier filter excludes other suppliers in the same country across map, chart and table", async () => {
+  const addSecondChileSupplier = value => {
+    const report = copy(value);
+    const lithium = report.materials.find(item => item.material === "lithium-carbonate");
+    const chile = lithium.suppliers.find(item => item.origin_country === "CL");
+    chile.allocation_share = .35;
+    lithium.suppliers.push({...chile, supplier: "CL-02", allocation_share: .20});
+    return report;
+  };
+  const assets = {
+    "demo/current-report.json": addSecondChileSupplier(current),
+    "demo/monthly-report.json": addSecondChileSupplier(monthly),
+    "demo/current-input.json": input,
+  };
+  const ctx = await open({demo: true, fetcher: async url => response(assets[url])});
+  const {doc, window} = ctx;
+  const choose = (id, value) => {
+    const select = doc.getElementById(id);
+    select.value = value;
+    select.dispatchEvent(new window.Event("change"));
+  };
+  choose("material-choice", "lithium-carbonate");
+  choose("origin-choice", "CL");
+  assert.equal(doc.querySelector("#country-bars progress").value, .55);
+  choose("supplier-choice", "CL-01");
+  assert.equal(doc.querySelector("#country-bars progress").value, .35);
+  assert.equal(doc.getElementById("origin-table").textContent, "Chile35%");
+  assert.match(doc.querySelector("#geo-markers [data-country=CL]").getAttribute("aria-label"), /35%/);
+  assert.match(doc.getElementById("exploration-summary").textContent, /1 origem · 1 posição/);
+
+  await click(ctx, "analyze-comparison");
+  assert.equal(doc.getElementById("supplier-choice").value, "CL-01");
+  assert.equal(doc.getElementById("origin-table").textContent, "Chile35%");
+  choose("origin-choice", "AR");
+  assert.equal(doc.querySelector("#geo-markers [data-country]"), null);
+  assert.match(doc.getElementById("country-bars").textContent, /Nenhuma posição/);
+  assert.equal(doc.getElementById("geo-to-scenario").disabled, true);
+  await click(ctx, "reset-material");
+  assert.equal(doc.getElementById("supplier-choice").value, "");
+  assert.equal(doc.activeElement.id, "material-choice");
+  assert.ok(ctx.calls.every(call => call.url.startsWith("demo/")));
+  assert.deepEqual(ctx.errors, []);
+  ctx.dom.window.close();
+});
+
+test("monthly order history uses the same cohort counts in chart and table and survives reanalysis", async () => {
+  const ctx = await open({demo: true});
+  const {doc, window} = ctx;
+  doc.querySelector('nav [data-view="intelligence"]').click();
+  const source = monthly.intelligence.delivery_months.at(-1);
+  const select = doc.getElementById("delivery-month");
+  assert.match(doc.getElementById("delivery-month-summary").textContent, /780 pedidos/);
+  select.value = source.month;
+  select.dispatchEvent(new window.Event("change"));
+  const expected = [source.received_on_time, source.received_late, source.open_overdue, source.open_pending];
+  const values = () => [...doc.querySelectorAll("#delivery-monthly progress")].map(bar => bar.value);
+  assert.deepEqual(values(), expected);
+  assert.deepEqual([...doc.querySelectorAll("#delivery-monthly tbody td:last-child")].map(cell => Number(cell.textContent)), expected);
+  await click(ctx, "analyze-comparison");
+  assert.equal(doc.getElementById("delivery-month").value, source.month);
+  assert.deepEqual(values(), expected);
+  assert.deepEqual(ctx.errors, []);
+  ctx.dom.window.close();
+});
+
+test("Terra/MODIS dates use the published periods and stale tiles cannot report coverage", async () => {
+  const ctx = await open({demo: true});
+  const {doc, window} = ctx;
+  const tiles = () => [...doc.querySelectorAll("#geo-tiles img")];
+  const date = doc.getElementById("geo-date");
+  const apply = doc.getElementById("geo-apply-date");
+  const layer = doc.getElementById("geo-imagery");
+  const state = doc.getElementById("geo-imagery-state");
+  const selectLayer = value => {
+    layer.value = value;
+    layer.dispatchEvent(new window.Event("change"));
+  };
+  assert.equal(date.disabled, true);
+  date.value = "2025-06-06";
+  apply.click();
+  assert.equal(tiles().length, 0);
+
+  doc.getElementById("geo-enable").click();
+  assert.equal(date.disabled, true);
+  selectLayer("daily");
+  const oldTiles = tiles();
+  assert.ok(oldTiles.length > 0);
+  assert.equal(date.disabled, false);
+  date.value = "2025-08-09"; // Gap in the NASA DescribeDomains snapshot.
+  apply.click();
+  assert.equal(date.getAttribute("aria-invalid"), "true");
+  assert.equal(doc.activeElement, date);
+  assert.equal(tiles()[0], oldTiles[0]);
+
+  date.value = "2025-06-06";
+  apply.click();
+  const newTiles = tiles();
+  assert.ok(newTiles.every(img => img.src.includes("/default/2025-06-06/")));
+  assert.match(doc.getElementById("geo-imagery-meta").textContent, /06\/06\/2025.*250 m/);
+  oldTiles[0].dispatchEvent(new window.Event("load"));
+  for (const img of newTiles) img.dispatchEvent(new window.Event("error"));
+  assert.match(state.textContent, /Imagens indisponíveis/);
+  assert.ok(doc.querySelectorAll("#geo-markers button").length > 0);
+
+  selectLayer("blue");
+  assert.equal(date.disabled, true);
+  selectLayer("daily");
+  assert.equal(date.value, "2025-06-06");
+  const resumed = tiles();
+  resumed[0].dispatchEvent(new window.Event("error"));
+  for (const img of resumed.slice(1)) img.dispatchEvent(new window.Event("load"));
+  assert.match(state.textContent, /imagem está parcial/);
+  assert.deepEqual(ctx.errors, []);
+  ctx.dom.window.close();
+});
+
+test("satellite comparison shares the viewport and tracks each date independently", async () => {
+  const ctx = await open({demo: true});
+  const {doc, window} = ctx;
+  const get = id => doc.getElementById(id);
+  const tiles = prefix => [...get(prefix + "-tiles").children];
+  const tileLayout = prefix => tiles(prefix).map(img => [
+    img.src.split("/").slice(-3).join("/"), img.style.transform,
+  ]);
+  const date = get("geo-date");
+  const secondDate = get("geo-compare-date");
+  const toggle = get("geo-compare-toggle");
+  const compare = get("geo-apply-comparison");
+  const pane = get("geo-compare-pane");
+  const layer = get("geo-imagery");
+  const stateA = get("geo-imagery-state");
+  const stateB = get("geo-compare-imagery-state");
+
+  assert.equal(toggle.disabled, true);
+  assert.equal(tiles("geo-compare").length, 0);
+  get("geo-enable").click();
+  assert.equal(toggle.disabled, true);
+  layer.value = "daily";
+  layer.dispatchEvent(new window.Event("change"));
+  date.value = "2025-06-06";
+  get("geo-apply-date").click();
+  toggle.click();
+  assert.equal(toggle.getAttribute("aria-expanded"), "true");
+  assert.equal(pane.hidden, true);
+  assert.equal(tiles("geo-compare").length, 0);
+
+  secondDate.value = "2025-06-06";
+  compare.click();
+  assert.equal(doc.activeElement, secondDate);
+  assert.match(get("geo-compare-feedback").textContent, /data diferente/);
+  assert.equal(pane.hidden, true);
+  assert.equal(tiles("geo-compare").length, 0);
+
+  secondDate.value = "2025-06-07";
+  compare.click();
+  assert.equal(pane.hidden, false);
+  assert.equal(get("geo-reference-day").dateTime, "2025-06-06");
+  assert.equal(get("geo-compare-day").dateTime, "2025-06-07");
+  assert.equal(get("geo-compare-day").textContent, "7 de junho de 2025");
+  assert.match(get("geo-compare-imagery-meta").textContent, /07\/06\/2025.*250 m/);
+  const reference = tiles("geo");
+  const comparison = tiles("geo-compare");
+  assert.ok(reference.length > 0);
+  assert.deepEqual(tileLayout("geo"), tileLayout("geo-compare"));
+  assert.ok(reference.every(img => img.src.includes("/default/2025-06-06/")));
+  assert.ok(comparison.every(img => img.src.includes("/default/2025-06-07/") && img.referrerPolicy === "no-referrer"));
+
+  for (const img of comparison) img.dispatchEvent(new window.Event("error"));
+  assert.match(stateB.textContent, /Imagens indisponíveis/);
+  assert.match(stateA.textContent, /Solicitando/);
+  for (const img of reference) img.dispatchEvent(new window.Event("load"));
+  assert.equal(stateA.textContent, reference.length + " mosaicos recebidos.");
+
+  secondDate.value = "2025-08-09";
+  compare.click();
+  assert.equal(secondDate.getAttribute("aria-invalid"), "true");
+  assert.equal(tiles("geo-compare")[0], comparison[0]);
+  assert.equal(get("geo-compare-day").dateTime, "2025-06-07");
+
+  const view = get("geo-compare-viewport");
+  const layoutBefore = tileLayout("geo");
+  view.focus();
+  view.dispatchEvent(new window.KeyboardEvent("keydown", {key: "ArrowRight", bubbles: true, cancelable: true}));
+  assert.notDeepEqual(tileLayout("geo"), layoutBefore);
+  assert.deepEqual(tileLayout("geo"), tileLayout("geo-compare"));
+  assert.equal(doc.activeElement, view);
+  get("geo-zoom-in").click();
+  assert.deepEqual(tileLayout("geo"), tileLayout("geo-compare"));
+  assert.ok(tiles("geo").every(img => img.src.split("/").at(-3) === "3"));
+  assert.deepEqual(
+    [...get("geo-markers").children].map(marker => marker.textContent),
+    [...get("geo-compare-markers").children].map(marker => marker.textContent),
+  );
+
+  toggle.click();
+  assert.equal(pane.hidden, true);
+  assert.equal(tiles("geo-compare").length, 0);
+  assert.ok(tiles("geo").every(img => img.src.includes("/default/2025-06-06/")));
+  toggle.click();
+  secondDate.value = "2025-06-07";
+  compare.click();
+  get("geo-enable").click();
+  assert.equal(pane.hidden, true);
+  assert.equal(tiles("geo-compare").length, 0);
+  assert.equal(tiles("geo").length, 0);
+  assert.equal(toggle.disabled, true);
+  assert.deepEqual(ctx.errors, []);
+  ctx.dom.window.close();
+});

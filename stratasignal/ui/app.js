@@ -182,10 +182,77 @@
     updateStatus(result.status);report=result.report;renderReport();controls();
     switchView(compare?"comparison":"overview");notice(isDemo?"Demonstração preparada com resultados sintéticos. Explore os cenários e a comparação.":"Análise concluída. Confira as premissas e os sinais antes de decidir.");
   }
+  function populateExplorationChoices(materials = []) {
+    const positions = materials.flatMap(material => material.suppliers);
+    const controls = [
+      ["origin-choice", "Todas as origens", new Set(positions.map(position => position.origin_country)), countryName],
+      ["supplier-choice", "Todos os fornecedores", new Set(positions.map(position => position.supplier)), code => code],
+    ];
+    for (const [id, allLabel, values, labelFor] of controls) {
+      const select = $(id);
+      const previous = select.value;
+      const all = node("option", allLabel);
+      all.value = "";
+      select.replaceChildren(all);
+      for (const value of [...values].sort((a, b) => labelFor(a).localeCompare(labelFor(b), "pt-BR"))) {
+        const option = node("option", labelFor(value));
+        option.value = value;
+        select.append(option);
+      }
+      select.value = values.has(previous) ? previous : "";
+    }
+  }
+
   function renderOrigins() {
-    const area=$("country-bars");area.replaceChildren();if(!report)return;
-    const material=report.materials.find(m=>m.material===$("material-choice").value);if(!material)return;
-    Object.entries(material.country_shares).sort((a,b)=>b[1]-a[1]).forEach(([country,share])=>{const row=node("div",undefined,"country-row"),progress=node("progress");progress.max=1;progress.value=share;progress.setAttribute("aria-label",countryName(country)+": "+pct(share));row.append(node("span",countryName(country)),progress,node("strong",pct(share)));area.append(row);});
+    const area = $("country-bars");
+    const table = $("origin-table");
+    area.replaceChildren();
+    table.replaceChildren();
+    const material = report?.materials.find(item => item.material === $("material-choice").value);
+    if (!material) return;
+
+    const origin = $("origin-choice").value;
+    const supplier = $("supplier-choice").value;
+    const positions = material.suppliers.filter(position =>
+      (!origin || position.origin_country === origin) && (!supplier || position.supplier === supplier));
+    const shares = new Map();
+    for (const position of positions) {
+      const country = position.origin_country;
+      shares.set(country, (shares.get(country) || 0) + position.allocation_share);
+    }
+    const origins = [...shares].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    for (const [country, share] of origins) {
+      const row = node("div", undefined, "country-row");
+      const progress = node("progress");
+      progress.max = 1;
+      progress.value = share;
+      progress.setAttribute("aria-label", countryName(country) + ": " + pct(share));
+      row.append(node("span", countryName(country)), progress, node("strong", pct(share)));
+      area.append(row);
+
+      const tr = node("tr");
+      const name = node("th", countryName(country));
+      name.scope = "row";
+      tr.append(name, node("td", pct(share)));
+      table.append(tr);
+    }
+    if (!origins.length) {
+      const message = "Nenhuma posição para esta combinação. Amplie o recorte em origem ou fornecedor.";
+      area.append(node("p", message, "support"));
+      const row = node("tr");
+      const cell = node("td", message);
+      cell.colSpan = 2;
+      row.append(cell);
+      table.append(row);
+    }
+
+    const originCount = origins.length === 1 ? "1 origem" : origins.length + " origens";
+    const positionCount = positions.length === 1 ? "1 posição" : positions.length + " posições";
+    const date = report.as_of.split("-").reverse().join("/");
+    const source = report.dataset_kind === "synthetic" ? "carteira fictícia" : "carteira declarada";
+    $("exploration-summary").textContent = `${originCount} · ${positionCount} · corte ${date} · ${source}`;
+    $("reset-material").disabled = !origin && !supplier && material.material === report.materials[0]?.material;
+    window.StrataGeo?.setScope(material.name, origins);
   }
   function renderScenario(value) {
     const area=$("scenario-results");area.replaceChildren();if(!report||!value)return;
@@ -218,12 +285,13 @@
   function renderReport() {
     window.StrataInsights?.render(report,scenario=>{$("scenario-country").value=scenario.country;$("scenario-days").value=scenario.duration_days;$("scenario-reduction").value=scenario.reduction*100;rangeLabels();switchView("scenario");notice("Premissas selecionadas. Use Calcular cenário para atualizar o resultado e as exportações.");});
     document.querySelectorAll(".analysis-empty").forEach(e=>{e.hidden=!!report;});document.querySelectorAll(".analysis-content").forEach(e=>{e.hidden=!report;});
-    if(!report){window.StrataGeo?.clear();$("comparison-card").hidden=true;$("export-provenance").replaceChildren(node("p","A data de corte e a impressão digital do conjunto aparecem após a análise.","support"));return;}
-    window.StrataGeo?.setReport(report);
+    if(!report){window.StrataGeo?.clear();populateExplorationChoices();$("material-choice").replaceChildren();$("country-bars").replaceChildren();$("origin-table").replaceChildren();$("exploration-summary").textContent="Aguardando análise.";$("reset-material").disabled=true;$("comparison-card").hidden=true;$("export-provenance").replaceChildren(node("p","A data de corte e a impressão digital do conjunto aparecem após a análise.","support"));return;}
     const kpis=$("overview-kpis");kpis.replaceChildren();
     [["Materiais em análise",report.materials.length,"Especificações técnicas distintas"],["Posições de fornecimento",report.materials.reduce((n,m)=>n+m.suppliers.length,0),"Relações material / fornecedor"],["Prioridade alta",report.materials.filter(m=>m.priority==="alta").length,"Regra de triagem, de 0 a 100"],["Sinais para conferência",report.metadata_flags.length,"Metadados documentais"]].forEach(([label,value,caption])=>{const card=node("div",undefined,"kpi");card.append(node("div",label,"kpi-label"),node("strong",value),node("small",caption));kpis.append(card);});
     const select=$("material-choice"),oldValue=select.value;select.replaceChildren();report.materials.forEach(m=>{const option=node("option",m.name);option.value=m.material;select.append(option);});
-    if(report.materials.some(m=>m.material===oldValue))select.value=oldValue;renderOrigins();
+    if(report.materials.some(m=>m.material===oldValue))select.value=oldValue;
+    populateExplorationChoices(report.materials);
+    renderOrigins();
     $("priorities").replaceChildren();report.materials.slice(0,2).forEach((m,index)=>{const card=node("div",undefined,"priority-item"),title=node("strong");title.append(node("span","0"+(index+1),"priority-index"),node("span",m.name));card.append(title,node("p",m.actions[0]));$("priorities").append(card);});
     $("portfolio-table").replaceChildren();report.materials.forEach(m=>{const row=node("tr");row.append(node("td",m.name));const priority=node("td");priority.append(node("span",m.priority+" · "+m.priority_score,"pill "+m.priority));row.append(priority);[pct(m.top_origin_share),fmt(m.coverage_days,1)+" dias",fmt(m.max_nominal_lead_days)+" dias",m.evidence_flags].forEach(value=>row.append(node("td",value)));$("portfolio-table").append(row);});
     const signals=$("evidence-signals");signals.replaceChildren();let shown=0;
@@ -258,6 +326,16 @@
   $("analyze").addEventListener("click",()=>task("Calculando a análise da carteira…",()=>runAnalysis($("compare-previous").checked)));
   $("analyze-comparison").addEventListener("click",()=>task("Comparando os dois períodos…",()=>runAnalysis(true)));
   $("material-choice").addEventListener("change",renderOrigins);
+  $("origin-choice").addEventListener("change", renderOrigins);
+  $("supplier-choice").addEventListener("change", renderOrigins);
+  $("reset-material").addEventListener("click", () => {
+    if (!report) return;
+    $("material-choice").value = report.materials[0]?.material || "";
+    $("origin-choice").value = "";
+    $("supplier-choice").value = "";
+    renderOrigins();
+    $("material-choice").focus();
+  });
   $("scenario-country").addEventListener("change",rangeLabels);
   ["scenario-days","scenario-reduction"].forEach(id=>$(id).addEventListener("input",rangeLabels));
   $("simulate").addEventListener("click",()=>task("Calculando o cenário escolhido…",async()=>{if(!report)throw new Error("Execute uma análise antes de simular.");const value=await adapter.simulate({country:$("scenario-country").value,duration_days:Number($("scenario-days").value),reduction:Number($("scenario-reduction").value)/100,input_sha256:report.input_sha256});report.scenario=value.scenario;renderScenario(value.scenario);rangeLabels();notice("Cenário atualizado. As exportações incluem estas premissas.");}));

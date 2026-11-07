@@ -5,8 +5,8 @@
   "dataset_kind": "synthetic",
   "as_of": "2026-11-06",
   "artifacts": {
-    "report.json": "c0df0ba831d31f48224d6d731ff9c3a0cbb49a10f9110fed5588023781138231",
-    "report.html": "63559f60c32fb24d82c96840644d6ea6d7c9ad2e92c2a9cfeb0fd8a174fe40f7"
+    "report.json": "33e219fc994136180689ae5ca6bfb04c1ebf292fb8b147a6401994a356d7939e",
+    "report.html": "4c6ce3922d6155c50d060bb15b0ec775f8e6030cc1d3f961967ba5ebd35ade38"
   },
   "note": "Hashes verificam consistência com este manifesto; não são assinatura digital nem prova de origem."
 }

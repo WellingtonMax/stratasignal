@@ -10,13 +10,20 @@ Os círculos têm tamanho proporcional à participação declarada de cada país
 
 1. **Padrão local/offline:** contornos de terras de **Natural Earth 1:110m**, dados públicos de uso livre, convertidos e simplificados para o SVG incluído no pacote. Essa base geográfica aproximada funciona sem rede e não representa limites administrativos precisos. Fonte: https://www.naturalearthdata.com/about/terms-of-use/
 2. **NASA GIBS, camada Blue Marble:** composição visual histórica de observações da Terra, com data explícita **2004-01-01** no serviço de mosaicos. Não é imagem em tempo real.
-3. **NASA GIBS, Terra/MODIS:** camada de reflectância corrigida (cores verdadeiras) de **uma data específica**, inicialmente cinco dias UTC antes da data atual do navegador para reduzir a possibilidade de mosaicos ainda não publicados. A disponibilidade e qualidade podem variar: nuvens, resolução, períodos ausentes e atraso de publicação são esperados. O usuário não deve interpretar a data como garantia de cobertura.
+3. **NASA GIBS, Terra/MODIS:** composição diária de reflectância corrigida em cores verdadeiras. Após ativar as imagens externas, selecione Terra/MODIS, escolha a data UTC e use **Aplicar data**. A sugestão inicial usa cinco dias antes da data UTC do navegador, limitada à última data elegível do catálogo. O painel mostra a data solicitada, o produto nominal de 250 m/pixel no equador e o resultado do carregamento dos mosaicos. O zoom do painel usa mosaicos mais agregados. Nuvens, cobertura ausente e atraso de publicação limitam a leitura. O recebimento de um mosaico comprova apenas a resposta da imagem.
 4. As imagens utilizam o padrão **OGC WMTS**, projeção Web Mercator EPSG:3857, em mosaicos da NASA, sem token de API neste protótipo. Camadas: BlueMarble_NextGeneration e MODIS_Terra_CorrectedReflectance_TrueColor. Zoom limitado a 6 no cliente. Referências oficiais:
    - https://nasa-gibs.github.io/gibs-api-docs/access-basics/
    - https://nasa-gibs.github.io/gibs-api-docs/map-library-usage/
    - https://www.nasa.gov/nasa-brand-center/images-and-media/
 
 A NASA não patrocinou, avaliou ou aprovou este produto. Atribuições NASA GIBS / NASA Earthdata e Natural Earth devem ser preservadas; o enquadramento comercial deverá observar as respectivas diretrizes de uso.
+
+
+O catálogo local usa os 11 intervalos diários que o [DescribeDomains da NASA](https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/1.0.0/MODIS_Terra_CorrectedReflectance_TrueColor/default/GoogleMapsCompatible_Level9/all/all.xml) retornou em 07/11/2026. A faixa total vai de 24/02/2000 a 07/11/2026, com lacunas. O seletor exige uma data dentro de um dos intervalos e mantém o último recorte aplicado ao rejeitar uma data. Datas publicadas posteriormente dependem de atualização do catálogo. Alterar a data conserva o enquadramento e as alocações.
+
+Em **Comparar duas datas**, escolha um segundo dia UTC distinto e aplique. As vistas A e B usam o mesmo centro, zoom e mosaicos geográficos. Arraste qualquer vista, use as setas com o mapa em foco ou use os controles comuns de zoom. Em telas estreitas, as vistas ficam empilhadas. Cada vista mostra sua data solicitada e seu carregamento. A vista com falha mantém a cartografia local. O gráfico e a tabela de alocações continuam disponíveis. **Encerrar comparação** volta à imagem de referência. Desativar imagens externas remove as duas camadas e impede novas requisições de mosaicos.
+
+Imagens fornecidas pelo NASA Global Imagery Browse Services (GIBS), parte do Earth Science Data and Information System (ESDIS) da NASA. Consulte as [orientações de uso e crédito](https://nasa-gibs.github.io/gibs-api-docs/#data-use-guidance-and-acknowledgements) e o [produto Terra/MODIS](https://gis.earthdata.nasa.gov/portal/home/item.html?id=780c03ffe3dc42e8bb03ca3b07bb283e).
 
 ## Privacidade e segurança
 

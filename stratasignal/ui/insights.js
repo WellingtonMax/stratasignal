@@ -6,10 +6,86 @@
   function table(headers){const wrapper=node("div",undefined,"table-wrap table-scroll"),t=node("table"),head=node("thead"),tr=node("tr"),body=node("tbody");headers.forEach(h=>tr.append(node("th",h)));head.append(tr);t.append(head,body);wrapper.append(t);return {wrapper,body};}
   const row=(target,values)=>{const tr=node("tr");values.forEach(value=>tr.append(node("td",value)));target.append(tr);return tr;};
   function card(title,caption){const e=node("article",undefined,"card");if(caption)e.append(node("p",caption,"eyebrow"));e.append(node("h2",title));return e;}
+  let selectedMonth = "";
+  const deliveryStates = [
+    ["received_on_time", "Recebidos no prazo"],
+    ["received_late", "Recebidos em atraso"],
+    ["open_overdue", "Abertos em atraso"],
+    ["open_pending", "Abertos dentro do prazo"],
+  ];
+  const monthLabel = month => month.split("-").reverse().join("/");
+
+  function deliveryHistory(report) {
+    const history = card("Situação dos pedidos por mês", "HISTÓRICO DECLARADO");
+    history.id = "delivery-monthly";
+    const months = report.intelligence.delivery_months;
+    if (!months?.length) {
+      selectedMonth = "";
+      const message = months
+        ? "A carteira não contém pedidos para exibir neste histórico."
+        : "Reexecute a análise para gerar a distribuição mensal de pedidos.";
+      history.append(node("p", message, "support"));
+      return history;
+    }
+
+    const label = node("label", "Mês do pedido", "field-label");
+    const select = node("select");
+    select.id = "delivery-month";
+    label.htmlFor = select.id;
+    const all = node("option", "Todos os meses com pedidos");
+    all.value = "";
+    select.append(all);
+    for (const entry of [...months].reverse()) {
+      const option = node("option", monthLabel(entry.month));
+      option.value = entry.month;
+      select.append(option);
+    }
+    select.value = months.some(entry => entry.month === selectedMonth) ? selectedMonth : "";
+    const summary = node("p", undefined, "support");
+    summary.id = "delivery-month-summary";
+    summary.setAttribute("role", "status");
+    const chart = node("div");
+    const details = node("details", undefined, "origin-data");
+    const counts = table(["Situação", "Pedidos"]);
+    details.append(node("summary", "Ver contagens em tabela"), counts.wrapper);
+
+    function draw() {
+      selectedMonth = select.value;
+      const visible = months.filter(entry => !selectedMonth || entry.month === selectedMonth);
+      const values = deliveryStates.map(([key]) => visible.reduce((sum, entry) => sum + entry[key], 0));
+      const total = values.reduce((sum, value) => sum + value, 0);
+      const scope = selectedMonth ? monthLabel(selectedMonth) : visible.length + " meses com pedidos";
+      summary.textContent = fmt(total) + (total === 1 ? " pedido" : " pedidos") + " · " + scope;
+      chart.replaceChildren();
+      counts.body.replaceChildren();
+      deliveryStates.forEach(([, state], index) => {
+        const count = values[index];
+        const bar = node("progress");
+        bar.max = total;
+        bar.value = count;
+        bar.setAttribute("aria-label", state + ": " + fmt(count) + " de " + fmt(total) + " pedidos");
+        const line = node("div", undefined, "country-row delivery-row");
+        line.append(node("span", state), bar, node("strong", fmt(count)));
+        chart.append(line);
+        row(counts.body, [state, fmt(count)]);
+      });
+    }
+
+    select.addEventListener("change", draw);
+    const cutoff = report.as_of.split("-").reverse().join("/");
+    history.append(
+      node("p", "Fonte: histórico da carteira " + (report.dataset_kind === "synthetic" ? "fictícia" : "declarada") + " · corte " + cutoff, "support"),
+      label, select, summary, chart, details,
+      node("p", "O mês corresponde à data do pedido. As situações refletem o corte da carteira. Este filtro se aplica às contagens desta seção.", "footnote"),
+    );
+    draw();
+    return history;
+  }
+
   function render(report,onScenario){
     const root=document.getElementById("insights-content");if(!root)return;root.replaceChildren();
     const data=report&&report.intelligence;
-    if(!data){root.append(node("p","Execute uma análise nesta versão para examinar pontualidade e cenários de estresse.","support"));return;}
+    if(!data){selectedMonth="";root.append(node("p","Execute uma análise nesta versão para examinar pontualidade e cenários de estresse.","support"));return;}
     const quality=data.data_quality,kpis=node("div",undefined,"kpis");
     [[data.supplier_performance.reduce((n,p)=>n+p.observed_orders,0),"Desfechos observados"],[quality.positions_with_evidence+" / "+quality.positions,"Posições com evidência"],[data.stress_matrix.length,"Cenários condicionais"],[quality.unknown_origin_positions,"Posições de origem desconhecida"]].forEach(([value,label])=>{const e=node("div",undefined,"kpi");e.append(node("div",label,"kpi-label"),node("strong",value));kpis.append(e);});root.append(kpis);
     const origins=card("Dependências entre especificações","EXPOSIÇÃO DECLARADA"),originTable=table(["Origem","Especificações","Referência mensal · USD"]);
@@ -27,7 +103,7 @@
     let page=0;
     const performance=[...data.supplier_performance].sort((a,b)=>b.open_overdue_orders-a.open_overdue_orders||(b.late_rate??-1)-(a.late_rate??-1)||a.supplier.localeCompare(b.supplier));
     function drawHistory(){const query=search.value.trim().toLocaleLowerCase("pt-BR"),filtered=performance.filter(p=>(p.name+" "+p.material+" "+p.supplier).toLocaleLowerCase("pt-BR").includes(query));const last=Math.max(0,Math.ceil(filtered.length/20)-1);page=Math.min(page,last);historyTable.body.replaceChildren();filtered.slice(page*20,page*20+20).forEach(p=>{const interval=p.late_rate_interval_95?`${pct(p.late_rate_interval_95[0])} a ${pct(p.late_rate_interval_95[1])}`:"Sem histórico";row(historyTable.body,[p.name+" / "+p.supplier,p.observed_orders+(p.sample_status==="small_sample"?" · amostra pequena":""),pct(p.late_rate),interval,p.received_lead_p90_days===null?"Menos de 10 recebimentos":p.received_lead_p90_days+" dias",p.open_overdue_orders]);});if(!filtered.length)row(historyTable.body,["Nenhuma posição corresponde ao filtro."]);position.textContent="Página "+(page+1)+" de "+(last+1)+" · "+filtered.length+(filtered.length===1?" posição":" posições");previous.disabled=page===0;next.disabled=page>=last;}
-    search.addEventListener("input",()=>{page=0;drawHistory();});previous.addEventListener("click",()=>{page--;drawHistory();});next.addEventListener("click",()=>{page++;drawHistory();});navigation.append(previous,position,next);history.append(searchLabel,search,historyTable.wrapper,navigation,node("p",data.scope,"footnote"));drawHistory();root.append(history);
+    search.addEventListener("input",()=>{page=0;drawHistory();});previous.addEventListener("click",()=>{page--;drawHistory();});next.addEventListener("click",()=>{page++;drawHistory();});navigation.append(previous,position,next);history.append(searchLabel,search,historyTable.wrapper,navigation,node("p",data.scope,"footnote"));drawHistory();root.append(history,deliveryHistory(report));
   }
   window.StrataInsights={render};
 })();
