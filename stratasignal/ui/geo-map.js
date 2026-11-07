@@ -177,20 +177,19 @@
     zoom=value;center=project(lon,lat,zoom);
     oldTileKey="";draw();
   }
-  function setReport(value) {
-    report=value&&Array.isArray(value.materials)?value:null;
-    const picker=$("geo-material");
-    if(!picker)return;
-    const previous=material;
-    picker.replaceChildren();
-    if(!report){material=null;selected=null;$("geo-origin-list").replaceChildren();$("geo-markers").replaceChildren();showSelected();return;}
-    for(const item of report.materials){
-      const option=make("option",item.name);
-      option.value=item.material;picker.append(option);
-    }
-    material=report.materials.some(m=>m.material===previous)?previous:report.materials[0]?.material||null;
-    picker.value=material||"";
+  function selectMaterial(value) {
+    if(!report?.materials.some(item=>item.material===value))return false;
+    if(material===value)return true;
+    material=value;
+    $("geo-material-name").textContent=currentMaterial().name;
     renderOriginList();draw();
+    return true;
+  }
+  function setReport(value,preferred=material) {
+    report=value&&Array.isArray(value.materials)?value:null;
+    material=null;selected=null;
+    if(!report||!report.materials.length){$("geo-material-name").textContent="Origens declaradas";$("geo-origin-list").replaceChildren();$("geo-markers").replaceChildren();showSelected();return;}
+    selectMaterial(report.materials.some(m=>m.material===preferred)?preferred:report.materials[0].material);
   }
   function refresh() {if(report)draw();}
   function clear() {setReport(null);}
@@ -212,7 +211,6 @@
       $("geo-imagery-state").textContent=enabled?"Carregando camada "+sources[layer].label+"…":"Cartografia local · sem transmissão externa";
       draw();
     });
-    $("geo-material").addEventListener("change",event=>{material=event.target.value;renderOriginList();draw();});
     $("geo-zoom-in").addEventListener("click",()=>changeZoom(zoom+1));
     $("geo-zoom-out").addEventListener("click",()=>changeZoom(zoom-1));
     $("geo-reset").addEventListener("click",()=>{zoom=2;center=project(5,17,zoom);oldTileKey="";draw();});
@@ -247,5 +245,5 @@
     draw();
   }
   document.addEventListener("DOMContentLoaded",init);
-  window.StrataGeo={setReport,refresh,clear};
+  window.StrataGeo={setReport,selectMaterial,refresh,clear};
 })();

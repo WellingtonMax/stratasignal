@@ -4,11 +4,11 @@
 
 **Status:** research-backed product hypothesis; functioning prototype; no paying customers, field validation, security certification or production SaaS claimed. The name is provisional.
 
-[Market research and business model, in Portuguese](docs/MARKET_RESEARCH_PT.md) · [Sample report](demo/report.html) · [Monthly comparison](demo/monthly/report.html) (download HTML and open locally) · [Methodology](docs/METHODOLOGY.md) · [Security](SECURITY.md) · [Verification](docs/VERIFICATION.md) · [Migration record](docs/MIGRATION.md)
+[UX architecture and implementation backlog, in Portuguese](docs/UX_DESIGN_PT.md) · [Market research and business model, in Portuguese](docs/MARKET_RESEARCH_PT.md) · [Sample report](demo/report.html) · [Monthly comparison](demo/monthly/report.html) (download HTML and open locally) · [Methodology](docs/METHODOLOGY.md) · [Security](SECURITY.md) · [Verification](docs/VERIFICATION.md) · [Migration record](docs/MIGRATION.md)
 
 **[Explore the online demonstration](https://stratasignal-workbench.wellingtonl-maxim.chatgpt.site/)** — fictional data only; private imports use the local workbench.
 
-![StrataSignal 0.4 workbench with a fictional procurement portfolio](docs/images/workbench-v04.png)
+![StrataSignal UX foundation with one fictional specification shared by map and allocation chart](docs/images/workbench-ux01.png)
 
 ## The service a customer receives
 

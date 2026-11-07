@@ -293,3 +293,56 @@ test("map country selection links to simulation without inventing coordinates or
   assert.match(ctx.doc.getElementById("geo-selection").textContent,/não localização de mina/);
   assert.deepEqual(ctx.errors,[]);ctx.dom.window.close();
 });
+
+test("one exploration selection keeps map, chart and accessible origin table on the same specification",async()=>{
+  const ctx=await open({demo:true}),select=ctx.doc.getElementById("material-choice");
+  select.value="lithium-carbonate";select.dispatchEvent(new ctx.window.Event("change"));
+  assert.match(ctx.doc.getElementById("geo-material-name").textContent,/lítio/i);
+  assert.deepEqual([...ctx.doc.querySelectorAll("#geo-origin-list [data-country]")].map(e=>e.dataset.country),["CL","AR"]);
+  assert.deepEqual([...ctx.doc.querySelectorAll("#geo-markers [data-country]")].map(e=>e.dataset.country).sort(),["AR","CL"]);
+  assert.deepEqual([...ctx.doc.querySelectorAll("#country-bars progress")].map(e=>e.value),[.55,.45]);
+  assert.deepEqual([...ctx.doc.querySelectorAll("#origin-table tr")].map(e=>e.textContent),["Chile55%","Argentina45%"]);
+  assert.match(ctx.doc.getElementById("exploration-summary").textContent,/2 origens · 2 posições · corte/);
+  assert.match(select.getAttribute("aria-describedby"),/exploration-help/);
+  assert.ok(ctx.calls.every(c=>c.url.startsWith("demo/"))); // A filter never opts into satellite requests.
+  assert.deepEqual(ctx.errors,[]);ctx.dom.window.close();
+});
+
+test("exploration survives navigation and reanalysis, while full-portfolio exports disclose their scope",async()=>{
+  const ctx=await open({demo:true}),select=ctx.doc.getElementById("material-choice");
+  select.value="lithium-carbonate";select.dispatchEvent(new ctx.window.Event("change"));
+  for(const view of ["intelligence","scenario","exports","overview"]){
+    ctx.doc.querySelector(`nav [data-view="${view}"]`).click();
+    assert.equal(select.value,"lithium-carbonate");
+  }
+  await click(ctx,"analyze-comparison");
+  assert.equal(select.value,"lithium-carbonate");
+  assert.match(ctx.doc.getElementById("geo-material-name").textContent,/lítio/i);
+  ctx.doc.querySelector('nav [data-view="exports"]').click();
+  assert.match(ctx.doc.querySelector(".export-scope").textContent,/carteira completa/);
+  ctx.doc.querySelector('.export-action[data-kind="json"]').click();await settle(ctx.doc);
+  const exported=JSON.parse(await ctx.blobs[0].text());
+  assert.equal(exported.materials.length,current.materials.length);
+  assert.equal(ctx.doc.querySelectorAll("#portfolio-table tr").length,current.materials.length);
+  assert.deepEqual(ctx.errors,[]);ctx.dom.window.close();
+});
+
+test("restoring or clearing exploration removes stale material and origin selection",async()=>{
+  const ctx=await open({demo:true}),select=ctx.doc.getElementById("material-choice"),initial=select.value;
+  select.value="lithium-carbonate";select.dispatchEvent(new ctx.window.Event("change"));
+  ctx.doc.querySelector('#geo-origin-list [data-country="AR"]').click();
+  assert.match(ctx.doc.getElementById("geo-selection").textContent,/Argentina/);
+  assert.equal(ctx.doc.getElementById("reset-material").disabled,false);
+  await click(ctx,"reset-material");
+  assert.equal(select.value,initial);
+  assert.equal(ctx.doc.getElementById("reset-material").disabled,true);
+  assert.doesNotMatch(ctx.doc.getElementById("geo-selection").textContent,/Argentina/);
+  assert.ok(ctx.doc.querySelectorAll("#origin-table tr").length>0);
+  await click(ctx,"reset");
+  assert.equal(select.options.length,0);
+  assert.equal(ctx.doc.querySelectorAll("#origin-table tr").length,0);
+  assert.equal(ctx.doc.querySelectorAll("#geo-markers button").length,0);
+  assert.equal(ctx.doc.getElementById("geo-to-scenario").disabled,true);
+  assert.equal(ctx.doc.getElementById("reset-material").disabled,true);
+  assert.deepEqual(ctx.errors,[]);ctx.dom.window.close();
+});

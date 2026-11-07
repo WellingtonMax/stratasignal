@@ -25,3 +25,8 @@ python -m stratasignal.build_demo --out /tmp/stratasignal-demo-001 --source-comm
 ```
 
 Use a new output directory. Only hardcoded synthetic fixtures are accepted by this builder; there is no arbitrary input-file argument. It copies the four packaged UI assets, switches the UI to demo mode and writes synthetic input/report assets plus a source manifest. ML is precomputed during the build; use `--without-ml` when the optional dependency is absent. Deploy the generated directory through the chosen static host. The canonical implementation remains in this repository; hosting receives generated assets.
+
+
+## UX exploration foundation
+
+[UX architecture, current journeys, visual tokens and acceptance backlog](UX_DESIGN_PT.md) consolidate the product and business plans with the updated blue/white/green/yellow direction. The first increment links the workbench map, allocation chart and accessible data table to one specification selection, with persistent visual context and explicit full-portfolio export scope. Satellite temporal controls, linked news and consolidated cross-source reports remain backlog items; do not present them as implemented.
