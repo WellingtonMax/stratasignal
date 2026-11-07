@@ -40,6 +40,8 @@ Each selected UTF-8 input is limited to 16 MiB. Operational CSV mapping requires
 
 The static online demo is built only from the hardcoded synthetic fixtures. It has no customer-data API and disables all private file imports. Its simulations run in browser memory; its ML numbers are precomputed demonstration results. Do not add customer records, secrets or local access tokens to this build. The deployment has no backend tenant boundary because it accepts no customer datasets.
 
+The public trade panorama is separate from the demo. Its build reads bounded JSON from the fixed official MDIC host with redirects disabled. Query fields are fixed public NCM codes, dates and flows. The builder accepts no upload or arbitrary URL. The browser loads the published JSON from the same origin and displays external labels as text. Neither route accepts private data.
+
 Period comparison accepts two raw bundles under the same bounded schema, requires a matching declared portfolio ID and data kind, and rejects nonchronological cuts. This reduces accidental mixing; the ID is not authentication or a tenant access control. Both raw input hashes are retained. Specification-name changes suspend deltas. Signal disappearance never establishes verified remediation. The comparison uses the same local rendering and exclusive output controls and adds no network or runtime dependency.
 
 ## Deployment before a shared service

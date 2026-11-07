@@ -45,6 +45,7 @@ main{padding:26px 40px 18px;max-width:1550px;margin:0 auto}
 .demo-banner{display:flex;align-items:center;gap:14px;padding:11px 14px;background:var(--warning-bg);border:1px solid #E5D792;border-radius:5px;font-size:13px;color:#6D5511;line-height:1.6;margin-bottom:25px}
 .demo-banner a{margin-left:auto;white-space:nowrap;font-size:12px;color:#6D5511}
 .demo-tag{font-size:11px;font-weight:700;letter-spacing:1px;border-right:1px solid #E5D792;padding-right:13px}
+.demo-home{display:inline-flex;align-items:center;min-height:44px;margin:0 0 10px;font-weight:650}
 .page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin:31px 0 29px}
 .page-heading.compact{margin-top:29px}
 .eyebrow{font-size:11px;letter-spacing:1.8px;font-weight:650;color:var(--muted);margin:0 0 12px}

@@ -6,7 +6,7 @@
 
 [UX architecture and implementation backlog, in Portuguese](docs/UX_DESIGN_PT.md) · [Market research and business model, in Portuguese](docs/MARKET_RESEARCH_PT.md) · [Sample report](demo/report.html) · [Monthly comparison](demo/monthly/report.html) (download HTML and open locally) · [Methodology](docs/METHODOLOGY.md) · [Security](SECURITY.md) · [Verification](docs/VERIFICATION.md) · [Migration record](docs/MIGRATION.md)
 
-**[Explore the online demonstration](https://stratasignal-workbench.wellingtonl-maxim.chatgpt.site/)** — fictional data only; private imports use the local workbench.
+**[Explore the public trade panorama](https://stratasignal-workbench.wellingtonl-maxim.chatgpt.site/)** for official Brazilian trade statistics. The [fictional workbench](https://stratasignal-workbench.wellingtonl-maxim.chatgpt.site/carteira/) uses synthetic procurement data. Private imports use the local workbench.
 
 ![StrataSignal UX foundation with one fictional specification shared by map and allocation chart](docs/images/workbench-ux01.png)
 
@@ -24,6 +24,7 @@ An analyst reviews a bounded procurement dataset and delivers a private HTML dec
 | Temporal stability | Three additional chronological windows; predictions require at least two valid windows and improvement over their baselines in at least two thirds |
 | Operational intelligence | Descriptive delivery rates and Wilson intervals, completed-delivery P90, overdue orders, cost-based origin dependencies and a bounded stress matrix |
 | Public-data preparation | Streaming importer for the MDIC's documented local CSV layout, with explicit NCM, flow and period |
+| Public trade panorama | Publication-time Comex Stat API snapshot for graphite and lithium carbonates, with product, flow, month and country filters |
 | Local workbench | Import JSON or map operational CSV columns; review inputs, run analysis, simulate, compare periods and download reports |
 | Geospatial explorer | Country-level allocations on a local world map, optional comparison of two NASA Terra/MODIS dates with synchronized navigation, and a shortcut to the supply shock simulator |
 | Private delivery | Local analysis; loopback-only UI connection; no remote customer-data service, telemetry, external fonts or third-party AI calls |
@@ -54,7 +55,7 @@ The command opens an address on `127.0.0.1`, with a temporary access credential 
 
 Uploaded content stays in the local Python process memory. Closing the process clears its state; it does not automatically save your inputs or results. Downloads use your browser's normal download handling. Use approved local storage and sharing practices. The interface has no browser storage or telemetry. The optional imagery layer contacts NASA GIBS only after an explicit user action; the visual tiles do not convey procurement records.
 
-The separately built online demonstration contains only repository-owned fictional data. Private-file import is disabled there; model results are precomputed on the synthetic fixture. It is a product demonstration, not a hosted customer-data service. The local workbench does not yet expose the Comex context or document-digest commands; those remain available through the CLI.
+The online fictional workbench contains only repository-owned fictional data. Private-file import is disabled and model results are precomputed on the synthetic fixture. Public trade statistics have their own page and snapshot. The local workbench's Comex CSV context and document digest remain available through the CLI.
 
 ## Run the demo
 
@@ -132,7 +133,7 @@ python -m stratasignal digest \
   --out client-data/document-metadata.private.json
 ```
 
-The importer expects an annual raw NCM CSV with semicolon delimiters, not an arbitrary spreadsheet export. It aggregates repeated state/route/customs-office rows by month and MDIC country code. Its fixture tests contain synthetic numbers. The initial direct API research request returned HTTP 429; **no live trade-volume snapshot is bundled and no automatic synchronization is implemented**. The CLI importer makes no network requests; the workbench communicates only with its local loopback service.
+The CLI importer expects an annual raw NCM CSV with semicolon delimiters. It aggregates repeated state, route and customs-office rows by month and MDIC country code and makes no network requests. The separate public panorama queries the official Comex Stat API when a publication is prepared. The [public-data contract](docs/DEVELOPMENT.md#build-the-public-trade-panorama) describes coverage, source dates and refresh behavior.
 
 `digest` hashes the original bytes and records size and filesystem modification time. It does not extract PDF content/XMP, execute documents, perform OCR, validate signatures, verify certificates or authenticate a physical shipment. Documentary dates and origins in the input manifest are declarations.
 
@@ -143,7 +144,7 @@ python -m unittest discover -s tests -v
 python -S -m unittest discover -s tests -v
 ```
 
-The second command exercises the standard-library path and skips ML-dependent tests. `npm ci --ignore-scripts && npm test` runs 29 test-only report/workbench DOM interaction and security checks. See [the verification record](docs/VERIFICATION.md) for exact observed results and environment limitations. Dedicated workflows run rule, ML, UI interaction, installed-package, dependency-advisory and CodeQL checks. GitHub Actions are pinned by commit SHA and checkout credentials are not persisted.
+The second command exercises the standard-library path and skips ML-dependent tests. `npm ci --ignore-scripts && npm test` runs report, workbench and public panorama DOM interaction checks. See [the verification record](docs/VERIFICATION.md) for exact observed results and environment limitations. Dedicated workflows run rule, ML, UI interaction, installed-package, dependency-advisory and CodeQL checks. GitHub Actions are pinned by commit SHA and checkout credentials are not persisted.
 
 To repeat the capacity measurement into a new output file:
 
