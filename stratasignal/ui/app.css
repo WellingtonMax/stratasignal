@@ -337,6 +337,7 @@ th,td{font-size:13px}
 .exploration-filter .support{font-size:13px;margin:0}
 .exploration-control{min-width:0}
 .exploration-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.exploration-fields > :first-child{grid-column:1/-1}
 @media(max-width:480px){.exploration-fields{grid-template-columns:1fr}}
 .exploration-control select{margin:6px 0 0}
 .exploration-status{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}

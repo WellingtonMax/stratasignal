@@ -58,18 +58,18 @@ Controles principais buscam 44 CSS px de altura. Texto de suporte permanece leg�
 - Selecionar uma especificação não ativa imagens externas. A ação NASA permanece opcional e explícita. A origem selecionada é redefinida quando muda a especificação, impedindo uma premissa geográfica obsoleta.
 - O gráfico oferece uma tabela expansível de origem e participação, gerada pelos mesmos valores. Rótulos importados continuam texto inerte.
 
-## Filtro de origem declarada
+## Filtros de origem e fornecedor declarados
 
-A exploração combina uma especificação com uma origem presente na carteira. O mapa, o gráfico e a tabela mostram a mesma seleção, com contagem de origens e posições, fonte da carteira e data de corte. A participação de cada origem usa a alocação total da especificação como base. A origem permanece selecionada durante a navegação e a reanálise enquanto existir na carteira.
+A exploração combina uma especificação, uma origem e um código de fornecedor da carteira. Cada visualização soma somente as posições que atendem aos filtros, usando a alocação total da especificação como base. O mapa, o gráfico e a tabela mostram a mesma seleção, com contagem de origens e posições, fonte da carteira e data de corte. A participação de cada origem usa a alocação total da especificação como base. Origem e fornecedor permanecem selecionados durante a navegação e a reanálise enquanto existirem na carteira.
 
-Uma combinação vazia informa a ausência de posições e permite voltar a todas as origens. Origens sem âncora cartográfica permanecem legíveis no gráfico e na tabela. “Restaurar seleção inicial” volta à primeira especificação e a todas as origens. O filtro abrange as três visualizações de origem. Indicadores e downloads abrangem a carteira completa.
+Uma combinação vazia informa a ausência de posições e permite ampliar o recorte pelos seletores de origem e fornecedor. Origens sem âncora cartográfica permanecem legíveis no gráfico e na tabela. “Restaurar seleção inicial” volta à primeira especificação, a todas as origens e a todos os fornecedores. O filtro abrange as três visualizações de origem. Indicadores e downloads abrangem a carteira completa.
 
 ## Backlog de entregas verificáveis
 
 | Ordem | Entrega | Critério de aceitação | Estado |
 | --- | --- | --- | --- |
 | UX-01 | Fundação visual e recorte único | Paleta em tokens; um seletor mantém mapa/gráfico/tabela coerentes; navegação, reanálise e restauração testadas; exports de carteira completa claramente identificados. | Implementado nesta etapa. |
-| UX-02 | Contexto e filtros compartilhados | Mineral, período, país/região e empresa com contagens, filtros ativos e limpeza; explicação quando filtro não se aplica a uma fonte; estado vazio; preservação por navegação. Proibir agregação entre especificações incompatíveis. | Especificação e origem entregues. Empresa e período seguem no backlog. |
+| UX-02 | Contexto e filtros compartilhados | Mineral, período, país/região e empresa com contagens, filtros ativos e limpeza; explicação quando filtro não se aplica a uma fonte; estado vazio; preservação por navegação. Proibir agregação entre especificações incompatíveis. | Especificação, origem e fornecedor declarado entregues. Período e identificação de empresas seguem no backlog. |
 | UX-03 | Satélite temporal | Verificar documentação oficial, disponibilidade e uso da fonte escolhida; seletor de área/data e comparação onde houver suporte; origem, aquisição, resolução, nuvens/cobertura e falhas explícitas. Nenhum ponto inventado de instalação. | Planejado; camada NASA datada existente preservada. |
 | UX-04 | Notícias conectadas | Feed/API permitido, títulos e resumos próprios, links originais e datas; deduplicação, associação revisável a mineral/país/empresa, filtro, atualização e estados de erro/sem resultado. Conteúdo externo tratado como não confiável. | Planejado; não inserir notícias fictícias como atuais. |
 | UX-05 | Relatório consolidado do recorte | Uma seleção reproduz mapa, indicadores, evidências e notícias disponíveis na visão e exportação; registrar fontes, filtros, unidades, data de geração, lacunas e divergências. Separar fato/inferência/previsão, alinhar períodos e evitar dupla contagem. | Planejado; HTML/JSON atuais preservados. |

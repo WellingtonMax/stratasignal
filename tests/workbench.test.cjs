@@ -389,3 +389,48 @@ test("country filter preserves allocation shares, survives reanalysis and clears
   assert.deepEqual(ctx.errors, []);
   ctx.dom.window.close();
 });
+
+test("supplier filter excludes other suppliers in the same country across map, chart and table", async () => {
+  const addSecondChileSupplier = value => {
+    const report = copy(value);
+    const lithium = report.materials.find(item => item.material === "lithium-carbonate");
+    const chile = lithium.suppliers.find(item => item.origin_country === "CL");
+    chile.allocation_share = .35;
+    lithium.suppliers.push({...chile, supplier: "CL-02", allocation_share: .20});
+    return report;
+  };
+  const assets = {
+    "demo/current-report.json": addSecondChileSupplier(current),
+    "demo/monthly-report.json": addSecondChileSupplier(monthly),
+    "demo/current-input.json": input,
+  };
+  const ctx = await open({demo: true, fetcher: async url => response(assets[url])});
+  const {doc, window} = ctx;
+  const choose = (id, value) => {
+    const select = doc.getElementById(id);
+    select.value = value;
+    select.dispatchEvent(new window.Event("change"));
+  };
+  choose("material-choice", "lithium-carbonate");
+  choose("origin-choice", "CL");
+  assert.equal(doc.querySelector("#country-bars progress").value, .55);
+  choose("supplier-choice", "CL-01");
+  assert.equal(doc.querySelector("#country-bars progress").value, .35);
+  assert.equal(doc.getElementById("origin-table").textContent, "Chile35%");
+  assert.match(doc.querySelector("#geo-markers [data-country=CL]").getAttribute("aria-label"), /35%/);
+  assert.match(doc.getElementById("exploration-summary").textContent, /1 origem · 1 posição/);
+
+  await click(ctx, "analyze-comparison");
+  assert.equal(doc.getElementById("supplier-choice").value, "CL-01");
+  assert.equal(doc.getElementById("origin-table").textContent, "Chile35%");
+  choose("origin-choice", "AR");
+  assert.equal(doc.querySelector("#geo-markers [data-country]"), null);
+  assert.match(doc.getElementById("country-bars").textContent, /Nenhuma posição/);
+  assert.equal(doc.getElementById("geo-to-scenario").disabled, true);
+  await click(ctx, "reset-material");
+  assert.equal(doc.getElementById("supplier-choice").value, "");
+  assert.equal(doc.activeElement.id, "material-choice");
+  assert.ok(ctx.calls.every(call => call.url.startsWith("demo/")));
+  assert.deepEqual(ctx.errors, []);
+  ctx.dom.window.close();
+});
