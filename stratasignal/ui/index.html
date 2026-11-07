@@ -65,8 +65,29 @@
         <div class="empty analysis-empty"><div class="empty-symbol" aria-hidden="true">◈</div><h2>Sua análise aparece aqui</h2><p>Carregue os dados ou experimente a carteira fictícia.</p><button type="button" class="button primary demo-load" data-mutates>Experimentar demonstração</button></div>
         <div class="analysis-content" hidden><div id="overview-kpis" class="kpis"></div>
         <div class="exploration-filter" role="region" aria-labelledby="exploration-title">
-          <div class="exploration-heading"><p class="eyebrow">RECORTE DE EXPLORAÇÃO</p><h2 id="exploration-title">Uma especificação, duas perspectivas.</h2><p id="exploration-help" class="support">A seleção conecta o mapa ao gráfico e à tabela de origens. Os indicadores e relatórios mantêm a carteira completa.</p></div>
-          <div class="exploration-control"><label class="field-label" for="material-choice">Especificação em foco</label><select id="material-choice" aria-describedby="exploration-help exploration-summary"></select><div class="exploration-status"><p id="exploration-summary" role="status" aria-live="polite"></p><button id="reset-material" type="button" class="text-button" disabled>Restaurar seleção inicial</button></div></div>
+          <div class="exploration-heading">
+            <p class="eyebrow">RECORTE DE EXPLORAÇÃO</p>
+            <h2 id="exploration-title">Explore por especificação e origem</h2>
+            <p id="exploration-help" class="support">Os percentuais se referem à alocação total da especificação. O recorte vale para o mapa, o gráfico e a tabela de origens. Indicadores e relatórios abrangem a carteira completa.</p>
+          </div>
+          <div class="exploration-control">
+            <div class="exploration-fields">
+              <div>
+                <label class="field-label" for="material-choice">Especificação em foco</label>
+                <select id="material-choice" aria-describedby="exploration-help exploration-summary"></select>
+              </div>
+              <div>
+                <label class="field-label" for="origin-choice">Origem declarada</label>
+                <select id="origin-choice" aria-describedby="exploration-help exploration-summary">
+                  <option value="">Todas as origens</option>
+                </select>
+              </div>
+            </div>
+            <div class="exploration-status">
+              <p id="exploration-summary" role="status"></p>
+              <button id="reset-material" type="button" class="text-button" disabled>Restaurar seleção inicial</button>
+            </div>
+          </div>
         </div>
         <article class="card geo-card" aria-labelledby="geo-title">
   <div class="geo-heading"><div><p class="eyebrow">EXPLORADOR GEOESPACIAL · STRATASIGNAL</p><h2 id="geo-title">Abastecimento visto do planeta.</h2><p class="geo-description">Explore a concentração por país da especificação selecionada. A camada de satélite é uma observação geográfica, não uma validação de mina, rota comercial ou origem física.</p></div><span class="small-tag">POSIÇÕES POR PAÍS</span></div>

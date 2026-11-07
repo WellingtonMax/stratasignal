@@ -346,3 +346,46 @@ test("restoring or clearing exploration removes stale material and origin select
   assert.equal(ctx.doc.getElementById("reset-material").disabled,true);
   assert.deepEqual(ctx.errors,[]);ctx.dom.window.close();
 });
+
+test("country filter preserves allocation shares, survives reanalysis and clears an empty intersection", async () => {
+  const ctx = await open({demo:true});
+  const {doc, window} = ctx;
+  const material = doc.getElementById("material-choice");
+  const origin = doc.getElementById("origin-choice");
+  const choose = (control, value) => {
+    control.value = value;
+    control.dispatchEvent(new window.Event("change"));
+  };
+  const markerCountries = () => [...doc.querySelectorAll("#geo-markers [data-country]")].map(marker => marker.dataset.country);
+  choose(material, "lithium-carbonate");
+  choose(origin, "CL");
+  assert.deepEqual(markerCountries(), ["CL"]);
+  assert.equal(doc.querySelector("#country-bars progress").value, .55);
+  assert.equal(doc.getElementById("origin-table").textContent, "Chile55%");
+  assert.match(doc.getElementById("exploration-summary").textContent, /1 origem · 1 posição.*carteira fictícia/);
+
+  doc.getElementById("geo-to-scenario").click();
+  assert.equal(doc.getElementById("scenario-country").value, "CL");
+  await click(ctx, "analyze-comparison");
+  doc.querySelector('nav [data-view="overview"]').click();
+  assert.equal(origin.value, "CL");
+  assert.deepEqual(markerCountries(), ["CL"]);
+
+  choose(material, "graphite-flake");
+  assert.equal(origin.value, "CL");
+  assert.deepEqual(markerCountries(), []);
+  assert.match(doc.getElementById("country-bars").textContent, /Nenhuma posição/);
+  assert.match(doc.getElementById("origin-table").textContent, /Nenhuma posição/);
+  assert.equal(doc.getElementById("geo-to-scenario").disabled, true);
+  assert.match(doc.getElementById("exploration-summary").textContent, /0 origens · 0 posições/);
+
+  choose(origin, "");
+  assert.ok(markerCountries().length > 0);
+  choose(origin, "BR");
+  await click(ctx, "reset-material");
+  assert.equal(origin.value, "");
+  assert.equal(doc.activeElement, material);
+  assert.ok(ctx.calls.every(call => call.url.startsWith("demo/")));
+  assert.deepEqual(ctx.errors, []);
+  ctx.dom.window.close();
+});

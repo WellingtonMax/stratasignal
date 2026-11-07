@@ -20,7 +20,7 @@
     NG:"Nigéria",NO:"Noruega",PE:"Peru",PH:"Filipinas",PK:"Paquistão",PL:"Polônia",PT:"Portugal",
     RU:"Rússia",SA:"Arábia Saudita",SE:"Suécia",TH:"Tailândia",TR:"Turquia",TW:"Taiwan",
     TZ:"Tanzânia",UA:"Ucrânia",US:"Estados Unidos",UZ:"Uzbequistão",VN:"Vietnã",
-    ZA:"África do Sul",ZM:"Zâmbia",ZW:"Zimbábue"});
+    ZA:"África do Sul",ZM:"Zâmbia",ZW:"Zimbábue",ZZ:"Desconhecida"});
   const NASA = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/";
   const $ = id => document.getElementById(id);
   const make = (tag,text,cls) => {
@@ -42,7 +42,7 @@
     now.setUTCDate(now.getUTCDate()-5);
     return now.toISOString().slice(0,10);
   };
-  let report=null,material=null,selected=null,enabled=false,layer="blue",zoom=2;
+  let report=null,material=null,originFilter="",selected=null,enabled=false,layer="blue",zoom=2;
   let center=project(5,17,zoom),drag=null,tileErrors=0,tilesLoaded=0;
   const sources={blue:{label:"NASA Blue Marble · composição histórica",id:"BlueMarble_NextGeneration",
     date:"2004-01-01",matrix:"GoogleMapsCompatible_Level8",extension:"jpeg",maxZoom:7},
@@ -112,10 +112,13 @@
   function currentMaterial() {
     return report?.materials?.find(m=>m.material===material)||null;
   }
+  function visibleOrigins() {
+    return Object.entries(currentMaterial()?.country_shares || {})
+      .filter(([code]) => !originFilter || code === originFilter);
+  }
   function positionOrigins() {
     const holder=$("geo-markers");holder.replaceChildren();
-    const current=currentMaterial();if(!current)return;
-    for(const [code,share] of Object.entries(current.country_shares||{})){
+    for(const [code,share] of visibleOrigins()){
       const ll=anchors[code];if(!ll||!Number.isFinite(share)||share<=0)continue;
       const [x,y]=point(ll[0],ll[1]);
       const marker=make("button",code,"geo-marker");
@@ -135,7 +138,13 @@
     const share=current?.country_shares?.[selected];
     const canSelect=typeof share==="number"&&share>0;
     $("geo-to-scenario").disabled=!canSelect;
-    if(!canSelect){target.append(make("p","Selecione uma origem destacada para examinar sua participação.","geo-hint"));return;}
+    if (!canSelect) {
+      const message = originFilter
+        ? (visibleOrigins().length ? "Origem sem posição no mapa. Consulte o gráfico ou a tabela." : "Nenhuma origem neste recorte.")
+        : "Selecione uma origem destacada para examinar sua participação.";
+      target.append(make("p", message, "geo-hint"));
+      return;
+    }
     target.append(make("strong",names[selected]||selected));
     target.append(make("p",pct(share)+" da alocação declarada desta especificação."));
     target.append(make("p","Ponto aproximado do país, não localização de mina, porto, fornecedor ou rota logística.","geo-hint"));
@@ -152,7 +161,7 @@
     const current=currentMaterial(),list=$("geo-origin-list");
     list.replaceChildren();selected=null;
     if(!current){showSelected();return;}
-    const entries=Object.entries(current.country_shares||{}).sort((a,b)=>b[1]-a[1]);
+    const entries = visibleOrigins().sort((a, b) => b[1] - a[1]);
     const available=entries.filter(([code])=>!!anchors[code]);
     for(const [code,share] of entries){
       const button=make("button",undefined,"geo-origin-item");
@@ -177,19 +186,20 @@
     zoom=value;center=project(lon,lat,zoom);
     oldTileKey="";draw();
   }
-  function selectMaterial(value) {
-    if(!report?.materials.some(item=>item.material===value))return false;
-    if(material===value)return true;
-    material=value;
+  function selectMaterial(value, origin = "") {
+    if (!report?.materials.some(item => item.material === value)) return false;
+    if (material === value && originFilter === origin) return true;
+    material = value;
+    originFilter = origin;
     $("geo-material-name").textContent=currentMaterial().name;
     renderOriginList();draw();
     return true;
   }
-  function setReport(value,preferred=material) {
+  function setReport(value, preferred = material, origin = "") {
     report=value&&Array.isArray(value.materials)?value:null;
-    material=null;selected=null;
+    material=null;originFilter="";selected=null;
     if(!report||!report.materials.length){$("geo-material-name").textContent="Origens declaradas";$("geo-origin-list").replaceChildren();$("geo-markers").replaceChildren();showSelected();return;}
-    selectMaterial(report.materials.some(m=>m.material===preferred)?preferred:report.materials[0].material);
+    selectMaterial(report.materials.some(m => m.material === preferred) ? preferred : report.materials[0].material, origin);
   }
   function refresh() {if(report)draw();}
   function clear() {setReport(null);}
