@@ -239,7 +239,7 @@ test("curated news and the report share mineral, month and country without apply
   assert.equal(report.news_context.source.feed_updated_at, news.feed_updated_at);
   assert.deepEqual(report.news_context.filters, {
     ncm: "28369100", months: sample.months, country: "Canadá",
-    country_role: "mentioned", month_basis: "published_on", flow_applies: false,
+    period_mode: "trade_period", country_role: "mentioned", month_basis: "published_on", flow_applies: false,
   });
   change("market-period", "2025-02");
   assert.equal(get("market-news-items").hidden, true);
@@ -256,6 +256,7 @@ test("a rejected news link leaves commerce available and a valid retry restores 
   await settle(get, "market-news-status");
   assert.equal(get("market-results").hidden, false);
   assert.equal(get("market-news-retry").hidden, false);
+  assert.equal(get("market-news-period").disabled, true);
   assert.match(get("market-news-status").textContent, /indisponível/);
   assert.equal((await download()).news_context.status, "unavailable");
   get("market-news-retry").click();
@@ -263,6 +264,7 @@ test("a rejected news link leaves commerce available and a valid retry restores 
   change("market-product", "28369100");
   assert.equal(get("market-news-items").hidden, false);
   assert.equal(get("market-news-retry").hidden, true);
+  assert.equal(get("market-news-period").disabled, false);
   assert.deepEqual(calls.map(call => call.url), ["comex.json", "news.json", "news.json"]);
   dom.window.close();
 });
@@ -288,5 +290,40 @@ test("Brazilian policy appears for graphite without changing the Canadian feed p
   assert.equal(report.news_context.mdic_source.feed_sha256, mdic.feed_sha256);
   change("market-product", "28369100");
   assert.equal(get("market-news-items").querySelector("a").href, newsItem.url);
+  dom.window.close();
+});
+
+test("a separate news month preserves the trade slice and exports each period and feed", async () => {
+  const archive = "https://www.gov.br/mdic/pt-br/assuntos/noticias/2026/novembro";
+  const feed = {source: "MDIC · Brasil", feed_url: archive + "/RSS", feed_updated_at: null,
+    fetched_at: "2026-11-07T18:00:00Z", feed_sha256: "c".repeat(64), feed_entries: 10};
+  const story = {...newsItem, source_id: "mdic", feed_url: feed.feed_url, url: archive + "/example",
+    ncm: "25041000", related_ncms: ["28369100"], countries: ["Brasil"],
+    title: "Comunicado fictício de novembro", published_on: "2026-11-05", event_on: "2026-11-05"};
+  const news = {...newsSample, mdic_archives: [feed], items: [story, newsItem]};
+  const {dom, window, get, change} = open(null, () => response(news));
+  const {download} = captureDownloads(window, get);
+  await settle(get);
+  await settle(get, "market-news-status");
+  assert.equal(get("market-news-items").hidden, true);
+  assert.equal(get("market-period").querySelector('option[value="2026-11"]'), null);
+  assert.match(get("market-news-mdic-november-coverage").textContent, /1 entre 10.*novembro de 2026/);
+  const before = await download();
+  change("market-news-period", "2026-11");
+  assert.match(get("market-news-status").textContent, /1 publicação.*grafita.*novembro de 2026/);
+  assert.equal(get("market-news-items").querySelectorAll("li").length, 1);
+  const after = await download();
+  for (const key of ["filters", "months", "totals", "records"]) assert.deepEqual(after[key], before[key]);
+  assert.deepEqual(after.news_context.filters.months, ["2026-11"]);
+  assert.equal(after.news_context.filters.period_mode, "independent");
+  assert.deepEqual(after.news_context.items, [story]);
+  assert.equal(after.news_context.mdic_archives[0].feed_sha256, feed.feed_sha256);
+  change("market-period", "2025-03");
+  change("market-product", "28369100");
+  assert.match(get("market-news-status").textContent, /1 publicação.*lítio.*novembro de 2026/);
+  assert.deepEqual((await download()).months, ["2025-03"]);
+  get("market-clear").click();
+  assert.equal(get("market-news-period").value, "");
+  assert.equal(get("market-news-items").hidden, true);
   dom.window.close();
 });

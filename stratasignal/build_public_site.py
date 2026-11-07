@@ -159,9 +159,15 @@ def collect_news():
     """Read the fixed public news feeds without following redirects."""
     canada = _read_news_feed(public_news.FEED_URL)
     news = public_news.parse_feed(canada, datetime.now(timezone.utc))
-    brazil = _read_news_feed(public_news.MDIC_FEED_URL)
-    news["mdic"], items = public_news.parse_mdic_feed(brazil, datetime.now(timezone.utc))
-    news["items"].extend(items)
+    news["mdic_archives"] = []
+    for feed_url in public_news.MDIC_EDITORIAL:
+        raw = _read_news_feed(feed_url)
+        metadata, items = public_news.parse_mdic_feed(raw, datetime.now(timezone.utc), feed_url=feed_url)
+        if feed_url == public_news.MDIC_FEED_URL:
+            news["mdic"] = metadata
+        else:
+            news["mdic_archives"].append(metadata)
+        news["items"].extend(items)
     news["items"].sort(key=lambda item: item["published_on"], reverse=True)
     return news
 
@@ -199,8 +205,9 @@ def build_public_site(directory, source_commit=None, *, enable_ml=True):
                               "feed_updated_at": news["feed_updated_at"], "fetched_at": news["fetched_at"]},
             "synthetic_workbench": "carteira/source-manifest.json",
         }
-        if "mdic" in news:
-            manifest["news_snapshot"]["mdic"] = news["mdic"]
+        for key in ("mdic", "mdic_archives"):
+            if key in news:
+                manifest["news_snapshot"][key] = news[key]
         with (output / "source-manifest.json").open("x", encoding="utf-8", newline="\n") as stream:
             stream.write(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
     except Exception:

@@ -148,3 +148,10 @@ Existing report integrity manifests remain valid because their generated report 
 - O RSS mensal do MDIC retornou 15 entradas. A publicação revisada apareceu com data de 16/09/2026. O canal não forneceu data de atualização. O feed canadense foi consultado separadamente e forneceu os dois comunicados anteriores. O Comex Stat respondeu HTTP 429. O pacote reutilizou o JSON da versão 12 após conferir o SHA-256 no manifesto e preservou a data original da consulta.
 - No Chromium, grafita, Brasil e setembro de 2026 exibiram uma notícia e nenhum registro de comércio. A 337 pixels CSS via zoom, Tab alcançou o link original e Enter acionou a exportação sem rolagem horizontal. O arquivo baixado correspondeu à matéria, ao hash do feed do MDIC e ao hash da carga de notícias.
 - Passaram 110 testes Python e 44 testes DOM após `npm ci --ignore-scripts`. Com `python -S`, 102 passaram e 8 dependentes de ML foram ignorados.
+
+## Período próprio para notícias em 7 de novembro de 2026
+
+- A carga preparada a partir da API oficial do Comex Stat incluiu 79 registros de agosto a outubro de 2026, com atualização da fonte em 6 de novembro. O arquivo RSS de novembro do MDIC foi consultado às 22h19 UTC e trouxe 10 entradas. A curadoria confirmou o comunicado de 5 de novembro para grafita e lítio. [RSS do MDIC](https://www.gov.br/mdic/pt-br/assuntos/noticias/2026/novembro/RSS)
+- No Chromium, Tab alcançou o seletor de notícias com foco visível. A 337 pixels CSS via zoom, o seletor manteve altura de 44 pixels e a página ficou sem rolagem horizontal. Trocar para novembro preservou os valores do comércio. Voltar ao período do comércio restaurou as notícias de outubro.
+- O JSON baixado por Enter registrou dois agregados de importação de carbonatos de lítio em outubro, com US$ 395 FOB e 2 kg, e um comunicado do MDIC em novembro. Registros, totais, filtros, item e hashes foram comparados às cargas.
+- Passaram 111 testes Python e 45 testes DOM após `npm ci --ignore-scripts`. A execução com `python -S` passou 103 testes e ignorou 8 dependentes de ML.

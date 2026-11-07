@@ -6,8 +6,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
-from stratasignal.build_public_site import build_public_site, collect_comex
-from stratasignal.public_news import EDITORIAL, MAX_FEED_BYTES, MDIC_ARTICLE, MDIC_FEED_URL, SOURCE, parse_feed, parse_mdic_feed
+from stratasignal.build_public_site import build_public_site, collect_comex, collect_news
+from stratasignal.public_news import (
+    EDITORIAL, FEED_URL, MAX_FEED_BYTES, MDIC_ARTICLE, MDIC_FEED_URL,
+    MDIC_NOVEMBER_ARTICLE, MDIC_NOVEMBER_FEED_URL, SOURCE, parse_feed, parse_mdic_feed,
+)
 from stratasignal.schema import InputError
 
 
@@ -35,6 +38,14 @@ def atom_feed(*urls, updated="2026-11-06T15:41:37-05:00"):
             f'<updated>{updated}</updated><link rel="self" href="http://localhost/feed"/>{entries}</feed>').encode()
 
 
+def mdic_feed(feed_url, article, published_on):
+    entry = (f'<item rdf:about="{article}"><link>{article}</link>'
+             f'<dc:date>{published_on}T21:15:00Z</dc:date><description>UNTRUSTED</description></item>')
+    return ('<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"'
+            ' xmlns="http://purl.org/rss/1.0/" xmlns:dc="http://purl.org/dc/elements/1.1/">'
+            f'<channel rdf:about="{feed_url}"/>{entry * 2}</rdf:RDF>').encode()
+
+
 FETCHED_AT = datetime(2026, 11, 7, 18, 0, tzinfo=timezone.utc)
 
 
@@ -44,6 +55,12 @@ class PublicSiteTests(unittest.TestCase):
     def test_build_keeps_public_snapshots_outside_the_synthetic_workbench(self, fetch, news):
         fetch.side_effect = [reply(metadata()), reply({"list": [trade_record()]}), reply({"list": []})]
         news.return_value = parse_feed(atom_feed(next(iter(EDITORIAL))), FETCHED_AT)
+        november, items = parse_mdic_feed(
+            mdic_feed(MDIC_NOVEMBER_FEED_URL, MDIC_NOVEMBER_ARTICLE, "2026-11-05"),
+            FETCHED_AT, feed_url=MDIC_NOVEMBER_FEED_URL,
+        )
+        news.return_value["mdic_archives"] = [november]
+        news.return_value["items"].extend(items)
         with tempfile.TemporaryDirectory() as directory:
             output = build_public_site(Path(directory) / "site", "b" * 40, enable_ml=False)
             public_bytes = (output / "comex.json").read_bytes()
@@ -67,6 +84,7 @@ class PublicSiteTests(unittest.TestCase):
             self.assertEqual(json.loads(news_bytes), news.return_value)
             self.assertEqual(manifest["news_snapshot"]["sha256"], hashlib.sha256(news_bytes).hexdigest())
             self.assertEqual(manifest["news_snapshot"]["feed_updated_at"], "2026-11-06T20:41:37+00:00")
+            self.assertEqual(manifest["news_snapshot"]["mdic_archives"], [november])
             self.assertIn('id="public-home" class=', (output / "carteira/index.html").read_text())
             self.assertEqual([call.args[1]["flow"] for call in fetch.call_args_list[1:]], ["import", "export"])
             self.assertEqual(fetch.call_args_list[1].args[1]["period"], {"from": "2024-11", "to": "2025-01"})
@@ -103,11 +121,7 @@ class PublicSiteTests(unittest.TestCase):
 
 class NewsFeedTests(unittest.TestCase):
     def test_mdic_rss_keeps_curated_policy_context_and_separate_provenance(self):
-        entry = (f'<item rdf:about="{MDIC_ARTICLE}"><link>{MDIC_ARTICLE}</link>'
-                 '<dc:date>2026-09-16T21:15:00Z</dc:date><description>UNTRUSTED</description></item>')
-        raw = (f'<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"'
-               ' xmlns="http://purl.org/rss/1.0/" xmlns:dc="http://purl.org/dc/elements/1.1/">'
-               f'<channel rdf:about="{MDIC_FEED_URL}"/>{entry * 2}</rdf:RDF>').encode()
+        raw = mdic_feed(MDIC_FEED_URL, MDIC_ARTICLE, "2026-09-16")
         source, items = parse_mdic_feed(raw, FETCHED_AT)
         self.assertEqual(source["feed_entries"], 2)
         self.assertEqual(source["feed_sha256"], hashlib.sha256(raw).hexdigest())
@@ -117,6 +131,28 @@ class NewsFeedTests(unittest.TestCase):
         self.assertNotIn("UNTRUSTED", json.dumps(items))
         with self.assertRaises(InputError):
             parse_mdic_feed(raw.replace(b"2026-09-16", b"2026-09-17"), FETCHED_AT)
+
+    @patch("stratasignal.build_public_site._read_news_feed")
+    def test_november_archive_adds_one_story_for_two_minerals(self, read):
+        september = mdic_feed(MDIC_FEED_URL, MDIC_ARTICLE, "2026-09-16")
+        november = mdic_feed(MDIC_NOVEMBER_FEED_URL, MDIC_NOVEMBER_ARTICLE, "2026-11-05")
+        read.side_effect = [atom_feed(next(iter(EDITORIAL))), september, november]
+        with patch("stratasignal.build_public_site.datetime", wraps=datetime) as clock:
+            clock.now.return_value = FETCHED_AT
+            news = collect_news()
+        self.assertEqual([call.args[0] for call in read.call_args_list],
+                         [FEED_URL, MDIC_FEED_URL, MDIC_NOVEMBER_FEED_URL])
+        self.assertEqual([item["published_on"] for item in news["items"]],
+                         ["2026-11-05", "2026-10-28", "2026-09-16"])
+        self.assertEqual(news["mdic"]["feed_sha256"], hashlib.sha256(september).hexdigest())
+        self.assertEqual(news["mdic_archives"][0]["feed_sha256"], hashlib.sha256(november).hexdigest())
+        article = news["items"][0]
+        self.assertEqual(article["feed_url"], MDIC_NOVEMBER_FEED_URL)
+        self.assertEqual(article["ncm"], "25041000")
+        self.assertEqual(article["related_ncms"], ["28369100"])
+        self.assertNotIn("UNTRUSTED", article["summary"])
+        with self.assertRaises(InputError):
+            parse_mdic_feed(november, FETCHED_AT, feed_url=MDIC_FEED_URL)
 
     def test_reconciles_reviewed_urls_and_ignores_feed_markup(self):
         primary, second = EDITORIAL
