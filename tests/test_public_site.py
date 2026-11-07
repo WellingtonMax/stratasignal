@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from stratasignal.build_public_site import build_public_site, collect_comex
-from stratasignal.public_news import EDITORIAL, MAX_FEED_BYTES, SOURCE, parse_feed
+from stratasignal.public_news import EDITORIAL, MAX_FEED_BYTES, MDIC_ARTICLE, MDIC_FEED_URL, SOURCE, parse_feed, parse_mdic_feed
 from stratasignal.schema import InputError
 
 
@@ -102,6 +102,22 @@ class PublicSiteTests(unittest.TestCase):
 
 
 class NewsFeedTests(unittest.TestCase):
+    def test_mdic_rss_keeps_curated_policy_context_and_separate_provenance(self):
+        entry = (f'<item rdf:about="{MDIC_ARTICLE}"><link>{MDIC_ARTICLE}</link>'
+                 '<dc:date>2026-09-16T21:15:00Z</dc:date><description>UNTRUSTED</description></item>')
+        raw = (f'<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"'
+               ' xmlns="http://purl.org/rss/1.0/" xmlns:dc="http://purl.org/dc/elements/1.1/">'
+               f'<channel rdf:about="{MDIC_FEED_URL}"/>{entry * 2}</rdf:RDF>').encode()
+        source, items = parse_mdic_feed(raw, FETCHED_AT)
+        self.assertEqual(source["feed_entries"], 2)
+        self.assertEqual(source["feed_sha256"], hashlib.sha256(raw).hexdigest())
+        self.assertIsNone(source["feed_updated_at"])
+        self.assertEqual([(x["source_id"], x["ncm"], x["countries"]) for x in items],
+                         [("mdic", "25041000", ["Brasil"])])
+        self.assertNotIn("UNTRUSTED", json.dumps(items))
+        with self.assertRaises(InputError):
+            parse_mdic_feed(raw.replace(b"2026-09-16", b"2026-09-17"), FETCHED_AT)
+
     def test_reconciles_reviewed_urls_and_ignores_feed_markup(self):
         primary, second = EDITORIAL
         raw = atom_feed(second, primary, primary, primary.replace("www.canada.ca", "www.canada.ca.example.invalid"))

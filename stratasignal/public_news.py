@@ -1,4 +1,4 @@
-"""Curated release notes matched to the official Natural Resources Canada feed."""
+"""Curated release notes matched to official mineral news feeds."""
 
 import hashlib
 from datetime import datetime, timezone
@@ -13,6 +13,13 @@ FEED_URL = (
     "&format=atom&atomtitle=Natural%20Resources%20Canada"
 )
 ARTICLE_ROOT = "https://www.canada.ca/en/natural-resources-canada/news/"
+MDIC_SOURCE = "MDIC · Brasil"
+MDIC_ARCHIVE = "https://www.gov.br/mdic/pt-br/assuntos/noticias/2026/setembro"
+MDIC_FEED_URL = MDIC_ARCHIVE + "/RSS"
+MDIC_ARTICLE = MDIC_ARCHIVE + "/presidente-sanciona-politica-nacional-de-minerais-criticos-e-estrategicos"
+RDF = "{http://www.w3.org/1999/02/22-rdf-syntax-ns#}"
+RSS = "{http://purl.org/rss/1.0/}"
+DC = "{http://purl.org/dc/elements/1.1/}"
 MAX_FEED_BYTES = 512 * 1024
 MAX_FEED_ENTRIES = 50
 ATOM = "{http://www.w3.org/2005/Atom}"
@@ -56,17 +63,21 @@ EDITORIAL = {
 }
 
 
-def parse_feed(raw, fetched_at):
-    """Read bounded Atom metadata. All displayed text and links are editorially reviewed."""
+def _read_xml(raw):
     if len(raw) > MAX_FEED_BYTES:
-        raise InputError("Feed do Natural Resources Canada excede 512 KiB")
+        raise InputError("Feed de notícias excede 512 KiB")
     try:
         xml = raw.decode("utf-8")
         if "<!DOCTYPE" in xml or "<!ENTITY" in xml:
             raise InputError("Declaração XML proibida no feed de notícias")
-        feed = ElementTree.fromstring(xml)
+        return ElementTree.fromstring(xml)
     except (UnicodeDecodeError, ElementTree.ParseError, ValueError) as error:
         raise InputError("Feed de notícias inválido") from error
+
+
+def parse_feed(raw, fetched_at):
+    """Read bounded Atom metadata. All displayed text and links are editorially reviewed."""
+    feed = _read_xml(raw)
     if feed.tag != ATOM + "feed" or feed.findtext(ATOM + "title") != SOURCE:
         raise InputError("Identidade inesperada no feed de notícias")
     try:
@@ -101,3 +112,55 @@ def parse_feed(raw, fetched_at):
         "feed_entries": len(entries),
         "items": items,
     }
+
+
+def parse_mdic_feed(raw, fetched_at):
+    """Match a reviewed Brazilian policy announcement to its official monthly RSS archive."""
+    feed = _read_xml(raw)
+    channel = feed.find(RSS + "channel")
+    if feed.tag != RDF + "RDF" or channel is None or channel.get(RDF + "about") != MDIC_FEED_URL:
+        raise InputError("Identidade inesperada no feed do MDIC")
+    entries = feed.findall(RSS + "item")
+    if len(entries) > MAX_FEED_ENTRIES:
+        raise InputError("Feed do MDIC excede o limite de entradas")
+    matched = [
+        entry for entry in entries
+        if entry.get(RDF + "about") == MDIC_ARTICLE and entry.findtext(RSS + "link") == MDIC_ARTICLE
+    ]
+    published_on = "2026-09-16"
+    items = []
+    if matched:
+        for entry in matched:
+            try:
+                date = datetime.fromisoformat(entry.findtext(DC + "date", ""))
+                if date.utcoffset() is None or date.date().isoformat() != published_on or date > fetched_at:
+                    raise ValueError
+            except ValueError as error:
+                raise InputError("Data de publicação divergente no feed do MDIC") from error
+        items.append({
+            "url": MDIC_ARTICLE,
+            "source_id": "mdic",
+            "title": "Brasil estabelece política para minerais críticos e estratégicos",
+            "summary": (
+                "A sanção da política nacional criou instrumentos para desenvolver cadeias minerais no Brasil, "
+                "da pesquisa ao beneficiamento e à transformação. O comunicado trata da política setorial."
+            ),
+            "possible_impact": (
+                "A política pode influenciar investimentos na cadeia da grafita. "
+                "O efeito depende das medidas de implementação e dos projetos que avancem."
+            ),
+            "published_on": published_on,
+            "event_on": published_on,
+            "ncm": "25041000",
+            "countries": ["Brasil"],
+            "companies": [],
+            "topic": "Política mineral",
+        })
+    return {
+        "source": MDIC_SOURCE,
+        "feed_url": MDIC_FEED_URL,
+        "feed_updated_at": None,
+        "fetched_at": fetched_at.isoformat(timespec="seconds"),
+        "feed_sha256": hashlib.sha256(raw).hexdigest(),
+        "feed_entries": len(entries),
+    }, items

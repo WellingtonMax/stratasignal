@@ -18,6 +18,8 @@
   const newsRetry = get("market-news-retry");
   const newsList = get("market-news-items");
   const newsSource = "Natural Resources Canada";
+  const mdicSource = "MDIC · Brasil";
+  const mdicFeed = "https://www.gov.br/mdic/pt-br/assuntos/noticias/2026/setembro/RSS";
   const digits = new Intl.NumberFormat("pt-BR");
   const percent = new Intl.NumberFormat("pt-BR", {style: "percent", maximumFractionDigits: 1});
   const calendar = new Intl.DateTimeFormat("pt-BR", {dateStyle: "long", timeZone: "UTC"});
@@ -71,21 +73,31 @@
 
   function validateNews(data) {
     const instant = value => typeof value === "string" && Number.isFinite(Date.parse(value));
+    const hash = value => typeof value === "string" && /^[0-9a-f]{64}$/.test(value);
+    const feedCount = value => integer(value) && value <= 50;
     if (data?.schema_version !== 1 || data.dataset_kind !== "public_curated_news" || data.source !== newsSource ||
         !instant(data.feed_updated_at) || !instant(data.fetched_at) ||
         Date.parse(data.feed_updated_at) > Date.parse(data.fetched_at) ||
-        typeof data.feed_sha256 !== "string" || !/^[0-9a-f]{64}$/.test(data.feed_sha256) ||
-        !integer(data.feed_entries) || data.feed_entries > 50 ||
-        !Array.isArray(data.items) || data.items.length > data.feed_entries) {
+        !hash(data.feed_sha256) || !feedCount(data.feed_entries) ||
+        !Array.isArray(data.items) || data.items.length > 100) {
       throw new Error("Invalid news snapshot");
     }
-    const article = /^https:\/\/www\.canada\.ca\/en\/natural-resources-canada\/news\/\d{4}\/\d{2}\/[a-z0-9-]+\.html$/;
+    const mdic = data.mdic;
+    if (mdic !== undefined && (!mdic || mdic.source !== mdicSource || mdic.feed_url !== mdicFeed ||
+        mdic.feed_updated_at !== null || !instant(mdic.fetched_at) || !hash(mdic.feed_sha256) || !feedCount(mdic.feed_entries))) {
+      throw new Error("Invalid MDIC news source");
+    }
+    const canadaArticle = /^https:\/\/www\.canada\.ca\/en\/natural-resources-canada\/news\/\d{4}\/\d{2}\/[a-z0-9-]+\.html$/;
+    const mdicArticle = /^https:\/\/www\.gov\.br\/mdic\/pt-br\/assuntos\/noticias\/2026\/setembro\/[a-z0-9-]+$/;
     const text = (value, limit) => typeof value === "string" && value.trim() && value.length <= limit;
     const labels = list => Array.isArray(list) && list.length <= 8 && list.every(value => text(value, 100));
     const codes = new Set(Array.from(product.options, option => option.value));
     const seen = new Set();
     const items = data.items.map(item => {
+      const mdicItem = item?.source_id === "mdic";
+      const article = mdicItem ? mdicArticle : canadaArticle;
       if (!item || !text(item.url, 300) || item.url !== item.url.trim() || !article.test(item.url) || seen.has(item.url) ||
+          (item.source_id !== undefined && (!mdicItem || !mdic)) ||
           !text(item.title, 150) || !text(item.summary, 400) || !text(item.possible_impact, 400) ||
           !text(item.topic, 80) || !validDate(item.published_on) ||
           (item.event_on !== null && !validDate(item.event_on)) ||
@@ -93,10 +105,14 @@
         throw new Error("Invalid news entry");
       }
       seen.add(item.url);
-      const {url, title, summary, possible_impact, topic, published_on, event_on, ncm, countries, companies} = item;
-      return {url, title, summary, possible_impact, topic, published_on, event_on, ncm, countries, companies};
+      const {url, title, summary, possible_impact, topic, published_on, event_on, ncm, countries, companies, source_id} = item;
+      return {url, title, summary, possible_impact, topic, published_on, event_on, ncm, countries, companies, source_id};
     });
-    return {...data, items};
+    const brazilCount = items.filter(item => item.source_id === "mdic").length;
+    if (brazilCount > (mdic?.feed_entries ?? 0) || items.length - brazilCount > data.feed_entries) {
+      throw new Error("Invalid news coverage");
+    }
+    return {...data, items, brazilCount};
   }
 
   function productFlow() {
@@ -196,7 +212,7 @@
     date.dateTime = item.published_on;
     const dates = element("p");
     dates.className = "market-news-meta";
-    dates.append("Publicada em ", date);
+    dates.append(item.source_id === "mdic" ? mdicSource : newsSource, " · Publicada em ", date);
     if (item.event_on) {
       const event = element("time", calendar.format(new Date(item.event_on)));
       event.dateTime = item.event_on;
@@ -304,7 +320,11 @@
           fetched_at: news?.fetched_at ?? null,
           quality: "Comunicados governamentais com curadoria editorial. Possíveis impactos são hipóteses qualitativas.",
         },
-        coverage: news ? {feed_entries: news.feed_entries, curated_entries: news.items.length} : null,
+        coverage: news ? {feed_entries: news.feed_entries, curated_entries: news.items.length - news.brazilCount} : null,
+        mdic_source: news?.mdic ? {
+          name: mdicSource, feed_url: mdicFeed, feed_updated_at: null, fetched_at: news.mdic.fetched_at,
+          feed_sha256: news.mdic.feed_sha256, feed_entries: news.mdic.feed_entries, curated_entries: news.brazilCount,
+        } : null,
         filters: {
           ncm: product.value, months: reportSlice.months, country: country.value || null,
           country_role: "mentioned", month_basis: "published_on", flow_applies: false,
@@ -349,11 +369,20 @@
       ({data: news, sha256: newsSha256} = await readSnapshot("news.json", validateNews));
       newsState = "available";
       const coverage = get("market-news-coverage");
-      coverage.textContent = "Curadoria de " + digits.format(news.items.length) + " entre " + digits.format(news.feed_entries) +
+      coverage.textContent = newsSource + " · Curadoria de " + digits.format(news.items.length - news.brazilCount) + " entre " + digits.format(news.feed_entries) +
         " publicações do feed. Atualizado pela fonte em " + timestamp.format(new Date(news.feed_updated_at)) +
         " UTC. Consultado em " + timestamp.format(new Date(news.fetched_at)) + " UTC.";
       coverage.hidden = false;
-      get("market-news-stale").hidden = Date.now() - Date.parse(news.fetched_at) <= 30 * 86400000;
+      if (news.mdic) {
+        const brazilCoverage = get("market-news-mdic-coverage");
+        brazilCoverage.textContent = mdicSource + " · Curadoria de " + digits.format(news.brazilCount) + " entre " +
+          digits.format(news.mdic.feed_entries) + " publicações do arquivo de setembro de 2026. " +
+          "Atualização do feed não informada. Consultado em " + timestamp.format(new Date(news.mdic.fetched_at)) + " UTC.";
+        brazilCoverage.hidden = false;
+        get("market-news-mdic-feed").hidden = false;
+      }
+      const oldest = Math.min(Date.parse(news.fetched_at), Date.parse(news.mdic?.fetched_at ?? news.fetched_at));
+      get("market-news-stale").hidden = Date.now() - oldest <= 30 * 86400000;
       if (snapshot) refreshCountries();
     } catch {
       newsState = "unavailable";

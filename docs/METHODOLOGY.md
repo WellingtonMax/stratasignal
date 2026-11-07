@@ -72,6 +72,8 @@ The local importer uses operator-supplied files. The separate public panorama pr
 
 Public news uses a reviewed association to a mineral and countries mentioned in the source. The shared month filters apply to publication dates. Event dates and feed update times are recorded separately. The country in a news item is thematic context, while the trade country is the declared origin or destination. Keep announcement facts and possible effects distinct. A news item does not identify the NCM or cause of a trade movement.
 
+A sanção da política brasileira em setembro entra como contexto setorial para grafita. A lista federal que cita grafita foi publicada em novembro e fica fora dos meses disponíveis no Comex Stat nesta edição. [Comunicado sobre a política](https://www.gov.br/mdic/pt-br/assuntos/noticias/2026/setembro/presidente-sanciona-politica-nacional-de-minerais-criticos-e-estrategicos) · [Lista federal](https://www.gov.br/mdic/pt-br/assuntos/noticias/2026/novembro/governo-federal-aprova-lista-brasileira-de-minerais-criticos-e-estrategicos)
+
 ## 7. Comparing reporting periods
 
 The comparison consumes two raw input bundles and validates both with the same schema. A stable matching `portfolio_id`, identical `dataset_kind` and strictly increasing `as_of` are required. The ID is a pseudonymous operator declaration; it does not authenticate a customer or verify that two files truly belong together. Ordinary analysis accepts legacy inputs without it.

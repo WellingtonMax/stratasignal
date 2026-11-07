@@ -142,3 +142,9 @@ Existing report integrity manifests remain valid because their generated report 
 - No Chromium, o lítio exibiu dois comunicados. Em **Canadá** e **outubro de 2026**, o painel mostrou uma notícia e nenhum registro de comércio. Setembro mostrou o estado vazio. O relatório baixado preservou o recorte, o comunicado exato e os hashes da carga publicada e da resposta Atom.
 - A 337 pixels CSS via zoom em desktop, a página manteve largura útil e de rolagem iguais e o cartão coube em 305 pixels. Tab alcançou o link original com foco visível. Enter acionou a exportação a partir do botão de download.
 - Passaram 109 testes Python e 43 testes DOM após `npm ci --ignore-scripts`. Com `python -S`, 101 passaram e 8 dependentes de ML foram ignorados. Os testes incluem deduplicação, rejeição de XML inseguro e destinos inválidos, recarga independente, campos externos inertes, seleção compartilhada e verificação dos manifestos.
+
+## Contexto regulatório da grafita em 7 de novembro de 2026
+
+- O RSS mensal do MDIC retornou 15 entradas. A publicação revisada apareceu com data de 16/09/2026. O canal não forneceu data de atualização. O feed canadense foi consultado separadamente e forneceu os dois comunicados anteriores. O Comex Stat respondeu HTTP 429. O pacote reutilizou o JSON da versão 12 após conferir o SHA-256 no manifesto e preservou a data original da consulta.
+- No Chromium, grafita, Brasil e setembro de 2026 exibiram uma notícia e nenhum registro de comércio. A 337 pixels CSS via zoom, Tab alcançou o link original e Enter acionou a exportação sem rolagem horizontal. O arquivo baixado correspondeu à matéria, ao hash do feed do MDIC e ao hash da carga de notícias.
+- Passaram 110 testes Python e 44 testes DOM após `npm ci --ignore-scripts`. Com `python -S`, 102 passaram e 8 dependentes de ML foram ignorados.

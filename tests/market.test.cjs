@@ -266,3 +266,27 @@ test("a rejected news link leaves commerce available and a valid retry restores 
   assert.deepEqual(calls.map(call => call.url), ["comex.json", "news.json", "news.json"]);
   dom.window.close();
 });
+
+test("Brazilian policy appears for graphite without changing the Canadian feed provenance", async () => {
+  const archive = "https://www.gov.br/mdic/pt-br/assuntos/noticias/2026/setembro";
+  const brazil = {...newsItem, source_id: "mdic", url: archive + "/example",
+    ncm: "25041000", countries: ["Brasil"]};
+  const mdic = {source: "MDIC · Brasil", feed_url: archive + "/RSS", feed_updated_at: null,
+    fetched_at: newsSample.fetched_at, feed_sha256: "b".repeat(64), feed_entries: 15};
+  const {dom, window, get, change} = open(null, () => response({...newsSample, mdic, items: [newsItem, brazil]}));
+  const {download} = captureDownloads(window, get);
+  await settle(get);
+  await settle(get, "market-news-status");
+  assert.match(get("market-news-mdic-coverage").textContent, /1 entre 15.*Atualização do feed não informada/);
+  change("market-country", "Brasil");
+  assert.match(get("market-news-status").textContent, /1 publicação.*grafita.*Brasil/);
+  assert.equal(get("market-news-items").querySelector("a").href, brazil.url);
+  const report = await download();
+  assert.deepEqual(report.records, []);
+  assert.deepEqual(report.news_context.items, [brazil]);
+  assert.equal(report.news_context.source.feed_sha256, newsSample.feed_sha256);
+  assert.equal(report.news_context.mdic_source.feed_sha256, mdic.feed_sha256);
+  change("market-product", "28369100");
+  assert.equal(get("market-news-items").querySelector("a").href, newsItem.url);
+  dom.window.close();
+});
