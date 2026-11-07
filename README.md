@@ -25,6 +25,7 @@ An analyst reviews a bounded procurement dataset and delivers a private HTML dec
 | Operational intelligence | Descriptive delivery rates and Wilson intervals, completed-delivery P90, overdue orders, cost-based origin dependencies and a bounded stress matrix |
 | Public-data preparation | Streaming importer for the MDIC's documented local CSV layout, with explicit NCM, flow and period |
 | Public trade panorama | Publication-time Comex Stat API snapshot for graphite and lithium carbonates, with product, flow, month and country filters and a traceable JSON report of the active selection |
+| Public news context | Curated official Canadian releases about lithium, filtered by mineral, publication month and country, with source links and separate context in the JSON report |
 | Local workbench | Import JSON or map operational CSV columns; review inputs, run analysis, simulate, compare periods and download reports |
 | Geospatial explorer | Globe and flat map with country allocations, optional dated NASA imagery in both projections, synchronized comparisons, and a shortcut to the supply shock simulator |
 | Private delivery | Local analysis; loopback-only UI connection; no remote customer-data service, telemetry, external fonts or third-party AI calls |

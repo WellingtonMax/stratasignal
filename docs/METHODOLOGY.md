@@ -68,7 +68,9 @@ The MDIC CSV importer follows the [documented raw NCM layout](https://www.gov.br
 
 Snapshots contain only selected aggregates and provenance declarations, not raw customer records. The operator supplies the file and its claimed source; a hash is not an authenticated government signature. A context added to a report must have an import date no later than the report cut and a selected end month earlier than the report month. Revisions and historical availability cannot be reconstructed from a newly downloaded current file, so the importer is not a historical backtest source without archived as-of versions.
 
-No trade-volume snapshot or live synchronization is included. The initial API research request was rate limited (HTTP 429); it was not bypassed. NCM classification changes, source revisions, low/zero volumes, imports versus exports and product mixtures require review. FOB/kg is not a grade-specific market price. Customs flows cannot identify a firm or prove global supply shares.
+The local importer uses operator-supplied files. The separate public panorama prepares a three-month API snapshot at publication time. NCM classification changes, source revisions, low/zero volumes, imports versus exports and product mixtures require review. FOB/kg is not a grade-specific market price. Customs flows cannot identify a firm or prove global supply shares.
+
+Public news uses a reviewed association to a mineral and countries mentioned in the source. The shared month filters apply to publication dates. Event dates and feed update times are recorded separately. The country in a news item is thematic context, while the trade country is the declared origin or destination. Keep announcement facts and possible effects distinct. A news item does not identify the NCM or cause of a trade movement.
 
 ## 7. Comparing reporting periods
 

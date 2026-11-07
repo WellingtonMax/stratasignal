@@ -14,12 +14,19 @@
   const retry = get("market-retry");
   const results = get("market-results");
   const reportPanel = get("market-report");
+  const newsNotice = get("market-news-status");
+  const newsRetry = get("market-news-retry");
+  const newsList = get("market-news-items");
+  const newsSource = "Natural Resources Canada";
   const digits = new Intl.NumberFormat("pt-BR");
   const percent = new Intl.NumberFormat("pt-BR", {style: "percent", maximumFractionDigits: 1});
   const calendar = new Intl.DateTimeFormat("pt-BR", {dateStyle: "long", timeZone: "UTC"});
+  const timestamp = new Intl.DateTimeFormat("pt-BR", {dateStyle: "medium", timeStyle: "short", timeZone: "UTC"});
   const monthFull = new Intl.DateTimeFormat("pt-BR", {month: "long", year: "numeric", timeZone: "UTC"});
   const monthShort = new Intl.DateTimeFormat("pt-BR", {month: "short", year: "2-digit", timeZone: "UTC"});
   const monthName = (value, formatter = monthFull) => formatter.format(new Date(value + "-01T00:00:00Z"));
+  const monthSpan = months => months.length === 1 ? monthName(months[0]) :
+    monthName(months[0]) + " a " + monthName(months.at(-1));
   const money = value => "US$ " + digits.format(value);
   const validDate = value => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) &&
     Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
@@ -29,6 +36,8 @@
     select.replaceChildren(new Option(defaultLabel, ""), ...items.map(([label, value]) => new Option(label, value)));
   };
   let snapshot, snapshotSha256, reportSlice;
+  let news, newsSha256;
+  let newsState = "loading";
 
   function validate(data) {
     const codes = new Set(Array.from(product.options, option => option.value));
@@ -60,6 +69,36 @@
     return data;
   }
 
+  function validateNews(data) {
+    const instant = value => typeof value === "string" && Number.isFinite(Date.parse(value));
+    if (data?.schema_version !== 1 || data.dataset_kind !== "public_curated_news" || data.source !== newsSource ||
+        !instant(data.feed_updated_at) || !instant(data.fetched_at) ||
+        Date.parse(data.feed_updated_at) > Date.parse(data.fetched_at) ||
+        typeof data.feed_sha256 !== "string" || !/^[0-9a-f]{64}$/.test(data.feed_sha256) ||
+        !integer(data.feed_entries) || data.feed_entries > 50 ||
+        !Array.isArray(data.items) || data.items.length > data.feed_entries) {
+      throw new Error("Invalid news snapshot");
+    }
+    const article = /^https:\/\/www\.canada\.ca\/en\/natural-resources-canada\/news\/\d{4}\/\d{2}\/[a-z0-9-]+\.html$/;
+    const text = (value, limit) => typeof value === "string" && value.trim() && value.length <= limit;
+    const labels = list => Array.isArray(list) && list.length <= 8 && list.every(value => text(value, 100));
+    const codes = new Set(Array.from(product.options, option => option.value));
+    const seen = new Set();
+    const items = data.items.map(item => {
+      if (!item || !text(item.url, 300) || item.url !== item.url.trim() || !article.test(item.url) || seen.has(item.url) ||
+          !text(item.title, 150) || !text(item.summary, 400) || !text(item.possible_impact, 400) ||
+          !text(item.topic, 80) || !validDate(item.published_on) ||
+          (item.event_on !== null && !validDate(item.event_on)) ||
+          !codes.has(item.ncm) || !labels(item.countries) || !item.countries.length || !labels(item.companies)) {
+        throw new Error("Invalid news entry");
+      }
+      seen.add(item.url);
+      const {url, title, summary, possible_impact, topic, published_on, event_on, ncm, countries, companies} = item;
+      return {url, title, summary, possible_impact, topic, published_on, event_on, ncm, countries, companies};
+    });
+    return {...data, items};
+  }
+
   function productFlow() {
     return snapshot.records.filter(row => row.ncm === product.value && row.flow === flow.value);
   }
@@ -67,8 +106,16 @@
   function refreshCountries() {
     const previous = country.value;
     const available = [...new Set(productFlow().map(row => row.country))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    const mentioned = news?.items.filter(item => item.ncm === product.value).flatMap(item => item.countries) ?? [];
+    const extra = [...new Set(mentioned)].filter(label => !available.includes(label)).sort((a, b) => a.localeCompare(b, "pt-BR"));
     options(country, "Todos os países", available.map(label => [label, label]));
-    country.value = available.includes(previous) ? previous : "";
+    if (extra.length) {
+      const group = element("optgroup");
+      group.label = "Países citados nas notícias";
+      group.append(...extra.map(label => new Option(label, label)));
+      country.append(group);
+    }
+    country.value = available.includes(previous) || extra.includes(previous) ? previous : "";
     get("market-country-label").textContent = flow.value === "import" ? "País de origem" : "País de destino";
   }
 
@@ -133,11 +180,69 @@
     }));
   }
 
+  const selectedMonths = () => period.value ? [period.value] : snapshot.months;
+  function relatedNews() {
+    const months = selectedMonths();
+    return news?.items.filter(item => item.ncm === product.value && months.includes(item.published_on.slice(0, 7)) &&
+      (!country.value || item.countries.includes(country.value))) ?? [];
+  }
+
+  function newsCard(item) {
+    const card = element("li");
+    card.className = "card";
+    const topic = element("p", item.topic + " · " + item.countries.join(", "));
+    topic.className = "eyebrow";
+    const date = element("time", calendar.format(new Date(item.published_on)));
+    date.dateTime = item.published_on;
+    const dates = element("p");
+    dates.className = "market-news-meta";
+    dates.append("Publicada em ", date);
+    if (item.event_on) {
+      const event = element("time", calendar.format(new Date(item.event_on)));
+      event.dateTime = item.event_on;
+      dates.append(" · Evento em ", event);
+    } else {
+      dates.append(" · Data exata do evento não informada");
+    }
+    const impact = element("p");
+    impact.className = "market-news-impact";
+    impact.append(element("strong", "Possível impacto"), item.possible_impact);
+    const link = element("a", "Ler publicação original ↗");
+    link.className = "market-news-link";
+    link.href = item.url;
+    link.setAttribute("aria-label", "Ler publicação original sobre " + item.title);
+    card.append(topic, element("h3", item.title), dates, element("p", item.summary));
+    if (item.companies.length) {
+      const companies = element("p", "Empresas citadas · " + item.companies.join(", "));
+      companies.className = "market-news-meta";
+      card.append(companies);
+    }
+    card.append(impact, link);
+    return card;
+  }
+
+  function renderNews() {
+    if (!news || !snapshot) {
+      newsList.hidden = true;
+      newsNotice.textContent = newsState === "unavailable" ? "A carga publicada de notícias está indisponível." :
+        newsState === "loading" ? "Carregando notícias…" : "Aguardando o recorte de comércio para filtrar as notícias.";
+      return;
+    }
+    const items = relatedNews();
+    const mineral = product.selectedOptions[0].dataset.mineral;
+    const count = items.length ? items.length + (items.length === 1 ? " publicação" : " publicações") :
+      "Nenhuma notícia da curadoria neste recorte";
+    const scope = count + " · " + mineral + " · " + monthSpan(selectedMonths()) + " · " + (country.value || "todos os países");
+    if (newsNotice.textContent !== scope) newsNotice.textContent = scope;
+    newsList.replaceChildren(...items.map(newsCard));
+    newsList.hidden = !items.length;
+  }
+
   function render() {
-    const months = period.value ? [period.value] : snapshot.months;
+    const months = selectedMonths();
     const grouped = productFlow().filter(row => months.includes(row.month));
     const records = country.value ? grouped.filter(row => row.country === country.value) : grouped;
-    const span = months.length === 1 ? monthName(months[0]) : monthName(months[0]) + " a " + monthName(months.at(-1));
+    const span = monthSpan(months);
     const scope = flow.selectedOptions[0].textContent + " · NCM " + product.value + " · " + span + " · " +
       (country.value || "todos os países");
     const totals = {...summarize(records), partner_count: new Set(records.map(row => row.country)).size};
@@ -156,6 +261,7 @@
     const quantity = records.length === 1 ? "1 registro agregado" : digits.format(records.length) + " registros agregados";
     status.textContent = (records.length ? quantity : "Nenhum registro neste recorte") + " · " + scope;
     results.hidden = records.length === 0;
+    renderNews();
     if (!records.length) return;
     get("market-fob").textContent = money(totals.fob_usd);
     get("market-kg").textContent = digits.format(totals.kg);
@@ -165,6 +271,7 @@
   }
 
   function downloadReport() {
+    const stories = relatedNews();
     const report = {
       report_type: "stratasignal_comex_slice",
       schema_version: 1,
@@ -184,11 +291,31 @@
       records: reportSlice.records.map(({month, ncm, country, flow, fob_usd, kg}) => ({
         month, ncm, country, flow, fob_usd, kg,
       })),
+      news_context: {
+        status: news ? (stories.length ? "available" : "no_matches") : newsState,
+        dataset_kind: "public_curated_news",
+        source: {
+          name: newsSource,
+          catalog_url: get("market-news-feed").href,
+          snapshot_url: new URL("news.json", document.baseURI).href,
+          snapshot_sha256: newsSha256 ?? null,
+          feed_sha256: news?.feed_sha256 ?? null,
+          feed_updated_at: news?.feed_updated_at ?? null,
+          fetched_at: news?.fetched_at ?? null,
+          quality: "Comunicados governamentais com curadoria editorial. Possíveis impactos são hipóteses qualitativas.",
+        },
+        coverage: news ? {feed_entries: news.feed_entries, curated_entries: news.items.length} : null,
+        filters: {
+          ncm: product.value, months: reportSlice.months, country: country.value || null,
+          country_role: "mentioned", month_basis: "published_on", flow_applies: false,
+        },
+        items: stories,
+      },
       limits: [
         "O relatório cobre o comércio exterior brasileiro por produto, fluxo, mês e país ou área parceira.",
         "Totais nulos indicam ausência de registros no recorte. Registros com valor zero são mantidos.",
-        "Produção, empresas, instalações, evidências geoespaciais e notícias não integram este recorte.",
-        "O relatório apresenta estatísticas declaradas de comércio, sem inferências ou previsões.",
+        "Produção, dados empresariais, instalações e evidências geoespaciais não integram este recorte.",
+        "As notícias dão contexto temático por mineral e não demonstram vínculos com transações ou códigos aduaneiros.",
       ],
     };
     const blob = new Blob([JSON.stringify(report, null, 2) + "\n"], {type: "application/json"});
@@ -203,6 +330,38 @@
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  async function readSnapshot(path, validateSnapshot) {
+    const response = await fetch(path, {credentials: "omit", redirect: "error", cache: "no-store",
+      signal: AbortSignal.timeout(10000)});
+    if (!response.ok) throw new Error("Snapshot unavailable");
+    const bytes = await response.arrayBuffer();
+    const data = validateSnapshot(JSON.parse(new TextDecoder("utf-8", {fatal: true}).decode(bytes)));
+    const digest = crypto.subtle ? await crypto.subtle.digest("SHA-256", bytes) : null;
+    const sha256 = digest && Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+    return {data, sha256};
+  }
+
+  async function loadNews() {
+    newsRetry.hidden = true;
+    newsState = "loading";
+    renderNews();
+    try {
+      ({data: news, sha256: newsSha256} = await readSnapshot("news.json", validateNews));
+      newsState = "available";
+      const coverage = get("market-news-coverage");
+      coverage.textContent = "Curadoria de " + digits.format(news.items.length) + " entre " + digits.format(news.feed_entries) +
+        " publicações do feed. Atualizado pela fonte em " + timestamp.format(new Date(news.feed_updated_at)) +
+        " UTC. Consultado em " + timestamp.format(new Date(news.fetched_at)) + " UTC.";
+      coverage.hidden = false;
+      get("market-news-stale").hidden = Date.now() - Date.parse(news.fetched_at) <= 30 * 86400000;
+      if (snapshot) refreshCountries();
+    } catch {
+      newsState = "unavailable";
+      newsRetry.hidden = false;
+    }
+    renderNews();
+  }
+
   async function load() {
     const controls = get("market-controls");
     controls.disabled = true;
@@ -211,13 +370,7 @@
     reportPanel.hidden = true;
     status.textContent = "Carregando dados públicos…";
     try {
-      const response = await fetch("comex.json", {credentials: "omit", redirect: "error", cache: "no-store",
-        signal: AbortSignal.timeout(10000)});
-      if (!response.ok) throw new Error("Trade snapshot unavailable");
-      const bytes = await response.arrayBuffer();
-      snapshot = validate(JSON.parse(new TextDecoder("utf-8", {fatal: true}).decode(bytes)));
-      const digest = crypto.subtle ? await crypto.subtle.digest("SHA-256", bytes) : null;
-      snapshotSha256 = digest && Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+      ({data: snapshot, sha256: snapshotSha256} = await readSnapshot("comex.json", validate));
       get("market-through").textContent = monthName(snapshot.months.at(-1));
       get("market-updated").textContent = calendar.format(new Date(snapshot.updated_on));
       get("market-retrieved").textContent = "Consulta do StrataSignal em " + calendar.format(new Date(snapshot.fetched_at)) + ".";
@@ -247,5 +400,7 @@
   });
   get("market-download").addEventListener("click", downloadReport);
   retry.addEventListener("click", load);
+  newsRetry.addEventListener("click", loadNews);
   load();
+  loadNews();
 })();
