@@ -4,7 +4,7 @@ Atualização em 7 de novembro de 2026. Este documento traduz os planos de produ
 
 ## Objetivo da experiência
 
-Permitir entender onde o mineral entra, como se transforma, para onde segue e por que isso importa economicamente, sempre com evidência e período identificados. O observatório público, os espaços empresariais privados e o acesso institucional autorizado são experiências distintas. O modelo atual é uma demonstração sintética e um aplicativo local; as outras experiências ainda são propostas.
+Permitir entender onde o mineral entra, como se transforma, para onde segue e por que isso importa economicamente, sempre com evidência e período identificados. O observatório público, os espaços empresariais privados e o acesso institucional autorizado são experiências distintas. O modelo atual tem um panorama público de comércio, uma carteira sintética e um aplicativo local. Espaços empresariais hospedados e acesso institucional são propostas.
 
 Cada tela deverá responder: **qual é o recorte, o que sabemos, de onde veio, quando vale e o que falta?** A informação progride de visão geral para entidade, fato, evidência e relatório. Fontes com granularidades diferentes não ganham uma equivalência fictícia.
 
@@ -12,7 +12,7 @@ Cada tela deverá responder: **qual é o recorte, o que sabemos, de onde veio, q
 
 | Área | Pergunta do usuário | Organização e limite atual |
 | --- | --- | --- |
-| Exploração / atlas | Onde se extrai, processa e comercializa? | Mapa, séries e relações por mineral e etapa. Hoje: alocação declarada por país, sem instalações ou cargas rastreadas. |
+| Exploração / atlas | Onde se extrai, processa e comercializa? | Panorama inicial de comércio brasileiro por NCM e país. A carteira fictícia oferece alocação declarada por país. Instalações e cargas rastreadas seguem no backlog. |
 | Organizações e instalações | Quem atua e qual é a origem dessa informação? | Ficha, identificadores, materiais, portfólio e evidências por campo. Planejado. |
 | Contexto mundial | O que mudou e quais relações podem ser afetadas? | Notícias e eventos relacionados a entidades e filtros. Planejado; não há feed ativo. |
 | Carteira privada | Onde está minha exposição e o que devo conferir? | Importação, visão da carteira, inteligência operacional, cenários e comparação já existem no aplicativo local. |
@@ -74,6 +74,7 @@ Em Inteligência operacional, a seção Situação dos pedidos por mês filtra p
 | --- | --- | --- | --- |
 | UX-01 | Fundação visual e recorte único | Paleta em tokens; um seletor mantém mapa/gráfico/tabela coerentes; navegação, reanálise e restauração testadas; exports de carteira completa claramente identificados. | Implementado nesta etapa. |
 | UX-02 | Contexto e filtros compartilhados | Mineral, período, país/região e empresa com contagens, filtros ativos e limpeza; explicação quando filtro não se aplica a uma fonte; estado vazio; preservação por navegação. Proibir agregação entre especificações incompatíveis. | Especificação, origem e fornecedor declarado entregues. Mês do pedido entregue para contagens do histórico. Identificação de empresas e períodos de outras fontes seguem no backlog. |
+| UX-02A | Panorama público de comércio | Fonte oficial verificada; abertura distingue dados públicos da carteira fictícia; seleção de NCM, fluxo, mês e país informa contagem, unidades, fonte, data e lacunas; gráfico oferece tabela equivalente. | Entregue para grafita natural em pó ou escamas e carbonatos de lítio com carga do Comex Stat preparada na publicação. |
 | UX-03 | Satélite temporal | Verificar documentação oficial, disponibilidade e uso da fonte escolhida; selecionar área e data e comparar períodos com área/zoom iguais; mostrar origem, aquisição, resolução, nuvens/cobertura e falhas por vista. Nenhum ponto inventado de instalação. | Terra/MODIS com data UTC e comparação A/B sincronizada. Catálogo datado e carregamento por vista visíveis. |
 | UX-04 | Notícias conectadas | Feed/API permitido, títulos e resumos próprios, links originais e datas; deduplicação, associação revisável a mineral/país/empresa, filtro, atualização e estados de erro/sem resultado. Conteúdo externo tratado como não confiável. | Planejado; não inserir notícias fictícias como atuais. |
 | UX-05 | Relatório consolidado do recorte | Uma seleção reproduz mapa, indicadores, evidências e notícias disponíveis na visão e exportação; registrar fontes, filtros, unidades, data de geração, lacunas e divergências. Separar fato/inferência/previsão, alinhar períodos e evitar dupla contagem. | Planejado; HTML/JSON atuais preservados. |

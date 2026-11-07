@@ -30,3 +30,15 @@ Use a new output directory. Only hardcoded synthetic fixtures are accepted by th
 ## UX exploration foundation
 
 [UX architecture, current journeys, visual tokens and acceptance backlog](UX_DESIGN_PT.md) consolidate the product and business plans with the updated blue/white/green/yellow direction. The workbench links the map, allocation chart and accessible data table to the same exploration filters. The optional NASA layer supports two dated Terra/MODIS views with shared navigation. Linked news and consolidated cross-source reports remain backlog items.
+
+## Build the public trade panorama
+
+```bash
+python -m stratasignal.build_public_site --out /tmp/stratasignal-public-001 --source-commit <40-character-source-commit>
+```
+
+This builder fetches the latest publication date and month from `GET /general/dates/updated`, then reads one `POST /general` per flow. Each query covers the last three published months and the NCM codes `25041000` (natural graphite powder/flakes) and `28369100` (lithium carbonates). It requests monthly rows by country and NCM, with FOB USD and net kilograms. The snapshot records source date, query time and response SHA-256 hashes. The root manifest records the published JSON hash and the separately generated synthetic workbench at `carteira/`.
+
+The queries use the documented public API and attribute the resulting aggregates to SECEX/MDIC. The provider publishes the same underlying statistics as open data. [API documentation](https://api-comexstat.mdic.gov.br/docs) · [Official open data](https://www.gov.br/mdic/pt-br/assuntos/comercio-exterior/estatisticas/base-de-dados-bruta) · [Query methodology](https://www.gov.br/mdic/pt-br/assuntos/comercio-exterior/estatisticas/perguntas-frequentes-faq/4-como-realizar-consultas)
+
+Use a new output directory. A failed query or invalid row prevents a new build. HTTP 429 permits one bounded retry after a wait. Publication retains the last successful version until a new package is validated. The browser reads a same-origin snapshot, with a warning when the source update date is more than 45 days old. There is no background refresh. These aggregates describe Brazilian trade under the selected customs codes. They do not establish mine origin, specifications, company-level movements, market price or worldwide production.

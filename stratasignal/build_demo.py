@@ -14,7 +14,7 @@ from .report import render_html
 from .schema import InputError
 
 
-def build_demo(directory, source_commit=None, enable_ml=True):
+def build_demo(directory, source_commit=None, enable_ml=True, *, public_home=False):
     if source_commit is not None and not re.fullmatch(r"[0-9a-f]{40}", source_commit):
         raise InputError("Commit de origem inválido")
     current, previous = demo_bundle(), demo_previous_bundle()
@@ -26,6 +26,8 @@ def build_demo(directory, source_commit=None, enable_ml=True):
     ui = Path(__file__).with_name("ui")
     assets = {name: (ui / name).read_text(encoding="utf-8") for name in ("index.html", "app.css", "app.js", "insights.js", "geo-map.css", "geo-map.js", "world-land.svg", "favicon.svg")}
     assets["index.html"] = assets["index.html"].replace('data-mode="local"', 'data-mode="demo"')
+    if public_home:
+        assets["index.html"] = assets["index.html"].replace('id="public-home" hidden', 'id="public-home"')
     assets["demo/current-report.json"] = json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
     assets["demo/monthly-report.json"] = json.dumps(monthly, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
     assets["demo/current-input.json"] = normalized_json(current)

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="description" content="Compare os fluxos de grafita natural e carbonatos de lítio no comércio exterior brasileiro, com dados públicos do Comex Stat.">
+  <title>StrataSignal · Panorama mineral do Brasil</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="market.css">
+  <script src="market.js" defer></script>
+</head>
+<body class="market-page">
+  <a href="#main" class="skip">Pular para o conteúdo</a>
+  <header class="market-header">
+    <div class="market-header-inner">
+      <a class="brand" href="./" aria-label="StrataSignal, panorama público">
+        <span class="brand-symbol" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>strata<b>signal</b><small>INTELIGÊNCIA MINERAL</small></span>
+      </a>
+      <nav aria-label="Áreas do StrataSignal">
+        <a href="#explorar" aria-current="page">Panorama</a>
+        <a href="carteira/">Carteira fictícia <span aria-hidden="true">↗</span></a>
+      </nav>
+    </div>
+  </header>
+  <main id="main">
+    <section class="market-hero" aria-labelledby="market-title">
+      <div class="market-hero-copy">
+        <p class="eyebrow"><span class="market-dot" aria-hidden="true"></span> OBSERVATÓRIO PÚBLICO · BRASIL</p>
+        <h1 id="market-title">Comércio mineral<br>do Brasil.</h1>
+        <p>Veja quanto o Brasil importa e exporta de grafita natural e carbonatos de lítio, e com quais países negocia.</p>
+        <a class="button primary" href="#explorar">Explorar dados <span aria-hidden="true">↓</span></a>
+      </div>
+      <aside class="market-release" aria-labelledby="market-source-title">
+        <p class="eyebrow">FONTE OFICIAL</p>
+        <h2 id="market-source-title">Comex Stat</h2>
+        <p>Secretaria de Comércio Exterior · MDIC</p>
+        <dl>
+          <div><dt>Último mês incluído</dt><dd id="market-through">—</dd></div>
+          <div><dt>Atualização na fonte</dt><dd id="market-updated">—</dd></div>
+        </dl>
+        <p id="market-retrieved">Consultando a carga publicada…</p>
+      </aside>
+    </section>
+    <section id="explorar" aria-labelledby="market-explore-title">
+      <div class="market-section-title">
+        <div><p class="eyebrow">BRASIL E PARCEIROS COMERCIAIS</p><h2 id="market-explore-title">Explore os fluxos</h2></div>
+        <a href="#fonte">Fonte e metodologia ↓</a>
+      </div>
+      <fieldset id="market-controls" class="market-filters" disabled>
+        <legend class="market-visually-hidden">Filtros do panorama</legend>
+        <label for="market-product">Produto
+          <select id="market-product">
+            <option value="25041000">Grafita natural em pó ou escamas</option>
+            <option value="28369100">Carbonatos de lítio</option>
+          </select>
+        </label>
+        <label for="market-flow">Fluxo
+          <select id="market-flow"><option value="import">Importações</option><option value="export">Exportações</option></select>
+        </label>
+        <label for="market-period">Período
+          <select id="market-period"><option value="">Todo o período</option></select>
+        </label>
+        <label for="market-country"><span id="market-country-label">País de origem</span>
+          <select id="market-country"><option value="">Todos os países</option></select>
+        </label>
+        <button type="button" id="market-clear" class="button secondary">Limpar filtros</button>
+      </fieldset>
+      <p id="market-stale" class="market-notice" hidden>O corte tem mais de 45 dias. Confira na fonte se há uma publicação posterior.</p>
+      <p id="market-status" class="market-status" role="status">Carregando dados públicos…</p>
+      <button type="button" id="market-retry" class="button secondary" hidden>Tentar carregar novamente</button>
+      <noscript><p>Ative o JavaScript para usar os filtros ou consulte o Comex Stat na seção de fontes.</p></noscript>
+      <div id="market-results" hidden>
+        <dl class="market-stats" aria-label="Indicadores do recorte">
+          <div><dt>Valor total FOB</dt><dd id="market-fob"></dd><small>US$ correntes</small></div>
+          <div><dt>Peso líquido</dt><dd id="market-kg"></dd><small>quilogramas</small></div>
+          <div><dt>Países e áreas parceiras</dt><dd id="market-partners"></dd><small>com registros no recorte</small></div>
+        </dl>
+        <div class="market-charts">
+          <article class="card market-series" aria-labelledby="market-series-title">
+            <p class="eyebrow">SÉRIE MENSAL</p>
+            <h3 id="market-series-title">Valor FOB por mês</h3>
+            <p id="market-scale" class="market-axis"></p>
+            <ol id="market-bars" class="market-bars" aria-hidden="true"></ol>
+            <details class="market-table">
+              <summary>Ver dados mensais em tabela</summary>
+              <div class="table-wrap" role="region" aria-label="Tabela de comércio por mês" tabindex="0">
+                <table>
+                  <caption id="market-table-caption"></caption>
+                  <thead><tr><th scope="col">Mês</th><th scope="col">Valor FOB (US$)</th><th scope="col">Peso líquido (kg)</th></tr></thead>
+                  <tbody id="market-monthly"></tbody>
+                </table>
+              </div>
+            </details>
+          </article>
+          <article class="card market-ranking" aria-labelledby="market-ranking-title">
+            <p class="eyebrow">PARTICIPAÇÃO EM VALOR FOB</p>
+            <h3 id="market-ranking-title">Principais parceiros</h3>
+            <p id="market-ranking-note">Até 5 parceiros do produto e período. Selecione um para ver o recorte.</p>
+            <ol id="market-ranking" aria-describedby="market-ranking-note"></ol>
+          </article>
+        </div>
+      </div>
+    </section>
+    <section id="fonte" class="market-method" aria-labelledby="market-method-title">
+      <div><p class="eyebrow">PROCEDÊNCIA E COBERTURA</p><h2 id="market-method-title">Como ler o painel</h2></div>
+      <div>
+        <p>Estatísticas aduaneiras agregadas do Brasil por mês, país e produto. Grafita natural em pó ou escamas (NCM 25041000) e carbonatos de lítio (NCM 28369100). A série mostra os três últimos meses disponíveis no momento da consulta.</p>
+        <p>O valor FOB mede o comércio declarado em dólares correntes. Variações podem refletir peso, composição ou preço dos itens comercializados. Os códigos abrangem categorias aduaneiras. Eles não identificam pureza, mina ou fornecedor. Os valores da fonte podem ser revisados.</p>
+        <p>Uma carga do Comex Stat é consultada a cada preparação de publicação. Os registros da carteira fictícia ficam separados deste painel.</p>
+        <div class="market-source-links">
+          <a href="https://comexstat.mdic.gov.br/pt/home">Consultar o Comex Stat ↗</a>
+          <a href="https://api-comexstat.mdic.gov.br/docs">Documentação da API ↗</a>
+          <a href="comex.json" download>Baixar a carga publicada (JSON)</a>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="market-footer"><span>STRATASIGNAL · OBSERVATÓRIO PÚBLICO</span><a href="carteira/">Abrir a carteira fictícia ↗</a></footer>
+</body>
+</html>
