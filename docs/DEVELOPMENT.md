@@ -29,4 +29,4 @@ Use a new output directory. Only hardcoded synthetic fixtures are accepted by th
 
 ## UX exploration foundation
 
-[UX architecture, current journeys, visual tokens and acceptance backlog](UX_DESIGN_PT.md) consolidate the product and business plans with the updated blue/white/green/yellow direction. The first increment links the workbench map, allocation chart and accessible data table to one specification selection, with persistent visual context and explicit full-portfolio export scope. Satellite temporal controls, linked news and consolidated cross-source reports remain backlog items; do not present them as implemented.
+[UX architecture, current journeys, visual tokens and acceptance backlog](UX_DESIGN_PT.md) consolidate the product and business plans with the updated blue/white/green/yellow direction. The workbench links the map, allocation chart and accessible data table to the same exploration filters. The optional NASA layer supports two dated Terra/MODIS views with shared navigation. Linked news and consolidated cross-source reports remain backlog items.

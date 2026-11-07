@@ -25,7 +25,7 @@ An analyst reviews a bounded procurement dataset and delivers a private HTML dec
 | Operational intelligence | Descriptive delivery rates and Wilson intervals, completed-delivery P90, overdue orders, cost-based origin dependencies and a bounded stress matrix |
 | Public-data preparation | Streaming importer for the MDIC's documented local CSV layout, with explicit NCM, flow and period |
 | Local workbench | Import JSON or map operational CSV columns; review inputs, run analysis, simulate, compare periods and download reports |
-| Geospatial explorer | Country-level supplier allocation markers on a local world map; opt-in dated NASA GIBS satellite imagery; jump from country to supply shock simulator |
+| Geospatial explorer | Country-level allocations on a local world map, optional comparison of two NASA Terra/MODIS dates with synchronized navigation, and a shortcut to the supply shock simulator |
 | Private delivery | Local analysis; loopback-only UI connection; no remote customer-data service, telemetry, external fonts or third-party AI calls |
 
 The demo has **3 fictional material specifications, 6 fictional supplier positions and 780 synthetic orders**. Every report records whether its input is synthetic or customer-declared. Synthetic model metrics demonstrate software behavior only.

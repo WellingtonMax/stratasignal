@@ -110,16 +110,45 @@
       <input id="geo-date" type="date" aria-describedby="geo-date-coverage geo-date-feedback" disabled>
     </div>
     <button type="button" id="geo-apply-date" class="button secondary" disabled>Aplicar data</button>
+    <button type="button" id="geo-compare-toggle" class="button secondary" aria-expanded="false" aria-controls="geo-compare-controls" disabled>Comparar duas datas</button>
     <p id="geo-date-coverage" class="geo-source">Catálogo NASA consultado em 07/11/2026. Datas entre 24/02/2000 e 07/11/2026, com lacunas.</p>
     <p id="geo-date-feedback" class="geo-source" role="status"></p>
   </div>
-  <div class="geo-layout">
-    <div id="geo-viewport" class="geo-viewport" role="region" tabindex="0" aria-label="Mapa-múndi navegável. Arraste para mover e use setas no teclado.">
-      <div id="geo-land" class="geo-land" aria-hidden="true"><img src="world-land.svg" alt="" draggable="false"></div>
-      <div id="geo-land-copy" class="geo-land" aria-hidden="true"><img src="world-land.svg" alt="" draggable="false"></div>
-      <div id="geo-tiles" class="geo-tiles" aria-hidden="true"></div>
-      <div id="geo-markers" class="geo-markers" aria-label="Países de origem declarados"></div>
-      <div class="geo-corner">Âncoras aproximadas por país · sem coordenadas de instalações</div>
+  <div id="geo-compare-controls" class="geo-date-controls geo-compare-controls" hidden>
+    <div class="geo-date-field">
+      <label class="field-label" for="geo-compare-date">Segunda data Terra/MODIS (UTC)</label>
+      <input id="geo-compare-date" type="date" aria-describedby="geo-date-coverage geo-compare-feedback" disabled>
+    </div>
+    <button type="button" id="geo-apply-comparison" class="button primary" disabled>Aplicar comparação</button>
+    <p id="geo-compare-help" class="geo-source">As duas vistas compartilham a mesma área e o mesmo zoom. Arraste ou use as setas no mapa para mover ambas. Nuvens e lacunas podem mudar a aparência entre datas.</p>
+    <p id="geo-compare-feedback" class="geo-source" role="status"></p>
+  </div>
+  <div id="geo-layout" class="geo-layout">
+    <div class="geo-maps">
+      <div class="geo-pane">
+        <h3 id="geo-reference-title" class="geo-pane-title" hidden>A · Referência <time id="geo-reference-day"></time></h3>
+        <div id="geo-viewport" class="geo-viewport" role="region" tabindex="0" aria-label="Mapa-múndi navegável. Arraste para mover e use setas no teclado.">
+          <div id="geo-land" class="geo-land" aria-hidden="true"><img src="world-land.svg" alt="" draggable="false"></div>
+          <div id="geo-land-copy" class="geo-land" aria-hidden="true"><img src="world-land.svg" alt="" draggable="false"></div>
+          <div id="geo-tiles" class="geo-tiles" aria-hidden="true"></div>
+          <div id="geo-markers" class="geo-markers" aria-label="Países de origem declarados"></div>
+          <div class="geo-corner">Âncoras aproximadas por país · sem coordenadas de instalações</div>
+        </div>
+        <p id="geo-imagery-meta" class="geo-source" hidden></p>
+        <p id="geo-imagery-state" class="geo-source" role="status" aria-label="Carregamento da imagem de referência">Cartografia local · sem transmissão externa</p>
+      </div>
+      <div id="geo-compare-pane" class="geo-pane" hidden>
+        <h3 id="geo-compare-title" class="geo-pane-title">B · Comparação <time id="geo-compare-day"></time></h3>
+        <div id="geo-compare-viewport" class="geo-viewport" role="region" tabindex="0" aria-labelledby="geo-compare-title" aria-describedby="geo-compare-help">
+          <div id="geo-compare-land" class="geo-land" aria-hidden="true"><img src="world-land.svg" alt="" draggable="false"></div>
+          <div id="geo-compare-land-copy" class="geo-land" aria-hidden="true"><img src="world-land.svg" alt="" draggable="false"></div>
+          <div id="geo-compare-tiles" class="geo-tiles" aria-hidden="true"></div>
+          <div id="geo-compare-markers" class="geo-markers" aria-hidden="true"></div>
+          <div class="geo-corner">Âncoras aproximadas por país · sem coordenadas de instalações</div>
+        </div>
+        <p id="geo-compare-imagery-meta" class="geo-source"></p>
+        <p id="geo-compare-imagery-state" class="geo-source" role="status" aria-label="Carregamento da segunda imagem"></p>
+      </div>
     </div>
     <aside class="geo-sidebar" aria-label="Dados de concentração por origem">
       <h3 id="geo-material-name">Origens declaradas</h3><div id="geo-origin-list" class="geo-origin-list"></div>
@@ -127,8 +156,6 @@
       <button type="button" id="geo-to-scenario" class="button primary" disabled>Simular redução desta origem</button>
     </aside>
   </div>
-  <p id="geo-imagery-meta" class="geo-source" hidden></p>
-  <p id="geo-imagery-state" class="geo-source" role="status">Cartografia local · sem transmissão externa</p>
   <p class="footnote">Mapa local: Natural Earth 1:110m (domínio público). Após consentimento, somente coordenadas dos mosaicos visualizados e a data da camada são solicitadas à NASA GIBS; sua carteira e seus arquivos não são enviados. Blue Marble é uma composição histórica; MODIS é uma observação datada, sujeita a nuvens e atrasos. País não significa mina nem rota verificada.</p>
 </article><div class="two-col"><article class="card"><div class="card-heading"><div><p class="eyebrow">CONCENTRAÇÃO DE ORIGEM</p><h2>De onde vem a sua oferta?</h2></div><span class="small-tag">ALOCAÇÃO DECLARADA</span></div><div id="country-bars" class="country-bars"></div><details class="origin-data"><summary>Ver dados do gráfico em tabela</summary><div class="table-wrap"><table><caption>Alocação declarada da especificação em foco</caption><thead><tr><th scope="col">Origem</th><th scope="col">Participação</th></tr></thead><tbody id="origin-table"></tbody></table></div></details><p class="footnote">A origem declarada pode se referir a uma etapa da cadeia. Extração, refino e embarque exigem definições distintas.</p></article><article class="card priority-card"><p class="eyebrow">PRÓXIMAS AÇÕES</p><h2>O que merece atenção primeiro</h2><div id="priorities"></div><p class="footnote">A prioridade combina concentração, cobertura e sinais documentais. É uma regra de triagem, não uma probabilidade de crise.</p></article></div><article class="card"><div class="card-heading"><div><p class="eyebrow">MATERIAIS ACOMPANHADOS</p><h2>Vulnerabilidades, por especificação</h2></div><button type="button" class="text-button" data-go="scenario">Simular uma redução ↗</button></div><div class="table-wrap"><table><thead><tr><th>Material</th><th>Prioridade</th><th>Maior origem</th><th>Cobertura</th><th>Prazo nominal</th><th>Sinais</th></tr></thead><tbody id="portfolio-table"></tbody></table></div></article><div class="two-col"><article class="card"><p class="eyebrow">CONFERÊNCIA DOCUMENTAL</p><h2>Um motivo para cada sinal</h2><div id="evidence-signals"></div><p class="footnote">Metadados e hashes não autenticam certificados nem a origem física. Uma repetição pode ser um modelo compartilhado.</p></article><article class="card"><p class="eyebrow">PADRÕES DE ENTREGA</p><h2>Estimativas com contexto</h2><div id="model-state"></div><details><summary>Ver avaliação do modelo</summary><div id="model-evaluation"></div></details></article></div></div>
       </section>

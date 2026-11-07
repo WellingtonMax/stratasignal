@@ -505,3 +505,97 @@ test("Terra/MODIS dates use the published periods and stale tiles cannot report 
   assert.deepEqual(ctx.errors, []);
   ctx.dom.window.close();
 });
+
+test("satellite comparison shares the viewport and tracks each date independently", async () => {
+  const ctx = await open({demo: true});
+  const {doc, window} = ctx;
+  const get = id => doc.getElementById(id);
+  const tiles = prefix => [...get(prefix + "-tiles").children];
+  const tileLayout = prefix => tiles(prefix).map(img => [
+    img.src.split("/").slice(-3).join("/"), img.style.transform,
+  ]);
+  const date = get("geo-date");
+  const secondDate = get("geo-compare-date");
+  const toggle = get("geo-compare-toggle");
+  const compare = get("geo-apply-comparison");
+  const pane = get("geo-compare-pane");
+  const layer = get("geo-imagery");
+  const stateA = get("geo-imagery-state");
+  const stateB = get("geo-compare-imagery-state");
+
+  assert.equal(toggle.disabled, true);
+  assert.equal(tiles("geo-compare").length, 0);
+  get("geo-enable").click();
+  assert.equal(toggle.disabled, true);
+  layer.value = "daily";
+  layer.dispatchEvent(new window.Event("change"));
+  date.value = "2025-06-06";
+  get("geo-apply-date").click();
+  toggle.click();
+  assert.equal(toggle.getAttribute("aria-expanded"), "true");
+  assert.equal(pane.hidden, true);
+  assert.equal(tiles("geo-compare").length, 0);
+
+  secondDate.value = "2025-06-06";
+  compare.click();
+  assert.equal(doc.activeElement, secondDate);
+  assert.match(get("geo-compare-feedback").textContent, /data diferente/);
+  assert.equal(pane.hidden, true);
+  assert.equal(tiles("geo-compare").length, 0);
+
+  secondDate.value = "2025-06-07";
+  compare.click();
+  assert.equal(pane.hidden, false);
+  assert.equal(get("geo-reference-day").dateTime, "2025-06-06");
+  assert.equal(get("geo-compare-day").dateTime, "2025-06-07");
+  assert.equal(get("geo-compare-day").textContent, "7 de junho de 2025");
+  assert.match(get("geo-compare-imagery-meta").textContent, /07\/06\/2025.*250 m/);
+  const reference = tiles("geo");
+  const comparison = tiles("geo-compare");
+  assert.ok(reference.length > 0);
+  assert.deepEqual(tileLayout("geo"), tileLayout("geo-compare"));
+  assert.ok(reference.every(img => img.src.includes("/default/2025-06-06/")));
+  assert.ok(comparison.every(img => img.src.includes("/default/2025-06-07/") && img.referrerPolicy === "no-referrer"));
+
+  for (const img of comparison) img.dispatchEvent(new window.Event("error"));
+  assert.match(stateB.textContent, /Imagens indisponíveis/);
+  assert.match(stateA.textContent, /Solicitando/);
+  for (const img of reference) img.dispatchEvent(new window.Event("load"));
+  assert.equal(stateA.textContent, reference.length + " mosaicos recebidos.");
+
+  secondDate.value = "2025-08-09";
+  compare.click();
+  assert.equal(secondDate.getAttribute("aria-invalid"), "true");
+  assert.equal(tiles("geo-compare")[0], comparison[0]);
+  assert.equal(get("geo-compare-day").dateTime, "2025-06-07");
+
+  const view = get("geo-compare-viewport");
+  const layoutBefore = tileLayout("geo");
+  view.focus();
+  view.dispatchEvent(new window.KeyboardEvent("keydown", {key: "ArrowRight", bubbles: true, cancelable: true}));
+  assert.notDeepEqual(tileLayout("geo"), layoutBefore);
+  assert.deepEqual(tileLayout("geo"), tileLayout("geo-compare"));
+  assert.equal(doc.activeElement, view);
+  get("geo-zoom-in").click();
+  assert.deepEqual(tileLayout("geo"), tileLayout("geo-compare"));
+  assert.ok(tiles("geo").every(img => img.src.split("/").at(-3) === "3"));
+  assert.deepEqual(
+    [...get("geo-markers").children].map(marker => marker.textContent),
+    [...get("geo-compare-markers").children].map(marker => marker.textContent),
+  );
+
+  toggle.click();
+  assert.equal(pane.hidden, true);
+  assert.equal(tiles("geo-compare").length, 0);
+  assert.ok(tiles("geo").every(img => img.src.includes("/default/2025-06-06/")));
+  toggle.click();
+  secondDate.value = "2025-06-07";
+  compare.click();
+  get("geo-enable").click();
+  assert.equal(pane.hidden, true);
+  assert.equal(tiles("geo-compare").length, 0);
+  assert.equal(tiles("geo").length, 0);
+  assert.equal(toggle.disabled, true);
+  assert.deepEqual(ctx.errors, []);
+  ctx.dom.window.close();
+});
