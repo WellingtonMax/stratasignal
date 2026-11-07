@@ -8,7 +8,7 @@ def main():
     import stratasignal
     from stratasignal.workbench import UI, create_server
     assert Path(stratasignal.__file__).resolve().is_relative_to(Path(sys.prefix).resolve())
-    assert all((UI/name).is_file() for name in ("index.html", "app.js", "insights.js", "geo-map.js", "world-land.svg"))
+    assert all((UI/name).is_file() for name in ("index.html", "app.js", "insights.js", "geo-map.js", "geo-globe.js", "world-land.svg"))
     server, _, workspace=create_server(0)
     try:
         workspace.load_demo({"with_previous": True})

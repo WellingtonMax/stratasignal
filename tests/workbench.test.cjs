@@ -10,6 +10,7 @@ const root = path.join(__dirname,"..");
 const html = fs.readFileSync(path.join(root,"stratasignal/ui/index.html"),"utf8");
 const script = fs.readFileSync(path.join(root,"stratasignal/ui/app.js"),"utf8");
 const geoScript = fs.readFileSync(path.join(root,"stratasignal/ui/geo-map.js"),"utf8");
+const globeScript = fs.readFileSync(path.join(root,"stratasignal/ui/geo-globe.js"),"utf8");
 const insightsScript = fs.readFileSync(path.join(root,"stratasignal/ui/insights.js"),"utf8");
 const input = JSON.parse(execFileSync(process.env.PYTHON || "python",["-c",
   "import json; from stratasignal.demo import demo_bundle; print(json.dumps(demo_bundle()))"],{cwd:root,encoding:"utf8"}));
@@ -49,7 +50,7 @@ async function open({demo=false,fetcher,token="a".repeat(32)}={}) {
     if(url==="/api/reset"){loaded=false;return response({status:makeStatus()});}
     throw new Error("Unexpected request "+url);
   };
-  window.eval(geoScript);window.eval(insightsScript);window.eval(script);await settle(doc);
+  window.eval(globeScript);window.eval(geoScript);window.eval(insightsScript);window.eval(script);await settle(doc);
   return {dom,window,doc,calls,blobs,downloads,errors};
 }
 function chooseFile(ctx,id,text,name="data.csv") {
@@ -596,6 +597,79 @@ test("satellite comparison shares the viewport and tracks each date independentl
   assert.equal(tiles("geo-compare").length, 0);
   assert.equal(tiles("geo").length, 0);
   assert.equal(toggle.disabled, true);
+  assert.deepEqual(ctx.errors, []);
+  ctx.dom.window.close();
+});
+
+test("the globe preserves dates and country context without requesting imagery before consent", async () => {
+  const ctx = await open({demo: true});
+  const {doc, window} = ctx;
+  const get = id => doc.getElementById(id);
+  const requests = [];
+  window.HTMLCanvasElement.prototype.getContext = () => ({
+    drawImage() {},
+    getImageData: () => ({data: new Uint8ClampedArray(4)}),
+  });
+  window.requestAnimationFrame = () => 1;
+  window.cancelAnimationFrame = () => {};
+  window.Image = function () {
+    const image = doc.createElement("img");
+    Object.defineProperties(image, {naturalWidth: {value: 1536}, naturalHeight: {value: 768}});
+    requests.push(image);
+    return image;
+  };
+  get("geo-mode-globe").click();
+  assert.equal(get("geo-mode-globe").getAttribute("aria-pressed"), "true");
+  assert.equal(get("geo-globe").hidden, false);
+  assert.equal(get("geo-land").hidden, true);
+  assert.equal(requests.length, 0);
+  assert.equal(get("geo-tiles").childElementCount, 0);
+  assert.equal(window.StrataGlobe.point(180, 0, window.StrataGlobe.geometry(0, 0, 600, 400, 2)), null);
+
+  const select = get("geo-imagery");
+  get("geo-enable").click();
+  assert.equal(new URL(requests[0].src).searchParams.get("LAYERS"), "BlueMarble_NextGeneration");
+  select.value = "daily";
+  select.dispatchEvent(new window.Event("change"));
+  get("geo-date").value = "2025-06-06";
+  get("geo-apply-date").click();
+  get("geo-compare-toggle").click();
+  get("geo-compare-date").value = "2025-06-07";
+  get("geo-apply-comparison").click();
+  assert.deepEqual(requests.slice(-2).map(image => new URL(image.src).searchParams.get("TIME")), ["2025-06-06", "2025-06-07"]);
+  assert.ok(requests.every(image => new URL(image.src).host === "gibs.earthdata.nasa.gov" &&
+    new URL(image.src).searchParams.get("BBOX") === "-180,-90,180,90" &&
+    image.crossOrigin === "anonymous" && image.referrerPolicy === "no-referrer"));
+  requests.at(-2).dispatchEvent(new window.Event("load"));
+  requests.at(-1).dispatchEvent(new window.Event("error"));
+  assert.match(get("geo-imagery-state").textContent, /carregada/);
+  assert.match(get("geo-compare-imagery-state").textContent, /indisponível/);
+  get("geo-center-country").click();
+  const selected = doc.querySelector('#geo-markers button[aria-pressed="true"]');
+  assert.ok(selected);
+  assert.equal(parseFloat(selected.style.left), 480);
+  assert.ok(Math.abs(parseFloat(selected.style.top) - 220) < 0.001);
+  assert.ok(doc.querySelector("#geo-compare-markers .is-selected"));
+  const count = requests.length;
+  get("geo-viewport").dispatchEvent(new window.KeyboardEvent("keydown", {key: "ArrowLeft", bubbles: true}));
+  assert.equal(requests.length, count, "rotation reuses the global raster");
+
+  get("geo-mode-flat").click();
+  assert.equal(get("geo-globe").hidden, true);
+  assert.equal(get("geo-land").hidden, false);
+  assert.equal(get("geo-reference-day").dateTime, "2025-06-06");
+  assert.equal(get("geo-compare-day").dateTime, "2025-06-07");
+  assert.ok(get("geo-tiles").firstElementChild.src.includes("/default/2025-06-06/"));
+  assert.ok(get("geo-compare-tiles").firstElementChild.src.includes("/default/2025-06-07/"));
+  get("geo-mode-globe").click();
+  assert.equal(requests.length, count + 1, "only the failed comparison raster is retried");
+  assert.match(get("geo-imagery-state").textContent, /carregada/);
+  requests.at(-1).dispatchEvent(new window.Event("load"));
+  get("geo-mode-flat").click();
+  get("geo-enable").click();
+  get("geo-mode-globe").click();
+  assert.equal(requests.length, count + 1);
+  assert.equal(get("geo-compare-pane").hidden, true);
   assert.deepEqual(ctx.errors, []);
   ctx.dom.window.close();
 });

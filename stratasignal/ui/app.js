@@ -342,10 +342,18 @@
   document.querySelectorAll(".export-action").forEach(button=>button.addEventListener("click",()=>task("Preparando o arquivo…",async()=>{const blob=await adapter.export(button.dataset.kind);download(blob,button.dataset.kind);notice("Arquivo preparado para download. Guarde os dados pelo processo aprovado da sua organização.");})));
   $("reset").addEventListener("click",()=>task("Limpando os dados desta execução…",async()=>{const value=await adapter.reset();updateStatus(value.status);renderReview(null);document.querySelectorAll("input[type=file]").forEach(e=>{e.value="";});for(const key of Object.keys(csvSources))delete csvSources[key];["positions","orders","evidence"].forEach(t=>$("mapping-"+t).replaceChildren());$("current-file-label").textContent="Nenhum arquivo selecionado";switchView("import");notice("Espaço de trabalho limpo. Os arquivos originais não foram alterados.");}));
   $("as-of").value=new Date().toLocaleDateString("sv-SE");
-  if(isDemo){$("demo-banner").hidden=false;$("mode-label").textContent="Demonstração fictícia";$("mode-description").textContent="Uma carteira pronta para explorar o produto.";$("private-import-note").textContent="Este endereço usa apenas dados fictícios. Seus arquivos são analisados no aplicativo local.";}
+  if(isDemo){$("demo-banner").hidden=false;$("geo-scope-tag").textContent="ORIGENS FICTÍCIAS";$("mode-label").textContent="Demonstração fictícia";$("mode-description").textContent="Uma carteira pronta para explorar o produto.";$("private-import-note").textContent="Este endereço usa apenas dados fictícios. Seus arquivos são analisados no aplicativo local.";}
   renderReport();controls();
   task("Abrindo o espaço de análise…",async()=>{
     updateStatus(await adapter.status());
-    if(isDemo){const value=await adapter.demo();updateStatus(value.status);renderReview(value.review);$("compare-previous").checked=true;const result=await adapter.analyze({use_ml:$("use-ml").checked,compare_previous:true});updateStatus(result.status);report=result.report;renderReport();switchView("overview");}
+    if(isDemo){
+      const value=await adapter.demo();updateStatus(value.status);renderReview(value.review);$("compare-previous").checked=true;
+      const result=await adapter.analyze({use_ml:$("use-ml").checked,compare_previous:true});
+      updateStatus(result.status);report=result.report;renderReport();switchView("overview");
+      if (location.hash === "#atlas") {
+        $("atlas").scrollIntoView?.({block: "start"});
+        $("geo-title").focus({preventScroll: true});
+      }
+    }
   });
 })();
