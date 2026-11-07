@@ -13,6 +13,7 @@
   const status = get("market-status");
   const retry = get("market-retry");
   const results = get("market-results");
+  const reportPanel = get("market-report");
   const digits = new Intl.NumberFormat("pt-BR");
   const percent = new Intl.NumberFormat("pt-BR", {style: "percent", maximumFractionDigits: 1});
   const calendar = new Intl.DateTimeFormat("pt-BR", {dateStyle: "long", timeZone: "UTC"});
@@ -27,7 +28,7 @@
   const options = (select, defaultLabel, items) => {
     select.replaceChildren(new Option(defaultLabel, ""), ...items.map(([label, value]) => new Option(label, value)));
   };
-  let snapshot;
+  let snapshot, snapshotSha256, reportSlice;
 
   function validate(data) {
     const codes = new Set(Array.from(product.options, option => option.value));
@@ -71,12 +72,16 @@
     get("market-country-label").textContent = flow.value === "import" ? "País de origem" : "País de destino";
   }
 
-  function renderSeries(records, months, caption) {
-    const series = months.map(value => {
-      const matching = records.filter(row => row.month === value);
-      return {month: value, hasData: matching.length > 0, usd: sum(matching, "fob_usd"), kg: sum(matching, "kg")};
-    });
-    const peak = Math.max(...series.map(row => row.usd));
+  function summarize(records) {
+    return {
+      record_count: records.length,
+      fob_usd: records.length ? sum(records, "fob_usd") : null,
+      kg: records.length ? sum(records, "kg") : null,
+    };
+  }
+
+  function renderSeries(series, caption) {
+    const peak = Math.max(...series.map(row => row.fob_usd ?? 0));
     get("market-scale").textContent = "Escala de " + money(0) + " a " + money(peak) + " FOB";
     get("market-table-caption").textContent = caption;
     const bars = [];
@@ -84,12 +89,12 @@
     for (const row of series) {
       const slot = element("li");
       slot.className = "market-bar-slot";
-      slot.title = monthName(row.month) + " · " + (row.hasData ? money(row.usd) + " FOB" : "sem registros");
+      slot.title = monthName(row.month) + " · " + (row.record_count ? money(row.fob_usd) + " FOB" : "sem registros");
       const track = element("div");
       track.className = "market-track";
       const bar = element("span");
       bar.className = "market-bar";
-      bar.style.setProperty("--bar-height", (peak ? row.usd / peak * 100 : 0) + "%");
+      bar.style.setProperty("--bar-height", (peak ? (row.fob_usd ?? 0) / peak * 100 : 0) + "%");
       track.append(bar);
       const label = element("time", monthName(row.month, monthShort));
       label.dateTime = row.month;
@@ -98,8 +103,8 @@
       const line = element("tr");
       const header = element("th", monthName(row.month));
       header.scope = "row";
-      line.append(header, element("td", row.hasData ? digits.format(row.usd) : "Sem registros"),
-        element("td", row.hasData ? digits.format(row.kg) : "—"));
+      line.append(header, element("td", row.record_count ? digits.format(row.fob_usd) : "Sem registros"),
+        element("td", row.record_count ? digits.format(row.kg) : "—"));
       table.push(line);
     }
     get("market-bars").replaceChildren(...bars);
@@ -135,15 +140,67 @@
     const span = months.length === 1 ? monthName(months[0]) : monthName(months[0]) + " a " + monthName(months.at(-1));
     const scope = flow.selectedOptions[0].textContent + " · NCM " + product.value + " · " + span + " · " +
       (country.value || "todos os países");
+    const totals = {...summarize(records), partner_count: new Set(records.map(row => row.country)).size};
+    const monthly = months.map(month => ({month, ...summarize(records.filter(row => row.month === month))}));
+    reportSlice = {
+      filters: {
+        ncm: product.value, product: product.selectedOptions[0].textContent, flow: flow.value,
+        period: period.value || null, country: country.value || null,
+        country_role: flow.value === "import" ? "origin" : "destination",
+      },
+      months,
+      totals,
+      monthly,
+      records,
+    };
     const quantity = records.length === 1 ? "1 registro agregado" : digits.format(records.length) + " registros agregados";
     status.textContent = (records.length ? quantity : "Nenhum registro neste recorte") + " · " + scope;
     results.hidden = records.length === 0;
     if (!records.length) return;
-    get("market-fob").textContent = money(sum(records, "fob_usd"));
-    get("market-kg").textContent = digits.format(sum(records, "kg"));
-    get("market-partners").textContent = digits.format(new Set(records.map(row => row.country)).size);
-    renderSeries(records, months, scope);
+    get("market-fob").textContent = money(totals.fob_usd);
+    get("market-kg").textContent = digits.format(totals.kg);
+    get("market-partners").textContent = digits.format(totals.partner_count);
+    renderSeries(monthly, scope);
     renderRanking(grouped);
+  }
+
+  function downloadReport() {
+    const report = {
+      report_type: "stratasignal_comex_slice",
+      schema_version: 1,
+      dataset_kind: snapshot.dataset_kind,
+      generated_at: new Date().toISOString(),
+      source: {
+        name: "Comex Stat · SECEX/MDIC",
+        url: "https://comexstat.mdic.gov.br/pt/home",
+        updated_on: snapshot.updated_on,
+        fetched_at: snapshot.fetched_at,
+        snapshot_url: new URL("comex.json", document.baseURI).href,
+        snapshot_sha256: snapshotSha256,
+        quality: "Estatísticas aduaneiras agregadas sujeitas a revisão pela fonte.",
+      },
+      units: {fob_usd: "USD FOB correntes", kg: "quilogramas de peso líquido"},
+      ...reportSlice,
+      records: reportSlice.records.map(({month, ncm, country, flow, fob_usd, kg}) => ({
+        month, ncm, country, flow, fob_usd, kg,
+      })),
+      limits: [
+        "O relatório cobre o comércio exterior brasileiro por produto, fluxo, mês e país ou área parceira.",
+        "Totais nulos indicam ausência de registros no recorte. Registros com valor zero são mantidos.",
+        "Produção, empresas, instalações, evidências geoespaciais e notícias não integram este recorte.",
+        "O relatório apresenta estatísticas declaradas de comércio, sem inferências ou previsões.",
+      ],
+    };
+    const blob = new Blob([JSON.stringify(report, null, 2) + "\n"], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const link = element("a");
+    link.href = url;
+    link.download = "stratasignal-comex-" + report.filters.ncm + "-" + report.filters.flow + ".json";
+    link.hidden = true;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   async function load() {
@@ -151,12 +208,16 @@
     controls.disabled = true;
     retry.hidden = true;
     results.hidden = true;
+    reportPanel.hidden = true;
     status.textContent = "Carregando dados públicos…";
     try {
       const response = await fetch("comex.json", {credentials: "omit", redirect: "error", cache: "no-store",
         signal: AbortSignal.timeout(10000)});
       if (!response.ok) throw new Error("Trade snapshot unavailable");
-      snapshot = validate(await response.json());
+      const bytes = await response.arrayBuffer();
+      snapshot = validate(JSON.parse(new TextDecoder("utf-8", {fatal: true}).decode(bytes)));
+      const digest = crypto.subtle ? await crypto.subtle.digest("SHA-256", bytes) : null;
+      snapshotSha256 = digest && Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
       get("market-through").textContent = monthName(snapshot.months.at(-1));
       get("market-updated").textContent = calendar.format(new Date(snapshot.updated_on));
       get("market-retrieved").textContent = "Consulta do StrataSignal em " + calendar.format(new Date(snapshot.fetched_at)) + ".";
@@ -165,6 +226,7 @@
       refreshCountries();
       render();
       controls.disabled = false;
+      reportPanel.hidden = false;
     } catch {
       get("market-retrieved").textContent = "Carga publicada indisponível.";
       status.textContent = "Não foi possível carregar o panorama. Tente novamente ou consulte o Comex Stat.";
@@ -183,6 +245,7 @@
     render();
     product.focus();
   });
+  get("market-download").addEventListener("click", downloadReport);
   retry.addEventListener("click", load);
   load();
 })();

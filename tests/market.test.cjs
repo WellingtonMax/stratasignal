@@ -1,6 +1,8 @@
 "use strict";
 const {test} = require("node:test");
 const assert = require("node:assert/strict");
+const {Blob} = require("node:buffer");
+const {createHash, webcrypto} = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const {JSDOM} = require("jsdom");
@@ -26,14 +28,21 @@ const sample = {
   ],
 };
 
+function response(data) {
+  const bytes = new TextEncoder().encode(JSON.stringify(data));
+  return {ok: true, arrayBuffer: async () => bytes.buffer};
+}
+
 function open(fetcher) {
   const dom = new JSDOM(html, {runScripts: "outside-only", url: "https://example.invalid/"});
   const {window} = dom;
   const get = id => window.document.getElementById(id);
   const calls = [];
+  window.TextDecoder = TextDecoder;
+  Object.defineProperty(window.crypto, "subtle", {value: webcrypto.subtle});
   window.fetch = async (url, options) => {
     calls.push({url, options});
-    return fetcher ? fetcher(calls.length) : {ok: true, json: async () => sample};
+    return fetcher ? fetcher(calls.length) : response(sample);
   };
   window.eval(script);
   const change = (id, value) => {
@@ -43,11 +52,15 @@ function open(fetcher) {
   };
   return {dom, window, get, calls, change};
 }
-const settle = () => new Promise(resolve => setImmediate(resolve));
+async function settle(get) {
+  for (let step = 0; step < 100 && /Carregando/.test(get("market-status").textContent); step++) {
+    await new Promise(resolve => setTimeout(resolve, 1));
+  }
+}
 
 test("the panorama groups verified amounts and preserves missing months and inert source labels", async () => {
   const {dom, window, get, calls, change} = open();
-  await settle();
+  await settle(get);
   assert.deepEqual(calls.map(call => [call.url, call.options.credentials, call.options.redirect]), [
     ["comex.json", "omit", "error"],
   ]);
@@ -81,20 +94,86 @@ test("the panorama groups verified amounts and preserves missing months and iner
 test("failed and invalid published loads expose a retry without enabling filters", async () => {
   const {dom, get, calls} = open(count => {
     if (count === 1) return {ok: false};
-    if (count === 2) return {ok: true, json: async () => ({...sample, records: [...sample.records, sample.records[0]]})};
-    return {ok: true, json: async () => sample};
+    if (count === 2) return response({...sample, records: [...sample.records, sample.records[0]]});
+    return response(sample);
   });
   assert.match(get("market-status").textContent, /Carregando/);
-  await settle();
+  assert.equal(get("market-report").hidden, true);
+  await settle(get);
   assert.equal(get("market-retry").hidden, false);
   assert.equal(get("market-controls").disabled, true);
+  assert.equal(get("market-report").hidden, true);
   get("market-retry").click();
-  await settle();
+  await settle(get);
   assert.equal(get("market-results").hidden, true);
+  assert.equal(get("market-report").hidden, true);
   get("market-retry").click();
-  await settle();
+  await settle(get);
   assert.equal(get("market-retry").hidden, true);
   assert.equal(get("market-results").hidden, false);
+  assert.equal(get("market-report").hidden, false);
   assert.equal(calls.length, 3);
+  dom.window.close();
+});
+
+test("the trade report captures active filters, source bytes, units and monthly gaps", async () => {
+  const data = {...sample, records: sample.records.map(row => ({...row, ignored: "extra field"}))};
+  const {dom, window, get, calls, change} = open(() => response(data));
+  const files = [];
+  let blob;
+  window.Blob = Blob;
+  window.URL.createObjectURL = file => {
+    blob = file;
+    return "blob:https://example.invalid/report";
+  };
+  window.URL.revokeObjectURL = () => {};
+  window.HTMLAnchorElement.prototype.click = function () {
+    files.push({blob, name: this.download});
+  };
+  async function download() {
+    get("market-download").click();
+    const file = files.at(-1);
+    assert.equal(file.blob.type, "application/json");
+    return JSON.parse(await file.blob.text());
+  }
+  await settle(get);
+  change("market-country", "China");
+  const report = await download();
+  assert.equal(files.at(-1).name, "stratasignal-comex-25041000-import.json");
+  assert.equal(report.dataset_kind, "public_aggregate");
+  assert.equal(report.schema_version, 1);
+  assert.equal(report.source.snapshot_url, "https://example.invalid/comex.json");
+  assert.equal(report.source.snapshot_sha256, createHash("sha256").update(JSON.stringify(data)).digest("hex"));
+  assert.equal(report.source.updated_on, sample.updated_on);
+  assert.equal(report.source.fetched_at, sample.fetched_at);
+  assert.ok(Number.isFinite(Date.parse(report.generated_at)));
+  assert.equal(report.units.fob_usd, "USD FOB correntes");
+  assert.equal(report.filters.ncm, "25041000");
+  assert.equal(report.filters.flow, "import");
+  assert.equal(report.filters.country_role, "origin");
+  assert.equal(report.filters.period, null);
+  assert.equal(report.filters.country, "China");
+  assert.deepEqual(report.totals, {record_count: 2, fob_usd: 1700, kg: 1000, partner_count: 1});
+  assert.deepEqual(report.records, [sample.records[0], sample.records[2]]);
+  assert.deepEqual(report.monthly, [
+    {month: "2025-01", record_count: 1, fob_usd: 1200, kg: 700},
+    {month: "2025-02", record_count: 0, fob_usd: null, kg: null},
+    {month: "2025-03", record_count: 1, fob_usd: 500, kg: 300},
+  ]);
+  assert.match(get("market-fob").textContent, /1\.700/);
+  assert.match(get("market-monthly").textContent, /fevereiro de 2025Sem registros/);
+  change("market-period", "2025-02");
+  assert.equal(get("market-report").hidden, false);
+  const empty = await download();
+  assert.equal(empty.filters.period, "2025-02");
+  assert.deepEqual(empty.totals, {record_count: 0, fob_usd: null, kg: null, partner_count: 0});
+  assert.deepEqual(empty.monthly, [{month: "2025-02", record_count: 0, fob_usd: null, kg: null}]);
+  assert.deepEqual(empty.records, []);
+  change("market-period", "2025-01");
+  change("market-country", foreignLabel);
+  const zero = await download();
+  assert.equal(zero.totals.kg, 0);
+  assert.deepEqual(zero.records, [sample.records[1]]);
+  assert.equal(calls.length, 1);
   dom.window.close();
 });

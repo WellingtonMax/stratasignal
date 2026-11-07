@@ -76,6 +76,15 @@
       <p id="market-status" class="market-status" role="status">Carregando dados públicos…</p>
       <button type="button" id="market-retry" class="button secondary" hidden>Tentar carregar novamente</button>
       <noscript><p>Ative o JavaScript para usar os filtros ou consulte o Comex Stat na seção de fontes.</p></noscript>
+      <section id="market-report" class="market-report" aria-labelledby="market-report-title" hidden>
+        <div>
+          <h3 id="market-report-title">Relatório do recorte</h3>
+          <p id="market-report-description">Registros de comércio, filtros aplicados, série mensal e fonte.</p>
+        </div>
+        <button type="button" id="market-download" class="button primary" aria-describedby="market-report-description">
+          Baixar relatório JSON <span aria-hidden="true">↓</span>
+        </button>
+      </section>
       <div id="market-results" hidden>
         <dl class="market-stats" aria-label="Indicadores do recorte">
           <div><dt>Valor total FOB</dt><dd id="market-fob"></dd><small>US$ correntes</small></div>
