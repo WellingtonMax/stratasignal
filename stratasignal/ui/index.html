@@ -99,10 +99,19 @@
   <div class="geo-heading"><div><p class="eyebrow">EXPLORADOR GEOESPACIAL · STRATASIGNAL</p><h2 id="geo-title">Abastecimento visto do planeta.</h2><p class="geo-description">Explore a concentração por país da especificação selecionada. A camada de satélite é uma observação geográfica, não uma validação de mina, rota comercial ou origem física.</p></div><span class="small-tag">POSIÇÕES POR PAÍS</span></div>
   <div class="geo-toolbar" aria-label="Controles de imagens e navegação">
     <button type="button" id="geo-enable" class="button secondary" aria-pressed="false">Ativar imagens NASA</button>
-    <select id="geo-imagery" aria-label="Camada de satélite" disabled><option value="blue">NASA · Blue Marble (histórica)</option><option value="daily">NASA · Terra/MODIS (observação recente)</option></select>
+    <select id="geo-imagery" aria-label="Camada de satélite" disabled><option value="blue">NASA · Blue Marble (histórica)</option><option value="daily">NASA · Terra/MODIS (imagem diária)</option></select>
     <button type="button" id="geo-zoom-in" class="geo-tool-button" aria-label="Ampliar mapa">+</button>
     <button type="button" id="geo-zoom-out" class="geo-tool-button" aria-label="Reduzir mapa">−</button>
     <button type="button" id="geo-reset" class="geo-tool-button" aria-label="Restaurar enquadramento">⌖</button>
+  </div>
+  <div id="geo-date-controls" class="geo-date-controls" hidden>
+    <div class="geo-date-field">
+      <label class="field-label" for="geo-date">Data da imagem Terra/MODIS (UTC)</label>
+      <input id="geo-date" type="date" aria-describedby="geo-date-coverage geo-date-feedback" disabled>
+    </div>
+    <button type="button" id="geo-apply-date" class="button secondary" disabled>Aplicar data</button>
+    <p id="geo-date-coverage" class="geo-source">Catálogo NASA consultado em 07/11/2026. Datas entre 24/02/2000 e 07/11/2026, com lacunas.</p>
+    <p id="geo-date-feedback" class="geo-source" role="status"></p>
   </div>
   <div class="geo-layout">
     <div id="geo-viewport" class="geo-viewport" role="region" tabindex="0" aria-label="Mapa-múndi navegável. Arraste para mover e use setas no teclado.">
@@ -118,6 +127,7 @@
       <button type="button" id="geo-to-scenario" class="button primary" disabled>Simular redução desta origem</button>
     </aside>
   </div>
+  <p id="geo-imagery-meta" class="geo-source" hidden></p>
   <p id="geo-imagery-state" class="geo-source" role="status">Cartografia local · sem transmissão externa</p>
   <p class="footnote">Mapa local: Natural Earth 1:110m (domínio público). Após consentimento, somente coordenadas dos mosaicos visualizados e a data da camada são solicitadas à NASA GIBS; sua carteira e seus arquivos não são enviados. Blue Marble é uma composição histórica; MODIS é uma observação datada, sujeita a nuvens e atrasos. País não significa mina nem rota verificada.</p>
 </article><div class="two-col"><article class="card"><div class="card-heading"><div><p class="eyebrow">CONCENTRAÇÃO DE ORIGEM</p><h2>De onde vem a sua oferta?</h2></div><span class="small-tag">ALOCAÇÃO DECLARADA</span></div><div id="country-bars" class="country-bars"></div><details class="origin-data"><summary>Ver dados do gráfico em tabela</summary><div class="table-wrap"><table><caption>Alocação declarada da especificação em foco</caption><thead><tr><th scope="col">Origem</th><th scope="col">Participação</th></tr></thead><tbody id="origin-table"></tbody></table></div></details><p class="footnote">A origem declarada pode se referir a uma etapa da cadeia. Extração, refino e embarque exigem definições distintas.</p></article><article class="card priority-card"><p class="eyebrow">PRÓXIMAS AÇÕES</p><h2>O que merece atenção primeiro</h2><div id="priorities"></div><p class="footnote">A prioridade combina concentração, cobertura e sinais documentais. É uma regra de triagem, não uma probabilidade de crise.</p></article></div><article class="card"><div class="card-heading"><div><p class="eyebrow">MATERIAIS ACOMPANHADOS</p><h2>Vulnerabilidades, por especificação</h2></div><button type="button" class="text-button" data-go="scenario">Simular uma redução ↗</button></div><div class="table-wrap"><table><thead><tr><th>Material</th><th>Prioridade</th><th>Maior origem</th><th>Cobertura</th><th>Prazo nominal</th><th>Sinais</th></tr></thead><tbody id="portfolio-table"></tbody></table></div></article><div class="two-col"><article class="card"><p class="eyebrow">CONFERÊNCIA DOCUMENTAL</p><h2>Um motivo para cada sinal</h2><div id="evidence-signals"></div><p class="footnote">Metadados e hashes não autenticam certificados nem a origem física. Uma repetição pode ser um modelo compartilhado.</p></article><article class="card"><p class="eyebrow">PADRÕES DE ENTREGA</p><h2>Estimativas com contexto</h2><div id="model-state"></div><details><summary>Ver avaliação do modelo</summary><div id="model-evaluation"></div></details></article></div></div>

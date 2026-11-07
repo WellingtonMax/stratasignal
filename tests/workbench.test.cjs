@@ -454,3 +454,54 @@ test("monthly order history uses the same cohort counts in chart and table and s
   assert.deepEqual(ctx.errors, []);
   ctx.dom.window.close();
 });
+
+test("Terra/MODIS dates use the published periods and stale tiles cannot report coverage", async () => {
+  const ctx = await open({demo: true});
+  const {doc, window} = ctx;
+  const tiles = () => [...doc.querySelectorAll("#geo-tiles img")];
+  const date = doc.getElementById("geo-date");
+  const apply = doc.getElementById("geo-apply-date");
+  const layer = doc.getElementById("geo-imagery");
+  const state = doc.getElementById("geo-imagery-state");
+  const selectLayer = value => {
+    layer.value = value;
+    layer.dispatchEvent(new window.Event("change"));
+  };
+  assert.equal(date.disabled, true);
+  date.value = "2025-06-06";
+  apply.click();
+  assert.equal(tiles().length, 0);
+
+  doc.getElementById("geo-enable").click();
+  assert.equal(date.disabled, true);
+  selectLayer("daily");
+  const oldTiles = tiles();
+  assert.ok(oldTiles.length > 0);
+  assert.equal(date.disabled, false);
+  date.value = "2025-08-09"; // Gap in the NASA DescribeDomains snapshot.
+  apply.click();
+  assert.equal(date.getAttribute("aria-invalid"), "true");
+  assert.equal(doc.activeElement, date);
+  assert.equal(tiles()[0], oldTiles[0]);
+
+  date.value = "2025-06-06";
+  apply.click();
+  const newTiles = tiles();
+  assert.ok(newTiles.every(img => img.src.includes("/default/2025-06-06/")));
+  assert.match(doc.getElementById("geo-imagery-meta").textContent, /06\/06\/2025.*250 m/);
+  oldTiles[0].dispatchEvent(new window.Event("load"));
+  for (const img of newTiles) img.dispatchEvent(new window.Event("error"));
+  assert.match(state.textContent, /Imagens indisponíveis/);
+  assert.ok(doc.querySelectorAll("#geo-markers button").length > 0);
+
+  selectLayer("blue");
+  assert.equal(date.disabled, true);
+  selectLayer("daily");
+  assert.equal(date.value, "2025-06-06");
+  const resumed = tiles();
+  resumed[0].dispatchEvent(new window.Event("error"));
+  for (const img of resumed.slice(1)) img.dispatchEvent(new window.Event("load"));
+  assert.match(state.textContent, /imagem está parcial/);
+  assert.deepEqual(ctx.errors, []);
+  ctx.dom.window.close();
+});

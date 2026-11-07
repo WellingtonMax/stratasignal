@@ -36,18 +36,40 @@
     const phi=clamp(lat,-85.05,85.05)*Math.PI/180;
     return [size(zoom)*(lon+180)/360,size(zoom)*(1-Math.log(Math.tan(Math.PI/4+phi/2))/Math.PI)/2];
   };
-  const recentDate = () => {
-    const now=new Date();
-    // MODIS granules may appear after acquisition; choose a dated observation, never label as real-time.
-    now.setUTCDate(now.getUTCDate()-5);
-    return now.toISOString().slice(0,10);
+  // GIBS DescribeDomains snapshot, queried 2026-11-07 (EPSG:3857, Terra/MODIS true color).
+  const modisPeriods = [
+    ["2000-02-24", "2000-04-25"],
+    ["2000-04-28", "2000-08-06"],
+    ["2000-08-18", "2001-06-15"],
+    ["2001-07-03", "2002-03-19"],
+    ["2002-03-28", "2003-12-16"],
+    ["2003-12-24", "2008-12-20"],
+    ["2008-12-23", "2016-02-18"],
+    ["2016-02-27", "2022-10-10"],
+    ["2022-10-23", "2025-08-08"],
+    ["2025-08-10", "2025-11-08"],
+    ["2025-11-10", "2026-11-07"],
+  ];
+  const isoDate = date => date.toISOString().slice(0, 10);
+  const suggestedDate = new Date();
+  suggestedDate.setUTCDate(suggestedDate.getUTCDate() - 5);
+  let modisDate = modisPeriods.reduce((chosen, [start, end]) => {
+    const suggested = isoDate(suggestedDate);
+    return start <= suggested ? (end < suggested ? end : suggested) : chosen;
+  }, modisPeriods[0][0]);
+  const displayDate = date => date.split("-").reverse().join("/");
+  const validModisDate = value => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const parsed = new Date(value + "T00:00:00Z");
+    return Number.isFinite(parsed.getTime()) && isoDate(parsed) === value &&
+      modisPeriods.some(([start, end]) => start <= value && value <= end);
   };
   let scopeName=null,origins=[],selected=null,enabled=false,layer="blue",zoom=2;
   let center=project(5,17,zoom),drag=null,tileErrors=0,tilesLoaded=0;
   const sources={blue:{label:"NASA Blue Marble · composição histórica",id:"BlueMarble_NextGeneration",
     date:"2004-01-01",matrix:"GoogleMapsCompatible_Level8",extension:"jpeg",maxZoom:7},
     daily:{label:"NASA Terra/MODIS · observação datada",id:"MODIS_Terra_CorrectedReflectance_TrueColor",
-    date:recentDate(),matrix:"GoogleMapsCompatible_Level9",extension:"jpg",maxZoom:8}};
+    matrix:"GoogleMapsCompatible_Level9",extension:"jpg",maxZoom:8}};
   let oldTileKey="";
   const viewport = () => $("geo-viewport");
   function dimensions() {
@@ -79,7 +101,14 @@
   function drawTiles() {
     const target=$("geo-tiles");
     if(!enabled){target.replaceChildren();oldTileKey="";return;}
-    const config=sources[layer],date=config.date,[w,h]=dimensions(),world=size(zoom);
+    const config = sources[layer];
+    const date = layer === "daily" ? modisDate : config.date;
+    const [w,h] = dimensions();
+    const sourceLabel = config.label + " · data solicitada " + displayDate(date);
+    const imageMeta = layer === "daily"
+      ? "Produto nominal de 250 m/pixel no equador. O zoom do painel exibe mosaicos mais agregados. Nuvens, áreas sem dados e atraso de publicação podem limitar a cobertura."
+      : "Composição histórica. A data identifica a camada no serviço.";
+    $("geo-imagery-meta").textContent = sourceLabel + ". " + imageMeta;
     const left=center[0]-w/2,top=center[1]-h/2;
     const xmin=Math.floor(left/256),xmax=Math.floor((left+w)/256);
     const ymin=Math.max(0,Math.floor(top/256)),ymax=Math.min(Math.pow(2,zoom)-1,Math.floor((top+h)/256));
@@ -88,6 +117,17 @@
     if(key!==oldTileKey){
       oldTileKey=key;tileErrors=0;tilesLoaded=0;
       target.replaceChildren();
+      $("geo-imagery-state").textContent = "Solicitando mosaicos à NASA…";
+      function settleTile(img, loaded) {
+        if (!target.contains(img)) return;
+        if (loaded) tilesLoaded++;
+        else tileErrors++;
+        if (tilesLoaded + tileErrors !== target.childElementCount) return;
+        let status = tilesLoaded + " mosaicos recebidos.";
+        if (!tilesLoaded) status = "Imagens indisponíveis para esta vista e data. Cartografia local disponível.";
+        else if (tileErrors) status += " Falha em " + tileErrors + " mosaicos. A imagem está parcial.";
+        $("geo-imagery-state").textContent = status;
+      }
       const n=Math.pow(2,zoom);
       for(let x=xmin;x<=xmax;x++)for(let y=ymin;y<=ymax;y++){
         const tx=((x%n)+n)%n;
@@ -95,13 +135,10 @@
         img.alt="";img.decoding="async";img.referrerPolicy="no-referrer";
         img.draggable=false;
         img.dataset.tileX=String(x);img.dataset.tileY=String(y);
-        img.src=NASA+config.id+"/default/"+date+"/"+config.matrix+"/"+zoom+"/"+y+"/"+tx+"."+config.extension;
-        img.addEventListener("load",()=>{tilesLoaded++;if(tilesLoaded===1)$("geo-imagery-state").textContent=config.label+" · "+date;});
-        img.addEventListener("error",()=>{
-          tileErrors++;
-          if(tileErrors>=2&&tilesLoaded===0)$("geo-imagery-state").textContent="Imagens indisponíveis. O mapa geográfico continua operante.";
-        });
+        img.addEventListener("load", () => settleTile(img, true), {once:true});
+        img.addEventListener("error", () => settleTile(img, false), {once:true});
         target.append(img);
+        img.src=NASA+config.id+"/default/"+date+"/"+config.matrix+"/"+zoom+"/"+y+"/"+tx+"."+config.extension;
       }
     }
     for(const tile of target.children){
@@ -182,23 +219,56 @@
   }
   function refresh() { if (scopeName) draw(); }
   function clear() { setScope(null, []); }
+  function syncDateControls() {
+    const showDate = enabled && layer === "daily";
+    $("geo-date-controls").hidden = !showDate;
+    $("geo-date").disabled = !showDate;
+    $("geo-apply-date").disabled = !showDate;
+    $("geo-date").value = modisDate;
+    $("geo-date").removeAttribute("aria-invalid");
+    $("geo-date-feedback").textContent = "";
+    $("geo-imagery-meta").hidden = !enabled;
+  }
   function activate() {
-    enabled=!enabled;
-    $("geo-enable").textContent=enabled?"Desativar imagens externas":"Ativar imagens NASA";
-    $("geo-enable").setAttribute("aria-pressed",String(enabled));
-    $("geo-imagery").disabled=!enabled;
-    $("geo-imagery-state").textContent=enabled?"Solicitando imagens à NASA…":"Cartografia local · sem transmissão externa";
-    tileErrors=0;tilesLoaded=0;oldTileKey="";draw();
+    enabled = !enabled;
+    $("geo-enable").textContent = enabled ? "Desativar imagens externas" : "Ativar imagens NASA";
+    $("geo-enable").setAttribute("aria-pressed", String(enabled));
+    $("geo-imagery").disabled = !enabled;
+    if (!enabled) $("geo-imagery-state").textContent = "Cartografia local · sem transmissão externa";
+    syncDateControls();
+    draw();
   }
   function init() {
     if(!viewport())return;
     const view=viewport();
-    $("geo-enable").addEventListener("click",activate);
-    $("geo-imagery").addEventListener("change",event=>{
-      if(event.target.value!=="blue"&&event.target.value!=="daily")return;
-      layer=event.target.value;oldTileKey="";zoom=Math.min(zoom,6);
-      $("geo-imagery-state").textContent=enabled?"Carregando camada "+sources[layer].label+"…":"Cartografia local · sem transmissão externa";
+    const date = $("geo-date");
+    date.min = modisPeriods[0][0];
+    date.max = modisPeriods.at(-1)[1];
+    syncDateControls();
+    $("geo-enable").addEventListener("click", activate);
+    $("geo-imagery").addEventListener("change", event => {
+      if (!enabled || !Object.hasOwn(sources, event.target.value)) return;
+      layer = event.target.value;
+      syncDateControls();
       draw();
+    });
+    $("geo-apply-date").addEventListener("click", () => {
+      if (!enabled || layer !== "daily") return;
+      const feedback = $("geo-date-feedback");
+      if (!validModisDate(date.value)) {
+        feedback.textContent = "Data fora dos períodos publicados neste catálogo. Escolha outro dia.";
+        date.setAttribute("aria-invalid", "true");
+        date.focus();
+        return;
+      }
+      date.removeAttribute("aria-invalid");
+      feedback.textContent = "";
+      modisDate = date.value;
+      draw();
+    });
+    date.addEventListener("input", () => {
+      date.removeAttribute("aria-invalid");
+      $("geo-date-feedback").textContent = "";
     });
     $("geo-zoom-in").addEventListener("click",()=>changeZoom(zoom+1));
     $("geo-zoom-out").addEventListener("click",()=>changeZoom(zoom-1));

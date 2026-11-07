@@ -53,3 +53,10 @@
 .geo-corner{font-size:11px}
 .geo-marker{min-width:28px;min-height:28px}
 @media(max-width:460px){.geo-tool-button{width:44px;height:44px}.geo-card{padding:18px}.geo-toolbar select{min-width:0;width:100%}}
+
+
+.geo-date-controls{display:flex;align-items:end;flex-wrap:wrap;gap:8px 12px;margin:0 0 14px}
+.geo-date-field{min-width:0;max-width:100%}
+.geo-date-controls .geo-source{flex-basis:100%;margin:0}
+.geo-date-controls .geo-source:empty{display:none}
+.geo-date-field input[aria-invalid="true"]{outline:2px solid var(--blue)}
