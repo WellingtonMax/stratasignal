@@ -12,6 +12,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from . import __version__
+from . import public_news
 from .build_demo import build_demo
 from .market import month
 from .schema import InputError, day, rows, text_value, unique_object
@@ -137,6 +138,21 @@ def collect_comex():
     }
 
 
+def collect_news():
+    """Read the fixed public Atom endpoint without following redirects."""
+    request = Request(public_news.FEED_URL, headers={
+        "Accept": "application/atom+xml, application/xml", "User-Agent": f"StrataSignal/{__version__}",
+    })
+    try:
+        with build_opener(_NoRedirect()).open(request, timeout=20) as response:
+            if response.headers.get_content_type() not in {"application/atom+xml", "application/xml", "text/xml"}:
+                raise InputError("O feed de notícias retornou um formato inesperado")
+            raw = response.read(public_news.MAX_FEED_BYTES + 1)
+    except (URLError, TimeoutError) as error:
+        raise InputError("Não foi possível consultar o feed do Natural Resources Canada") from error
+    return public_news.parse_feed(raw, datetime.now(timezone.utc))
+
+
 def build_public_site(directory, source_commit=None, *, enable_ml=True):
     if source_commit is not None and not re.fullmatch(r"[0-9a-f]{40}", source_commit):
         raise InputError("Commit de origem inválido")
@@ -145,6 +161,8 @@ def build_public_site(directory, source_commit=None, *, enable_ml=True):
         raise FileExistsError(output)
     snapshot = collect_comex()
     snapshot_bytes = (json.dumps(snapshot, ensure_ascii=False, allow_nan=False, indent=2) + "\n").encode("utf-8")
+    news = collect_news()
+    news_bytes = (json.dumps(news, ensure_ascii=False, allow_nan=False, indent=2) + "\n").encode("utf-8")
     ui = Path(__file__).with_name("ui")
     output.mkdir(mode=0o755, parents=False, exist_ok=False)
     try:
@@ -155,12 +173,17 @@ def build_public_site(directory, source_commit=None, *, enable_ml=True):
                 stream.write((ui / name).read_bytes())
         with (output / "comex.json").open("xb") as stream:
             stream.write(snapshot_bytes)
+        with (output / "news.json").open("xb") as stream:
+            stream.write(news_bytes)
         manifest = {
             "product": "StrataSignal", "version": __version__, "source_commit": source_commit,
             "source_repository": "https://github.com/WellingtonMax/stratasignal",
             "private_file_import": False, "dataset_kind": "public_aggregate",
             "trade_snapshot": {"path": "comex.json", "sha256": hashlib.sha256(snapshot_bytes).hexdigest(),
                                "source": snapshot["source"], "fetched_at": snapshot["fetched_at"]},
+            "news_snapshot": {"path": "news.json", "sha256": hashlib.sha256(news_bytes).hexdigest(),
+                              "source": news["source"], "feed_url": public_news.FEED_URL,
+                              "feed_updated_at": news["feed_updated_at"], "fetched_at": news["fetched_at"]},
             "synthetic_workbench": "carteira/source-manifest.json",
         }
         with (output / "source-manifest.json").open("x", encoding="utf-8", newline="\n") as stream:

@@ -29,7 +29,7 @@ Use a new output directory. Only hardcoded synthetic fixtures are accepted by th
 
 ## UX exploration foundation
 
-[UX architecture, current journeys, visual tokens and acceptance backlog](UX_DESIGN_PT.md) consolidate the product and business plans with the updated blue/white/green/yellow direction. The workbench links the map, allocation chart and accessible data table to the same exploration filters. The optional NASA layer supports two dated Terra/MODIS views with shared navigation. Linked news and consolidated cross-source reports remain backlog items.
+[UX architecture, current journeys, visual tokens and acceptance backlog](UX_DESIGN_PT.md) consolidate the product and business plans with the updated blue/white/green/yellow direction. The workbench links the map, allocation chart and accessible data table to the same exploration filters. The optional NASA layer supports two dated Terra/MODIS views with shared navigation. The first public report combines trade aggregates and curated news in separate sections.
 
 ## Build the public trade panorama
 
@@ -42,3 +42,15 @@ This builder fetches the latest publication date and month from `GET /general/da
 The queries use the documented public API and attribute the resulting aggregates to SECEX/MDIC. The provider publishes the same underlying statistics as open data. [API documentation](https://api-comexstat.mdic.gov.br/docs) · [Official open data](https://www.gov.br/mdic/pt-br/assuntos/comercio-exterior/estatisticas/base-de-dados-bruta) · [Query methodology](https://www.gov.br/mdic/pt-br/assuntos/comercio-exterior/estatisticas/perguntas-frequentes-faq/4-como-realizar-consultas)
 
 Use a new output directory. A failed query or invalid row prevents a new build. HTTP 429 permits one bounded retry after a wait. Publication retains the last successful version until a new package is validated. The browser reads a same-origin snapshot, with a warning when the source update date is more than 45 days old. There is no background refresh. These aggregates describe Brazilian trade under the selected customs codes. They do not establish mine origin, specifications, company-level movements, market price or worldwide production.
+
+**Baixar relatório JSON** exports the current public trade selection in the browser. The report records NCM, flow, month and country filters, the direction of the country field, generation time, source update and retrieval dates, units, matching rows, totals and monthly aggregates. Amounts are null where the selection has no rows. Reported zero amounts are retained. The ranking on the page covers all partners for the selected product, flow and period, while the report follows the country filter.
+
+On HTTPS, compare the report's `source.snapshot_sha256` with the digest of the loaded `comex.json` or with `trade_snapshot.sha256` in that publication's `source-manifest.json`. A later publication can replace those files. The digest identifies the input bytes and is null if the browser lacks Web Crypto. The report is generated locally from the public snapshots and requires no further requests.
+
+### Curadoria de notícias oficiais
+
+O mesmo build consulta o feed Atom do Natural Resources Canada. A seleção editorial em `stratasignal/public_news.py` mantém títulos e resumos próprios e exige que a URL original apareça no feed oficial. O build registra o hash da resposta Atom, a atualização informada pela fonte e a data da consulta. Uma falha do feed impede a geração de um novo pacote. A publicação existente fica disponível. [Catálogo oficial de feeds](https://natural-resources.canada.ca/corporate/rss-feeds)
+
+A primeira cobertura foi conferida em 7 de novembro de 2026. Inclui dois comunicados sobre lítio entre 50 entradas do feed. Datas de publicação e de evento vêm dos comunicados conferidos. O conteúdo original, as imagens e as marcas do emissor ficam na fonte. Os termos do governo canadense distinguem reprodução não comercial de redistribuição comercial. A curadoria publica texto próprio, metadados factuais e links. [Termos do Canada.ca](https://www.canada.ca/en/transparency/terms.html)
+
+O relatório acrescenta `news_context` com fonte, hashes, critérios de seleção, cobertura e itens. Compare `news_context.source.snapshot_sha256` com `news_snapshot.sha256` no manifesto. A interface e o JSON distinguem a ausência de correspondências da indisponibilidade da carga. Uma consulta feita há mais de 30 dias recebe aviso de atualização na interface. A preparação da publicação atualiza os arquivos. A navegação no panorama consulta apenas o próprio Site.
