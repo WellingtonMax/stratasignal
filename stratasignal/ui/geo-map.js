@@ -67,6 +67,7 @@
   };
   let scopeName=null,origins=[],selected=null,enabled=false,layer="blue",zoom=2;
   let center=project(5,17,zoom),drag=null;
+  let projection = "flat";
   let comparisonDate = null;
   const sources={blue:{label:"NASA Blue Marble · composição histórica",id:"BlueMarble_NextGeneration",
     date:"2004-01-01",matrix:"GoogleMapsCompatible_Level8",extension:"jpeg",maxZoom:7},
@@ -77,6 +78,7 @@
     land: $(prefix + "-land"),
     landCopy: $(prefix + "-land-copy"),
     tiles: $(prefix + "-tiles"),
+    canvas: $(prefix + "-globe"),
     markers: $(prefix + "-markers"),
     meta: $(prefix + "-imagery-meta"),
     status: $(prefix + "-imagery-state"),
@@ -87,12 +89,20 @@
     const v=referenceMap.view;
     return [v.clientWidth||960,v.clientHeight||440];
   }
-  function limitCenter() {
+  function limitCenter(panning = false) {
     const [,h]=dimensions(),world=size(zoom);
     // Horizontal wrapping is supported. Vertical panning is clipped to the Web Mercator world.
-    center[1]=clamp(center[1],Math.min(h/2,world/2),Math.max(world-h/2,world/2));
+    const inset = panning && projection === "flat" ? Math.min(h / 2, world / 2) : 0;
+    center[1]=clamp(center[1],inset,world-inset);
     if(!Number.isFinite(center[0]))center[0]=world/2;
     if(Math.abs(center[0])>world*8)center[0]=((center[0]%world)+world)%world;
+  }
+  function cameraAt(position = center) {
+    const world = size(zoom);
+    return [position[0] / world * 360 - 180, Math.atan(Math.sinh(Math.PI * (1 - 2 * position[1] / world))) * 180 / Math.PI];
+  }
+  function globeGeometry(w, h) {
+    return window.StrataGlobe.geometry(...cameraAt(), w, h, zoom);
   }
   function point(lon,lat,w,h) {
     const [x,y]=project(lon,lat,zoom),world=size(zoom);
@@ -112,6 +122,17 @@
     if (map.tileKey) map.tiles.replaceChildren();
     map.tileKey = "";
   }
+  function describeImagery(map, date) {
+    const source = sources[layer].label + " · data solicitada " + displayDate(date) + ". ";
+    const coverage = projection === "globe"
+      ? "Imagem global de 1536 × 768 px. O zoom amplia essa composição."
+      : "Mosaicos da área visível na projeção do mapa plano.";
+    const limitations = layer === "daily"
+      ? " Produto nominal de 250 m/pixel no equador. Nuvens, lacunas e atraso de publicação podem limitar a cobertura."
+      : " A data identifica a composição histórica no serviço.";
+    const text = source + coverage + limitations;
+    if (map.meta.textContent !== text) map.meta.textContent = text;
+  }
   function drawTiles(map, date, w, h, left, top) {
     if (!enabled) {
       clearTiles(map);
@@ -126,11 +147,6 @@
     if(key!==map.tileKey){
       map.tileKey = key;
       let tileErrors = 0, tilesLoaded = 0;
-      const sourceLabel = config.label + " · data solicitada " + displayDate(date);
-      const imageMeta = layer === "daily"
-        ? "Produto nominal de 250 m/pixel no equador. O zoom do painel exibe mosaicos mais agregados. Nuvens, áreas sem dados e atraso de publicação podem limitar a cobertura."
-        : "Composição histórica. A data identifica a camada no serviço.";
-      map.meta.textContent = sourceLabel + ". " + imageMeta;
       target.replaceChildren();
       map.status.textContent = "Solicitando mosaicos à NASA…";
       function settleTile(img, loaded) {
@@ -162,12 +178,14 @@
       tile.style.transform="translate("+(x*256-left)+"px,"+(y*256-top)+"px)";
     }
   }
-  function renderMarkers(map, w, h, interactive) {
+  function renderMarkers(map, w, h, globe, interactive) {
     const holder = map.markers;
     holder.replaceChildren();
     for(const [code,share] of origins){
       const ll=anchors[code];if(!ll||!Number.isFinite(share)||share<=0)continue;
-      const [x,y]=point(ll[0],ll[1],w,h);
+      const pixel = globe ? window.StrataGlobe.point(ll[0], ll[1], globe) : point(ll[0], ll[1], w, h);
+      if (!pixel) continue;
+      const [x,y] = pixel;
       const marker = make(interactive ? "button" : "span", code, "geo-marker");
       marker.style.left=x+"px";marker.style.top=y+"px";
       marker.style.setProperty("--marker-size",(17+36*Math.sqrt(share))+"px");
@@ -185,16 +203,18 @@
       holder.append(marker);
     }
   }
-  function positionOrigins() {
+  function positionOrigins(globe) {
     const [w,h] = dimensions();
-    renderMarkers(referenceMap, w, h, true);
-    if (comparisonDate) renderMarkers(comparisonMap, w, h, false);
+    if (!globe && projection === "globe") globe = globeGeometry(w, h);
+    renderMarkers(referenceMap, w, h, globe, true);
+    if (comparisonDate) renderMarkers(comparisonMap, w, h, globe, false);
   }
   function showSelected() {
     const target=$("geo-selection");target.replaceChildren();
     const share = origins.find(([code]) => code === selected)?.[1];
     const canSelect=typeof share==="number"&&share>0;
     $("geo-to-scenario").disabled=!canSelect;
+    $("geo-center-country").disabled=!canSelect || !anchors[selected];
     if (!canSelect) {
       const message = origins.length
         ? "Origens sem posição no mapa. Consulte o gráfico ou a tabela."
@@ -234,24 +254,33 @@
     time.dateTime = date;
     time.textContent = comparisonDay.format(new Date(date));
   }
+  function drawView(map, date, w, h, globe) {
+    if (enabled) describeImagery(map, date);
+    if (globe) {
+      const url = enabled ? window.StrataGlobe.imageryUrl(sources[layer].id, date) : null;
+      map.globe.update(globe, url);
+      return;
+    }
+    const left = center[0] - w / 2, top = center[1] - h / 2;
+    drawLand(map, left, top);
+    drawTiles(map, date, w, h, left, top);
+  }
   function draw() {
     limitCenter();
-    const [w,h] = dimensions(), left = center[0] - w / 2, top = center[1] - h / 2;
-    drawLand(referenceMap, left, top);
-    drawTiles(referenceMap, layer === "daily" ? modisDate : sources[layer].date, w, h, left, top);
+    const [w,h] = dimensions();
+    const globe = projection === "globe" ? {...globeGeometry(w, h), moving: drag !== null} : null;
+    drawView(referenceMap, layer === "daily" ? modisDate : sources[layer].date, w, h, globe);
     if (comparisonDate) {
       renderHeading("geo-reference-day", modisDate);
       renderHeading("geo-compare-day", comparisonDate);
-      drawLand(comparisonMap, left, top);
-      drawTiles(comparisonMap, comparisonDate, w, h, left, top);
+      drawView(comparisonMap, comparisonDate, w, h, globe);
     }
-    positionOrigins();
+    positionOrigins(globe);
   }
   function changeZoom(next) {
     const value=clamp(next,1,Math.min(6,sources[layer].maxZoom));
     if(value===zoom)return;
-    const lon=center[0]/size(zoom)*360-180;
-    const merc=center[1]/size(zoom),lat=Math.atan(Math.sinh(Math.PI*(1-2*merc)))*180/Math.PI;
+    const [lon,lat] = cameraAt();
     zoom=value;center=project(lon,lat,zoom);
     draw();
   }
@@ -263,13 +292,47 @@
   }
   function refresh() { if (scopeName) draw(); }
   function clear() { setScope(null, []); }
+  function setProjection(mode) {
+    if (projection === mode) return;
+    const maps = [referenceMap, comparisonMap];
+    const globe = mode === "globe";
+    if (globe) {
+      for (const map of maps) {
+        map.globe ||= window.StrataGlobe?.create(map.canvas, map.land.querySelector("img"),
+          message => { map.status.textContent = message; });
+      }
+      if (maps.some(map => !map.globe)) {
+        $("geo-mode-globe").disabled = true;
+        $("geo-projection-hint").textContent = "Globo indisponível neste navegador. O mapa plano permanece acessível.";
+        return;
+      }
+    }
+    projection = mode;
+    drag = null;
+    $("geo-layout").classList.toggle("is-globe", globe);
+    $("geo-mode-globe").setAttribute("aria-pressed", String(globe));
+    $("geo-mode-flat").setAttribute("aria-pressed", String(!globe));
+    $("geo-projection-hint").textContent = (globe ? "Globo. " : "Mapa plano. ") +
+      "Arraste ou use as setas para mover. No toque, deslize na horizontal.";
+    referenceMap.view.setAttribute("aria-label", globe ? "Globo navegável" : "Mapa-múndi navegável");
+    for (const map of maps) {
+      map.canvas.hidden = !globe;
+      map.land.hidden = map.landCopy.hidden = globe;
+      clearTiles(map);
+      if (!globe) map.globe?.deactivate(enabled);
+    }
+    draw();
+  }
   function setComparisonDate(value) {
     comparisonDate = value;
     const active = value !== null;
     $("geo-layout").classList.toggle("is-comparing", active);
     $("geo-reference-title").hidden = !active;
     $("geo-compare-pane").hidden = !active;
-    if (!active) clearTiles(comparisonMap);
+    if (!active) {
+      clearTiles(comparisonMap);
+      comparisonMap.globe?.deactivate();
+    }
   }
   function setComparisonControls(open) {
     const toggle = $("geo-compare-toggle");
@@ -331,7 +394,10 @@
     $("geo-enable").textContent = enabled ? "Desativar imagens externas" : "Ativar imagens NASA";
     $("geo-enable").setAttribute("aria-pressed", String(enabled));
     $("geo-imagery").disabled = !enabled;
-    if (!enabled) $("geo-imagery-state").textContent = "Cartografia local · sem transmissão externa";
+    if (!enabled) {
+      referenceMap.globe?.deactivate();
+      $("geo-imagery-state").textContent = "Cartografia local · sem transmissão externa";
+    }
     syncDateControls();
     draw();
   }
@@ -340,6 +406,8 @@
     bindDateControl("geo-date", "geo-apply-date", "geo-date-feedback", () => comparisonDate, value => { modisDate = value; });
     bindDateControl("geo-compare-date", "geo-apply-comparison", "geo-compare-feedback", () => modisDate, setComparisonDate);
     syncDateControls();
+    $("geo-mode-globe").addEventListener("click", () => setProjection("globe"));
+    $("geo-mode-flat").addEventListener("click", () => setProjection("flat"));
     $("geo-enable").addEventListener("click", activate);
     $("geo-imagery").addEventListener("change", event => {
       if (!enabled || !Object.hasOwn(sources, event.target.value)) return;
@@ -355,6 +423,12 @@
     $("geo-zoom-in").addEventListener("click",()=>changeZoom(zoom+1));
     $("geo-zoom-out").addEventListener("click",()=>changeZoom(zoom-1));
     $("geo-reset").addEventListener("click",()=>{zoom=2;center=project(5,17,zoom);draw();});
+    $("geo-center-country").addEventListener("click", () => {
+      const anchor = anchors[selected];
+      if (!anchor) return;
+      center = project(...anchor, zoom);
+      draw();
+    });
     $("geo-to-scenario").addEventListener("click",()=>{
       const picker=$("scenario-country");
       if(!selected||!picker)return;
@@ -368,27 +442,42 @@
     bindPan(referenceMap.view);
     bindPan(comparisonMap.view);
     window.addEventListener("resize",refresh);
+    if (document.body.dataset.mode === "demo" && location.hash === "#atlas") {
+      center = project(-52, -12, zoom);
+      setProjection("globe");
+    } else draw();
+  }
+  function panFrom(position, dx, dy) {
+    if (projection === "globe") {
+      const [lon,lat] = cameraAt(position);
+      const radius = globeGeometry(...dimensions()).radius;
+      const degreesPerPixel = 180 / (Math.PI * radius);
+      center = project(lon + dx * degreesPerPixel, lat - dy * degreesPerPixel, zoom);
+    } else center = [position[0] + dx, position[1] + dy];
+    limitCenter(true);
     draw();
   }
   function bindPan(view) {
     view.addEventListener("pointerdown",event=>{
       if(drag||event.target.closest("button")||event.button!==0)return;
-      drag={pointerId:event.pointerId,x:event.clientX,y:event.clientY,startX:center[0],startY:center[1]};
+      drag={pointerId:event.pointerId,x:event.clientX,y:event.clientY,start:center.slice()};
       try{view.setPointerCapture(event.pointerId);}catch(_){}
     });
     view.addEventListener("pointermove",event=>{
       if(!drag||event.pointerId!==drag.pointerId)return;
-      center=[drag.startX-(event.clientX-drag.x),drag.startY-(event.clientY-drag.y)];
-      draw();
+      panFrom(drag.start, drag.x - event.clientX, drag.y - event.clientY);
     });
     for(const name of ["pointerup","pointercancel","lostpointercapture"])view.addEventListener(name,event=>{
-      if (drag?.pointerId === event.pointerId) drag = null;
+      if (drag && drag.pointerId === event.pointerId) {
+        drag = null;
+        if (projection === "globe") draw();
+      }
     });
     view.addEventListener("keydown",event=>{
       const deltas={ArrowLeft:[-90,0],ArrowRight:[90,0],ArrowUp:[0,-90],ArrowDown:[0,90]};
       if(event.target!==view||!deltas[event.key])return;
       event.preventDefault();
-      const [dx,dy]=deltas[event.key];center[0]+=dx;center[1]+=dy;draw();
+      panFrom(center, ...deltas[event.key]);
     });
   }
   document.addEventListener("DOMContentLoaded",init);

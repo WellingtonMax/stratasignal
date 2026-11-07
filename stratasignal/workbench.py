@@ -352,6 +352,7 @@ def handler_class(workspace, token):
                       "/insights.js": ("insights.js", "text/javascript; charset=utf-8"),
                       "/geo-map.js": ("geo-map.js", "text/javascript; charset=utf-8"),
                       "/geo-map.css": ("geo-map.css", "text/css; charset=utf-8"),
+                      "/geo-globe.js": ("geo-globe.js", "text/javascript; charset=utf-8"),
                       "/world-land.svg": ("world-land.svg", "image/svg+xml"), "/favicon.svg": ("favicon.svg", "image/svg+xml")}
             if self.path in assets:
                 name, mime = assets[self.path]

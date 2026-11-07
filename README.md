@@ -26,7 +26,7 @@ An analyst reviews a bounded procurement dataset and delivers a private HTML dec
 | Public-data preparation | Streaming importer for the MDIC's documented local CSV layout, with explicit NCM, flow and period |
 | Public trade panorama | Publication-time Comex Stat API snapshot for graphite and lithium carbonates, with product, flow, month and country filters |
 | Local workbench | Import JSON or map operational CSV columns; review inputs, run analysis, simulate, compare periods and download reports |
-| Geospatial explorer | Country-level allocations on a local world map, optional comparison of two NASA Terra/MODIS dates with synchronized navigation, and a shortcut to the supply shock simulator |
+| Geospatial explorer | Globe and flat map with country allocations, optional dated NASA imagery in both projections, synchronized comparisons, and a shortcut to the supply shock simulator |
 | Private delivery | Local analysis; loopback-only UI connection; no remote customer-data service, telemetry, external fonts or third-party AI calls |
 
 The demo has **3 fictional material specifications, 6 fictional supplier positions and 780 synthetic orders**. Every report records whether its input is synthetic or customer-declared. Synthetic model metrics demonstrate software behavior only.
@@ -47,7 +47,7 @@ The command opens an address on `127.0.0.1`, with a temporary access credential 
 
 1. Choose the built-in fictional portfolio, import a raw procurement JSON bundle, or select **Planilhas CSV** and map your columns.
 2. For CSV, explicitly choose the separator, numeric format, date format and whether supplier participation is a fraction or percentage. Supply positions; order and evidence manifests are optional. See [the CSV guide and fictional samples](docs/CSV_IMPORT_PT.md).
-3. Review the portfolio and run the analysis. Explore country exposure on the **interactive world map**, the documentary queue and experimental delivery estimates when the optional ML dependency is installed. The offline land basemap is bundled; clicking **Ativar imagens NASA** requests dated NASA GIBS satellite tiles, without transmitting portfolio inputs. [Geospatial scope, image dates and privacy](docs/GEO_SPATIAL_PT.md).
+3. Review the portfolio and run the analysis. Explore country exposure in the **satellite atlas**, the documentary queue and experimental delivery estimates when the optional ML dependency is installed. The globe and flat map include local land outlines. Clicking **Ativar imagens NASA** requests dated imagery from NASA GIBS. [Geospatial scope, image dates and privacy](docs/GEO_SPATIAL_PT.md).
 4. Calculate a supply-reduction scenario. Downloads include the **last calculated** scenario, rather than unsent slider changes.
 5. Export HTML, JSON results and the normalized current input. For the next period, import that normalized input as the previous baseline under **Comparar períodos**.
 

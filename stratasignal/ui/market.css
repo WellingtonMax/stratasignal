@@ -13,6 +13,9 @@
 .market-hero-copy>p:not(.eyebrow){color:#d6e3f5;font-size:clamp(14px,1.4vw,17px);line-height:1.6;max-width:480px;margin:0 0 22px}
 .market-hero .button{min-height:44px;border-radius:7px}
 .market-hero .button:hover{background:#066454}
+.market-hero-actions{display:flex;flex-wrap:wrap;gap:10px}
+.market-hero .market-atlas-link{border:1px solid #6687ac;color:#f7faff;background:#153454}
+.market-hero .market-atlas-link:hover{background:#20486e}
 .market-release{min-width:0;padding:clamp(16px,2.5vw,28px);border:1px solid #4e6b8d;border-radius:12px;background:#122d4e}
 .market-release h2{color:#fff;font-size:28px;margin:0 0 5px}
 .market-release p:not(.eyebrow){font-size:13px;color:#c9d9ed;line-height:1.6;margin:0}

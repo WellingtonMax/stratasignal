@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="app.css">
   <link rel="stylesheet" href="geo-map.css">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <script defer src="geo-globe.js"></script>
   <script defer src="geo-map.js"></script>
   <script defer src="insights.js"></script>
   <script defer src="app.js"></script>
@@ -96,15 +97,29 @@
             </div>
           </div>
         </div>
-        <article class="card geo-card" aria-labelledby="geo-title">
-  <div class="geo-heading"><div><p class="eyebrow">EXPLORADOR GEOESPACIAL · STRATASIGNAL</p><h2 id="geo-title">Abastecimento visto do planeta.</h2><p class="geo-description">Explore a concentração por país da especificação selecionada. A camada de satélite é uma observação geográfica, não uma validação de mina, rota comercial ou origem física.</p></div><span class="small-tag">POSIÇÕES POR PAÍS</span></div>
-  <div class="geo-toolbar" aria-label="Controles de imagens e navegação">
-    <button type="button" id="geo-enable" class="button secondary" aria-pressed="false">Ativar imagens NASA</button>
-    <select id="geo-imagery" aria-label="Camada de satélite" disabled><option value="blue">NASA · Blue Marble (histórica)</option><option value="daily">NASA · Terra/MODIS (imagem diária)</option></select>
-    <button type="button" id="geo-zoom-in" class="geo-tool-button" aria-label="Ampliar mapa">+</button>
-    <button type="button" id="geo-zoom-out" class="geo-tool-button" aria-label="Reduzir mapa">−</button>
-    <button type="button" id="geo-reset" class="geo-tool-button" aria-label="Restaurar enquadramento">⌖</button>
+        <article id="atlas" class="card geo-card" aria-labelledby="geo-title">
+  <header class="geo-heading">
+    <div><p class="eyebrow">STRATASIGNAL · EXPLORAÇÃO GEOGRÁFICA</p><h2 id="geo-title" tabindex="-1">Atlas de satélite</h2><p class="geo-description">Gire o globo ou abra o mapa plano para explorar as origens declaradas da sua seleção. As imagens da NASA são datadas.</p></div>
+    <span id="geo-scope-tag" class="geo-scope-tag">POSIÇÕES POR PAÍS</span>
+  </header>
+  <div class="geo-toolbar">
+    <div class="geo-control-group">
+      <div class="geo-modes" role="group" aria-label="Projeção do atlas">
+        <button type="button" id="geo-mode-globe" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg>Globo</button>
+        <button type="button" id="geo-mode-flat" aria-pressed="true"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2V5Zm6-2v16m6-14v16"/></svg>Mapa plano</button>
+      </div>
+      <div class="geo-zoom" role="group" aria-label="Enquadramento">
+        <button type="button" id="geo-zoom-in" class="geo-tool-button" aria-label="Ampliar mapa">+</button>
+        <button type="button" id="geo-zoom-out" class="geo-tool-button" aria-label="Reduzir mapa">−</button>
+        <button type="button" id="geo-reset" class="geo-tool-button" aria-label="Restaurar enquadramento">⌖</button>
+      </div>
+    </div>
+    <div class="geo-imagery-controls" role="group" aria-label="Imagens de satélite">
+      <button type="button" id="geo-enable" class="button primary" aria-pressed="false">Ativar imagens NASA</button>
+      <select id="geo-imagery" aria-label="Camada de satélite" disabled><option value="blue">Blue Marble · histórica</option><option value="daily">Terra/MODIS · diária</option></select>
+    </div>
   </div>
+  <p id="geo-projection-hint" class="geo-instruction" role="status">Mapa plano. Arraste ou use as setas para mover. No toque, deslize na horizontal.</p>
   <div id="geo-date-controls" class="geo-date-controls" hidden>
     <div class="geo-date-field">
       <label class="field-label" for="geo-date">Data da imagem Terra/MODIS (UTC)</label>
@@ -128,10 +143,11 @@
     <div class="geo-maps">
       <div class="geo-pane">
         <h3 id="geo-reference-title" class="geo-pane-title" hidden>A · Referência <time id="geo-reference-day"></time></h3>
-        <div id="geo-viewport" class="geo-viewport" role="region" tabindex="0" aria-label="Mapa-múndi navegável. Arraste para mover e use setas no teclado.">
+        <div id="geo-viewport" class="geo-viewport" role="region" tabindex="0" aria-label="Mapa-múndi navegável" aria-describedby="geo-projection-hint">
           <div id="geo-land" class="geo-land" aria-hidden="true"><img src="world-land.svg" alt="" draggable="false"></div>
           <div id="geo-land-copy" class="geo-land" aria-hidden="true"><img src="world-land.svg" alt="" draggable="false"></div>
           <div id="geo-tiles" class="geo-tiles" aria-hidden="true"></div>
+          <canvas id="geo-globe" class="geo-globe" aria-hidden="true" hidden></canvas>
           <div id="geo-markers" class="geo-markers" aria-label="Países de origem declarados"></div>
           <div class="geo-corner">Âncoras aproximadas por país · sem coordenadas de instalações</div>
         </div>
@@ -144,6 +160,7 @@
           <div id="geo-compare-land" class="geo-land" aria-hidden="true"><img src="world-land.svg" alt="" draggable="false"></div>
           <div id="geo-compare-land-copy" class="geo-land" aria-hidden="true"><img src="world-land.svg" alt="" draggable="false"></div>
           <div id="geo-compare-tiles" class="geo-tiles" aria-hidden="true"></div>
+          <canvas id="geo-compare-globe" class="geo-globe" aria-hidden="true" hidden></canvas>
           <div id="geo-compare-markers" class="geo-markers" aria-hidden="true"></div>
           <div class="geo-corner">Âncoras aproximadas por país · sem coordenadas de instalações</div>
         </div>
@@ -152,12 +169,14 @@
       </div>
     </div>
     <aside class="geo-sidebar" aria-label="Dados de concentração por origem">
+      <p class="eyebrow">ORIGENS DECLARADAS</p>
       <h3 id="geo-material-name">Origens declaradas</h3><div id="geo-origin-list" class="geo-origin-list"></div>
       <div id="geo-selection" class="geo-selection" aria-live="polite"></div>
+      <button type="button" id="geo-center-country" class="button secondary" disabled>Centralizar país</button>
       <button type="button" id="geo-to-scenario" class="button primary" disabled>Simular redução desta origem</button>
     </aside>
   </div>
-  <p class="footnote">Mapa local: Natural Earth 1:110m (domínio público). Após consentimento, somente coordenadas dos mosaicos visualizados e a data da camada são solicitadas à NASA GIBS; sua carteira e seus arquivos não são enviados. Blue Marble é uma composição histórica; MODIS é uma observação datada, sujeita a nuvens e atrasos. País não significa mina nem rota verificada.</p>
+  <p class="footnote">Cartografia local de Natural Earth. Após ativação, <a href="https://nasa-gibs.github.io/gibs-api-docs/#data-use-guidance-and-acknowledgements" target="_blank" rel="noopener noreferrer">NASA GIBS</a> fornece as imagens. O globo usa uma imagem global por data. O mapa plano solicita mosaicos da área visível. Dados da carteira ficam no painel. Nuvens e lacunas podem afetar a imagem. Os marcadores indicam países aproximados, sem identificar minas ou rotas.</p>
 </article><div class="two-col"><article class="card"><div class="card-heading"><div><p class="eyebrow">CONCENTRAÇÃO DE ORIGEM</p><h2>De onde vem a sua oferta?</h2></div><span class="small-tag">ALOCAÇÃO DECLARADA</span></div><div id="country-bars" class="country-bars"></div><details class="origin-data"><summary>Ver dados do gráfico em tabela</summary><div class="table-wrap"><table><caption>Alocação declarada da especificação em foco</caption><thead><tr><th scope="col">Origem</th><th scope="col">Participação</th></tr></thead><tbody id="origin-table"></tbody></table></div></details><p class="footnote">A origem declarada pode se referir a uma etapa da cadeia. Extração, refino e embarque exigem definições distintas.</p></article><article class="card priority-card"><p class="eyebrow">PRÓXIMAS AÇÕES</p><h2>O que merece atenção primeiro</h2><div id="priorities"></div><p class="footnote">A prioridade combina concentração, cobertura e sinais documentais. É uma regra de triagem, não uma probabilidade de crise.</p></article></div><article class="card"><div class="card-heading"><div><p class="eyebrow">MATERIAIS ACOMPANHADOS</p><h2>Vulnerabilidades, por especificação</h2></div><button type="button" class="text-button" data-go="scenario">Simular uma redução ↗</button></div><div class="table-wrap"><table><thead><tr><th>Material</th><th>Prioridade</th><th>Maior origem</th><th>Cobertura</th><th>Prazo nominal</th><th>Sinais</th></tr></thead><tbody id="portfolio-table"></tbody></table></div></article><div class="two-col"><article class="card"><p class="eyebrow">CONFERÊNCIA DOCUMENTAL</p><h2>Um motivo para cada sinal</h2><div id="evidence-signals"></div><p class="footnote">Metadados e hashes não autenticam certificados nem a origem física. Uma repetição pode ser um modelo compartilhado.</p></article><article class="card"><p class="eyebrow">PADRÕES DE ENTREGA</p><h2>Estimativas com contexto</h2><div id="model-state"></div><details><summary>Ver avaliação do modelo</summary><div id="model-evaluation"></div></details></article></div></div>
       </section>
 
