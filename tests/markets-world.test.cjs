@@ -88,6 +88,7 @@ test("world filters distinguish zero, missing flow, and partial weight and keep 
   assert.equal(get("volume").textContent, "Indisponível");
   assert.equal(get("share").textContent, "0%");
   assert.equal(get("position").textContent, "1º");
+  assert.deepEqual([...get("share-rows").querySelectorAll("tr")].map(row => row.lastElementChild.textContent), ["Indisponível", "Indisponível", "0%"]);
   assert.match(get("venue-source").textContent, /<img src=x/);
   assert.equal(get("venue-source").querySelector("img"), null);
   assert.match(window.location.search, /pais=CL&produto=2603&fluxo=import/);
@@ -143,6 +144,11 @@ test("world report freezes filters, observations, coverage, registry, source has
   assert.equal(report.observations[2].fob_usd, 6000);
   assert.deepEqual(report.world_benchmark, {
     year: 2024, world_fob_usd: 24000, country_share: 0.25, country_rank: 1, countries_with_record: 1,
+    history: [
+      {year: 2022, country_fob_usd: null, world_fob_usd: 10000, country_share: null, status: "unavailable"},
+      {year: 2023, country_fob_usd: 5000, world_fob_usd: 20000, country_share: 0.25, status: "observed"},
+      {year: 2024, country_fob_usd: 6000, world_fob_usd: 24000, country_share: 0.25, status: "observed"},
+    ],
   });
   assert.equal(report.exchange_registry.records[0].name, "<img src=x onerror=alert(1)>");
   assert.deepEqual(report.interpretation.predictions, []);

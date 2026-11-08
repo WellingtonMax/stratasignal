@@ -10,6 +10,7 @@
   const number = new Intl.NumberFormat("pt-BR", {maximumFractionDigits: 2});
   const compact = new Intl.NumberFormat("pt-BR", {notation: "compact", maximumFractionDigits: 2});
   const percent = new Intl.NumberFormat("pt-BR", {style: "percent", maximumFractionDigits: 1, signDisplay: "exceptZero"});
+  const sharePercent = new Intl.NumberFormat("pt-BR", {style: "percent", maximumFractionDigits: 1});
   const dates = new Intl.DateTimeFormat("pt-BR", {dateStyle: "short", timeZone: "UTC"});
   const regions = new Intl.DisplayNames(["pt-BR"], {type: "region"});
   const collator = new Intl.Collator("pt-BR", {sensitivity: "base"});
@@ -144,6 +145,9 @@
     const year = years.at(-1);
     const valueSlot = (years.length - 1) * 2 + slot;
     const periods = years.map((_, index) => series[selection.pais]?.[2 * index + slot]);
+    const worldPeriods = years.map((_, index) => series.WORLD?.[2 * index + slot]);
+    const sharePeriods = periods.map((cell, index) => cell && worldPeriods[index]?.[0] > 0
+      ? (selection.pais === "WORLD" ? 1 : cell[0] / worldPeriods[index][0]) : null);
     const current = periods.at(-1);
     const previous = periods.at(-2);
     const empty = get("empty");
@@ -181,13 +185,34 @@
       row.append(label, element("td", cell ? number.format(cell[0]) : "Sem registro"), weight);
       return row;
     }));
+    get("share-caption").textContent = `${region(selection.pais)} · ${flows[selection.fluxo]} · participação mundial por ano`;
+    get("share-bars").replaceChildren(...years.map((year, index) => {
+      const bar = element("div", "");
+      bar.className = "markets-bar";
+      const share = sharePeriods[index];
+      const meter = document.createElement("meter");
+      meter.max = 1;
+      meter.value = share ?? 0;
+      bar.append(element("span", year), meter, element("strong", share === null ? "Indisponível" : sharePercent.format(share)));
+      return bar;
+    }));
+    get("share-rows").replaceChildren(...years.map((year, index) => {
+      const row = document.createElement("tr");
+      const label = element("th", year);
+      label.scope = "row";
+      row.append(label,
+        element("td", periods[index] ? number.format(periods[index][0]) : "Sem registro"),
+        element("td", worldPeriods[index] ? number.format(worldPeriods[index][0]) : "Sem registro"),
+        element("td", sharePeriods[index] === null ? "Indisponível" : sharePercent.format(sharePeriods[index])));
+      return row;
+    }));
     const ranked = catalog.countries.filter(code => series[code]?.[valueSlot])
       .sort((left, right) => series[right][valueSlot][0] - series[left][valueSlot][0] || collator.compare(region(left), region(right)));
     const worldCurrent = series.WORLD?.[valueSlot];
     const share = current && worldCurrent?.[0] > 0 ? current[0] / worldCurrent[0] : null;
     const rank = selection.pais === "WORLD" ? null : ranked.indexOf(selection.pais) + 1 || null;
     get("share-year").textContent = get("position-year").textContent = year;
-    get("share").textContent = selection.pais === "WORLD" && current ? "100%" : share === null ? "Indisponível" : percent.format(share);
+    get("share").textContent = selection.pais === "WORLD" && current ? "100%" : share === null ? "Indisponível" : sharePercent.format(share);
     get("share-context").textContent = selection.pais === "WORLD" ? "Total mundial reconciliado" :
       share === null ? "País ou total mundial sem valor comparável" : money(current[0]) + " de " + money(worldCurrent[0]);
     get("position").textContent = selection.pais === "WORLD" ? "—" : rank === null ? "Indisponível" : number.format(rank) + "º";
@@ -237,6 +262,13 @@
         country_share: selection.pais === "WORLD" && current ? 1 : share,
         country_rank: rank,
         countries_with_record: ranked.length,
+        history: years.map((year, index) => ({
+          year,
+          country_fob_usd: periods[index]?.[0] ?? null,
+          world_fob_usd: worldPeriods[index]?.[0] ?? null,
+          country_share: sharePeriods[index],
+          status: sharePeriods[index] === null ? "unavailable" : "observed",
+        })),
       },
     };
     get("download").disabled = false;

@@ -86,6 +86,21 @@
   letter-spacing: -.03em;
 }
 
+.world-share-history {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #d8e1ec;
+}
+
+.world-share-history h3,
+.world-share-history p {
+  margin-top: 0;
+}
+
+.world-share-history .markets-bars {
+  margin-block: 14px;
+}
+
 .world-quote-actions {
   display: flex;
   flex-wrap: wrap;
