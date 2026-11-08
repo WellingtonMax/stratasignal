@@ -1,0 +1,83 @@
+.world-banner-meta {
+  padding: 16px 18px;
+  border: 1px solid #476486;
+  border-radius: 8px;
+  background: #122d4e;
+}
+
+.world-banner-meta a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--white);
+}
+
+.world-filters {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(145px, .55fr);
+  align-items: start;
+  margin-top: 14px;
+}
+
+.world-filters legend {
+  padding-inline: 6px;
+  font-weight: 650;
+}
+
+.world-filter {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+.world-filter label {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.world-filter input,
+.world-filter select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+}
+
+.world-filter small {
+  min-height: 17px;
+  color: var(--muted);
+}
+
+.world-filter button {
+  justify-self: start;
+  min-height: 44px;
+}
+
+.world-ranking {
+  margin-block: 14px;
+}
+
+.world-quote-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.world-quote-actions .button:not(.secondary):hover {
+  background: #066454;
+  color: var(--white);
+}
+
+.world-banner-meta p,
+#world-trade-title {
+  overflow-wrap: anywhere;
+}
+
+.markets-table td small {
+  display: block;
+  color: var(--muted);
+  white-space: normal;
+}
+
+@media (max-width: 740px) {
+  .world-filters { grid-template-columns: minmax(0, 1fr); }
+}

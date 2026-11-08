@@ -49,21 +49,8 @@
     container.replaceChildren();
     if (!active) return;
     const market = snapshot.countries[country.value];
-    const widget = new URL("https://www.tradingview-widget.com/embed-widget/symbol-overview/?locale=br");
-    widget.hash = encodeURIComponent(JSON.stringify({
-      symbols: market.assets.map(asset => [asset.name, `${market.exchange_symbol}:${asset.symbol}|1D`]),
-      width: "100%",
-      height: "100%",
-      chartType: "area",
-      colorTheme: "light",
-      hideMarketStatus: false,
-    }));
-    const frame = document.createElement("iframe");
-    frame.title = `Cotações com atraso pela TradingView · ${country.selectedOptions[0].text}`;
-    frame.setAttribute("sandbox", "allow-scripts allow-same-origin");
-    frame.referrerPolicy = "no-referrer";
-    frame.src = widget.href;
-    container.append(frame);
+    const symbols = market.assets.map(asset => [asset.name, `${market.exchange_symbol}:${asset.symbol}|1D`]);
+    container.append(marketQuoteFrame(symbols, `Cotações com atraso pela TradingView · ${country.selectedOptions[0].text}`));
   }
 
   function render() {
@@ -134,6 +121,8 @@
         throw new Error("Snapshot inválido");
       }
       snapshot = data;
+      const requested = new URLSearchParams(location.search).get("pais");
+      if (Object.hasOwn(catalog, requested)) country.value = requested;
       render();
       country.disabled = false;
       get("content").hidden = false;

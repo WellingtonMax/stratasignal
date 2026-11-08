@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; frame-src https://www.tradingview-widget.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="description" content="Explore o comércio mundial de produtos minerais por país, produto e fluxo e consulte bolsas e cotações.">
+  <title>StrataSignal · Mercados globais</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../app.css">
+  <link rel="stylesheet" href="../market.css">
+  <link rel="stylesheet" href="markets.css">
+  <link rel="stylesheet" href="markets-world.css">
+  <script src="markets-quote.js" defer></script>
+  <script src="markets-world.js" defer></script>
+</head>
+<body class="market-page markets-page">
+  <a href="#main" class="skip">Pular para o conteúdo</a>
+  <header class="market-header">
+    <div class="market-header-inner">
+      <a class="brand" href="../" aria-label="StrataSignal, panorama público">
+        <span class="brand-symbol" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>strata<b>signal</b><small>INTELIGÊNCIA MINERAL</small></span>
+      </a>
+      <nav aria-label="Áreas do StrataSignal">
+        <a href="../#explorar">Panorama</a>
+        <a href="../#mapa">Mapa</a>
+        <a href="./" aria-current="page">Mercados</a>
+        <a href="../#noticias">Notícias</a>
+        <a href="../carteira/">Carteira fictícia <span aria-hidden="true">↗</span></a>
+      </nav>
+    </div>
+  </header>
+  <main id="main">
+    <section class="markets-banner world-banner" aria-labelledby="world-title">
+      <div>
+        <p class="eyebrow"><span class="market-dot" aria-hidden="true"></span> OBSERVATÓRIO PÚBLICO · COBERTURA GLOBAL</p>
+        <h1 id="world-title">Mercados globais</h1>
+        <p>Explore quem exporta e importa produtos minerais, consulte bolsas e acompanhe ações pelo código do ativo.</p>
+      </div>
+      <div class="world-banner-meta">
+        <p id="world-coverage" aria-label="Cobertura do catálogo">Catálogo de comércio e bolsas</p>
+        <a href="nacional.html">Séries nacionais de ferro · Brasil e Austrália</a>
+      </div>
+    </section>
+
+    <fieldset id="world-controls" class="market-filters world-filters" disabled>
+      <legend>Recorte comercial</legend>
+      <div class="world-filter">
+        <label for="world-country-search">Buscar país ou território</label>
+        <input id="world-country-search" type="search" placeholder="Ex. Chile" maxlength="80" aria-controls="world-country" aria-describedby="world-country-hint">
+        <label for="world-country">País ou território</label>
+        <select id="world-country"><option value="BR">Brasil</option></select>
+        <small id="world-country-hint"></small>
+      </div>
+      <div class="world-filter">
+        <label for="world-product-search">Buscar produto ou código HS</label>
+        <input id="world-product-search" type="search" placeholder="Ex. cobre ou 2603" maxlength="80" aria-controls="world-product" aria-describedby="world-product-hint">
+        <label for="world-product">Produto mineral</label>
+        <select id="world-product"><option value="2601">Minério de ferro e concentrados</option></select>
+        <small id="world-product-hint"></small>
+      </div>
+      <div class="world-filter">
+        <label for="world-flow">Fluxo comercial</label>
+        <select id="world-flow"><option value="export">Exportações</option><option value="import">Importações</option></select>
+        <button id="world-reset" class="button secondary" type="button">Limpar filtros</button>
+      </div>
+    </fieldset>
+    <p id="world-status" class="market-status" role="status">Carregando o catálogo mundial…</p>
+    <button id="world-retry" class="button secondary" type="button" hidden>Tentar novamente</button>
+    <noscript><p>Ative o JavaScript para explorar o catálogo. <a href="https://www.international-economics.eu/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37">Consultar a base BACI do CEPII</a></p></noscript>
+
+    <div id="world-content" class="markets-board" hidden>
+      <section class="markets-export" aria-labelledby="world-trade-title">
+        <p class="eyebrow">COMÉRCIO INTERNACIONAL · CEPII BACI</p>
+        <h2 id="world-trade-title">Comércio do recorte</h2>
+        <p class="markets-context" id="world-selection"></p>
+        <p class="market-status market-notice" id="world-empty" hidden></p>
+        <div id="world-trade" hidden>
+          <dl class="markets-stats">
+            <div><dt>Valor em <span id="world-year"></span></dt><dd id="world-value"></dd><small>USD correntes · FOB reconciliado</small></div>
+            <div><dt>Volume em <span id="world-volume-year"></span></dt><dd id="world-volume"></dd><small id="world-volume-coverage"></small></div>
+            <div><dt>Variação anual do valor</dt><dd id="world-change"></dd><small id="world-change-period"></small></div>
+          </dl>
+          <article class="card markets-card" aria-labelledby="world-chart-title">
+            <h3 id="world-chart-title">Valor por ano</h3>
+            <div id="world-bars" class="markets-bars" aria-hidden="true"></div>
+            <details class="market-table markets-table">
+              <summary>Ver valores em tabela</summary>
+              <div class="table-wrap" role="region" aria-label="Tabela de comércio mineral por ano" tabindex="0">
+                <table>
+                  <caption id="world-caption"></caption>
+                  <thead><tr><th scope="col">Ano</th><th scope="col">USD correntes</th><th scope="col">Toneladas</th></tr></thead>
+                  <tbody id="world-rows"></tbody>
+                </table>
+              </div>
+            </details>
+          </article>
+        </div>
+        <section id="world-rank" class="card markets-card market-ranking world-ranking" aria-labelledby="world-rank-title" hidden>
+          <h3 id="world-rank-title">Principais países e territórios</h3>
+          <p id="world-rank-meta"></p>
+          <ol id="world-ranking"></ol>
+        </section>
+        <p id="world-trade-date" class="markets-context"></p>
+        <p class="markets-context">BACI reconcilia declarações dos parceiros. Fluxo ausente é uma lacuna da carga. Peso parcial soma os fluxos com quantidade disponível. Os totais podem incluir reexportações e áreas sem código de país.</p>
+        <div class="market-source-links">
+          <a class="markets-source" href="https://www.international-economics.eu/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37">CEPII · BACI HS 2022 · Licença Ouverte 2.0</a>
+          <a class="markets-source" href="https://unstats.un.org/unsd/methodology/m49/overview/">Códigos geográficos · ONU M49</a>
+        </div>
+      </section>
+
+      <aside class="card markets-card" aria-labelledby="world-venue-title">
+        <p class="eyebrow">MERCADO FINANCEIRO</p>
+        <h2 id="world-venue-title">Bolsas e cotações</h2>
+        <p id="world-venue-count" class="markets-context"></p>
+        <div class="world-filter" id="world-venue-controls" hidden>
+          <label for="world-venue">Bolsa ou mercado no catálogo</label>
+          <select id="world-venue"></select>
+          <p id="world-venue-meta" class="markets-context"></p>
+          <a id="world-venue-source" class="markets-source" href="#world-venue-title">Consultar registro</a>
+        </div>
+        <p id="world-venues-date" class="markets-context"></p>
+        <p class="markets-context">O cadastro aberto reúne bolsas e plataformas de ações, commodities e futuros com país identificado. Confira no registro a situação do mercado e seus instrumentos.</p>
+        <a class="markets-source" href="https://www.iso20022.org/market-identifier-codes">Consultar diretório oficial de códigos MIC</a>
+        <hr>
+        <h3>Cotação por código</h3>
+        <p class="markets-context" id="world-quote-help">Use o código da TradingView, como BMFBOVESPA:VALE3 ou ASX:BHP. A cotação depende da bolsa e pode ter atraso. Ao exibir, seu navegador consulta o provedor. O filtro comercial é independente.</p>
+        <div class="world-filter">
+          <label for="world-ticker">Bolsa:ativo</label>
+          <input id="world-ticker" type="text" maxlength="48" placeholder="Ex. BMFBOVESPA:VALE3" spellcheck="false" aria-describedby="world-quote-help">
+          <div class="world-quote-actions">
+            <button id="world-show-quote" class="button" type="button">Exibir cotação</button>
+            <button id="world-hide-quote" class="button secondary" type="button" hidden>Fechar cotação</button>
+          </div>
+        </div>
+        <p id="world-quote-status" class="market-status" role="status"></p>
+        <div id="world-quote" class="markets-quote" hidden></div>
+        <div class="market-source-links">
+          <a id="world-ticker-source" class="markets-source" href="https://br.tradingview.com/" hidden>Abrir ativo na TradingView</a>
+          <a class="markets-source" href="https://br.tradingview.com/screener/">Pesquisar ativos e bolsas na TradingView</a>
+          <a id="world-curated" class="markets-source" href="nacional.html" hidden>Ver ações selecionadas de mineração</a>
+        </div>
+      </aside>
+    </div>
+  </main>
+  <footer class="market-footer"><span>STRATASIGNAL · OBSERVATÓRIO PÚBLICO</span><a href="../#mapa">Voltar ao mapa de parceiros</a></footer>
+</body>
+</html>

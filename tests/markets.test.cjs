@@ -8,6 +8,7 @@ const {JSDOM} = require("jsdom");
 const ui = path.join(__dirname, "../stratasignal/ui");
 const html = fs.readFileSync(path.join(ui, "markets.html"), "utf8");
 const script = fs.readFileSync(path.join(ui, "markets.js"), "utf8");
+const quoteScript = fs.readFileSync(path.join(ui, "markets-quote.js"), "utf8");
 const exampleName = "<img src=x onerror=alert(1)>";
 const example = {
   published_on: "2025-02-01",
@@ -41,7 +42,7 @@ function open(fetcher = () => sample) {
     const bytes = new TextEncoder().encode(JSON.stringify(fetcher(calls.length)));
     return {ok: true, arrayBuffer: async () => bytes.buffer};
   };
-  window.eval(script);
+  window.eval(quoteScript + "\n" + script);
   const change = value => {
     get("country").value = value;
     get("country").dispatchEvent(new window.Event("change"));
