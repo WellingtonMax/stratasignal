@@ -8,6 +8,12 @@
   };
   const product = get("market-product");
   const flow = get("market-flow");
+  const addressFilters = {ncm: product, fluxo: flow};
+  const query = new URLSearchParams(location.search);
+  for (const [key, select] of Object.entries(addressFilters)) {
+    const value = query.get(key);
+    if (Array.from(select.options).some(option => option.value === value)) select.value = value;
+  }
   const period = get("market-period");
   const country = get("market-country");
   const status = get("market-status");
@@ -381,6 +387,12 @@
   }
 
   function render() {
+    const baciLink = get("market-baci-link");
+    baciLink.hidden = product.value !== "25041000";
+    if (!baciLink.hidden) {
+      const query = new URLSearchParams({pais: "BR", produto: "250410", fluxo: flow.value});
+      baciLink.href = `mercados/?${query}`;
+    }
     const months = selectedMonths();
     const grouped = productFlow().filter(row => months.includes(row.month));
     const records = country.value ? grouped.filter(row => row.country === country.value) : grouped;
@@ -553,7 +565,14 @@
     }
   }
 
+  function saveFiltersToAddress() {
+    const url = new URL(location.href);
+    for (const [key, select] of Object.entries(addressFilters)) url.searchParams.set(key, select.value);
+    history.replaceState(history.state, "", url);
+  }
+
   for (const select of [product, flow]) select.addEventListener("change", () => {
+    saveFiltersToAddress();
     refreshCountries();
     render();
   });
@@ -561,6 +580,7 @@
   newsPeriod.addEventListener("change", renderNews);
   get("market-clear").addEventListener("click", () => {
     product.selectedIndex = flow.selectedIndex = period.selectedIndex = country.selectedIndex = newsPeriod.selectedIndex = 0;
+    saveFiltersToAddress();
     refreshCountries();
     render();
     product.focus();

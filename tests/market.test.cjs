@@ -56,8 +56,8 @@ function response(data) {
   return {ok: true, arrayBuffer: async () => bytes.buffer};
 }
 
-function open(fetcher, newsFetcher) {
-  const dom = new JSDOM(html, {runScripts: "outside-only", url: "https://example.invalid/"});
+function open(fetcher, newsFetcher, query = "") {
+  const dom = new JSDOM(html, {runScripts: "outside-only", url: `https://example.invalid/${query}`});
   const {window} = dom;
   const get = id => window.document.getElementById(id);
   const calls = [];
@@ -166,6 +166,42 @@ function captureDownloads(window, get) {
   }
   return {files, download};
 }
+
+test("the graphite deep link drives the official chart, map and report and survives a flow change", async t => {
+  const {dom, window, get, change} = open(null, null, "?ncm=25041000&fluxo=export#explorar");
+  t.after(() => dom.window.close());
+  const {download} = captureDownloads(window, get);
+  await settle(get);
+  await settle(get, "market-news-status");
+  assert.equal(get("market-flow").value, "export");
+  assert.equal(get("market-country-label").textContent, "País de destino");
+  assert.equal(get("market-fob").textContent, "US$ 5.000");
+  assert.equal(get("market-kg").textContent, "1.800");
+  assert.match(get("market-monthly").textContent, /fevereiro de 2025/);
+  assert.match(get("market-geo-partners").textContent, /Japão/);
+  const report = await download();
+  assert.equal(report.filters.ncm, "25041000");
+  assert.equal(report.filters.flow, "export");
+  assert.equal(report.filters.country_role, "destination");
+  assert.deepEqual(report.totals, {record_count: 1, fob_usd: 5000, kg: 1800, partner_count: 1});
+  assert.equal(get("market-baci-link").href, "https://example.invalid/mercados/?pais=BR&produto=250410&fluxo=export");
+  change("market-flow", "import");
+  assert.equal(window.location.search, "?ncm=25041000&fluxo=import");
+  assert.equal(window.location.hash, "#explorar");
+  assert.equal(new URL(get("market-baci-link").href).searchParams.get("fluxo"), "import");
+  change("market-product", "28369100");
+  assert.equal(get("market-baci-link").hidden, true);
+});
+
+test("the panorama falls back to its default controls for unsupported URL filters", async t => {
+  const {dom, get} = open(null, null, "?ncm=2504&fluxo=outro");
+  t.after(() => dom.window.close());
+  await settle(get);
+  await settle(get, "market-news-status");
+  assert.equal(get("market-product").value, "25041000");
+  assert.equal(get("market-flow").value, "import");
+  assert.equal(get("market-controls").disabled, false);
+});
 
 test("the public map and accessible partner table share the trade and news filters", async () => {
   const news = {...newsSample, items: [{...newsItem, countries: ["Chile"]}]};

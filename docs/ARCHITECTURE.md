@@ -1,6 +1,6 @@
 # StrataSignal 0.4 architecture
 
-The workbench supports one trusted local operator. Its data and compute bounds are distinct from a future shared cloud service. The published Site is a separate static, synthetic-only demonstration.
+The workbench supports one trusted local operator. Its data and compute bounds are distinct from a future shared cloud service. The static Site separates public aggregate data from the synthetic-only workbench. See [ADR 0001 on publication and the private boundary](adr/0001-publicacao-e-fronteira-privada.md).
 
 ```mermaid
 flowchart TD

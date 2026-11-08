@@ -200,6 +200,12 @@
   async function renderTrade() {
     const request = ++tradeRequest;
     const {pais, produto, fluxo} = selection;
+    const hasComexSlice = pais === "BR" && produto === "250410";
+    get("comex").hidden = !hasComexSlice;
+    if (hasComexSlice) {
+      const query = new URLSearchParams({ncm: "25041000", fluxo});
+      get("comex-link").href = `../?${query}#explorar`;
+    }
     get("trade").hidden = get("rank").hidden = get("empty").hidden = retry.hidden = true;
     get("selection").textContent = `${region(pais)} · ${flows[fluxo]} · ${catalog.products[produto][0]} · HS ${produto}`;
     status.textContent = "Carregando o recorte comercial…";
