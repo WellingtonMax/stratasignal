@@ -124,6 +124,56 @@ test("only the Brazilian graphite slice links to the official snapshot with the 
   assert.equal(get("comex").hidden, true);
 });
 
+test("searching the global exchange directory preserves the trade slice and its report", async t => {
+  const catalog = {
+    ...sample,
+    venues: [...sample.venues, ["CL", "Q13677", "Bolsa de Santiago", ["ações"]]],
+  };
+  const {dom, downloads, get, input, window} = open((_, value) => value,
+    "?pais=BR&produto=2601&fluxo=export#world-venue-search", catalog);
+  t.after(() => dom.window.close());
+  await settled(get);
+  assert.match(get("status").textContent, /Brasil · 3 de 3 anos/);
+  assert.match(get("coverage-venues").textContent, /Brasil · 1 registro/);
+  assert.match(get("coverage-venue-source").textContent, /2 de 4 países e territórios/);
+  assert.equal(get("coverage-quote-card").hidden, false);
+
+  input("venue-search", "santiago acoes", "input");
+  assert.equal(get("venue-controls").hidden, true);
+  assert.match(get("venue-count").textContent, /Brasil · Nenhum resultado/);
+  get("venue-worldwide").click();
+  assert.equal(get("venue-controls").hidden, false);
+  assert.match(get("venue-count").textContent, /Todos os países e territórios · 1 registro de 3/);
+  assert.equal(get("venue").selectedOptions[0].textContent, "Chile · Bolsa de Santiago");
+  assert.equal(get("venue-source").href, "https://www.wikidata.org/wiki/Q13677");
+  assert.match(get("coverage-venues").textContent, /Brasil · 1 registro/);
+  assert.match(window.location.search, /pais=BR&produto=2601&fluxo=export/);
+  assert.equal(get("quote").querySelector("iframe"), null);
+
+  get("download").click();
+  const report = JSON.parse(downloads[0].blob.parts.join(""));
+  assert.equal(report.filters.country_code, "BR");
+  assert.deepEqual(report.exchange_registry.records.map(record => record.id), ["BR-B3"]);
+  input("venue-search", "q13677", "input");
+  assert.equal(get("venue").options.length, 1);
+  get("venue-clear").click();
+  assert.equal(get("venue").options.length, 3);
+  assert.equal(get("venue").selectedOptions[0].textContent, "Chile · Bolsa de Santiago");
+  assert.equal(window.document.activeElement, get("venue-search"));
+
+  get("venue-worldwide").click();
+  input("country", "AQ");
+  await settled(get);
+  assert.match(get("status").textContent, /Antártida · 0 de 3 anos/);
+  assert.match(get("coverage-venues").textContent, /Antártida · Sem registro no catálogo/);
+  assert.match(get("venue-count").textContent, /Antártida · Sem registro de bolsa/);
+  assert.equal(window.location.hash, "#world-venue-search");
+  input("country", "WORLD");
+  await settled(get);
+  assert.equal(get("venue-scope").hidden, true);
+  assert.equal(get("venue").options.length, 3);
+});
+
 test("a changed trade shard is rejected and recovered without blocking venue and quote access", async t => {
   let reads = 0;
   const {dom, get} = open((_, data) => ++reads === 1 ? {...data, series: {}} : data, "?pais=CL&produto=2603");

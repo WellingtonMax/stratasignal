@@ -86,6 +86,12 @@ Em Inteligência operacional, a seção Situação dos pedidos por mês filtra p
 
 Os critérios são condições de entrega, não funcionalidades já publicadas. Persistência, autenticação e conectores não serão expandidos apenas para sustentar uma maquete. A próxima etapa deve reutilizar esta fundação e continuar a branch/PR de UX existente enquanto estiver aberta, conciliando eventuais mudanças remotas antes de editar.
 
+### Busca e cobertura em Mercados (F2, UX-09)
+
+Após escolher país ou território, produto HS e fluxo, a cobertura informa os anos com registros BACI, a edição e o período da fonte. O cadastro informa os vínculos de bolsas do recorte e quantos países e territórios têm registros no catálogo. A consulta de cotações exige o código da listagem, com disponibilidade e atraso informados pelo provedor. Os três cartões levam à série, à busca no cadastro e à consulta por código.
+
+O cadastro aceita nome, país, tipo ou identificador, com busca por teclado e sem distinção de acentos. Começa no país do recorte. A opção mundial amplia apenas a busca de bolsas. O endereço, os valores e o relatório preservam país, produto e fluxo do recorte comercial. Uma busca sem resultados, um país sem registros no cadastro e uma série comercial indisponível têm mensagens distintas. O catálogo atual inclui produtos aduaneiros selecionados. A associação verificada entre material, empresa e listagem segue no backlog.
+
 ### Edições verificáveis do Comex Stat
 
 O Panorama mostra o identificador abreviado da carga que efetivamente alimentou os gráficos e oferece o JSON congelado em uma rota content-addressed. O relatório aponta para essa mesma edição e mantém separada a rota mutável da publicação corrente. Ao preparar uma nova publicação, o operador pode reter a edição anterior já conferida. O manifesto enumera ambas com hash, atualização da fonte e data de consulta. A ausência de registros permanece nula no relatório, enquanto um registro publicado com valor zero continua sendo zero observado.

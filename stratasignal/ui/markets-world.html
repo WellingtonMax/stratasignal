@@ -67,14 +67,36 @@
         <button id="world-reset" class="button secondary" type="button">Limpar filtros</button>
       </div>
     </fieldset>
-    <p id="world-status" class="market-status" role="status">Carregando o catálogo mundial…</p>
-    <button id="world-retry" class="button secondary" type="button" hidden>Tentar novamente</button>
+    <section class="world-coverage" aria-labelledby="world-coverage-title">
+      <h2 id="world-coverage-title">Cobertura do recorte</h2>
+      <div class="world-coverage-grid">
+        <article class="world-coverage-card">
+          <h3>Comércio anual</h3>
+          <p id="world-status" class="world-coverage-value" role="status">Carregando o catálogo mundial…</p>
+          <p id="world-coverage-trade-source" class="markets-context"></p>
+          <a id="world-coverage-trade-link" class="markets-source" href="#world-trade-title" hidden>Ver série comercial</a>
+          <button id="world-retry" class="button secondary" type="button" hidden>Tentar novamente</button>
+        </article>
+        <article id="world-coverage-venue-card" class="world-coverage-card" hidden>
+          <h3>Cadastro de bolsas</h3>
+          <p id="world-coverage-venues" class="world-coverage-value"></p>
+          <p id="world-coverage-venue-source" class="markets-context"></p>
+          <a class="markets-source" href="#world-venue-search">Buscar bolsas</a>
+        </article>
+        <article id="world-coverage-quote-card" class="world-coverage-card" hidden>
+          <h3>Cotações</h3>
+          <p class="world-coverage-value">Consulta por código</p>
+          <p class="markets-context">TradingView · disponibilidade, moeda e atraso variam conforme o ativo.</p>
+          <a class="markets-source" href="#world-ticker">Consultar um ativo</a>
+        </article>
+      </div>
+    </section>
     <noscript><p>Ative o JavaScript para explorar o catálogo. <a href="https://www.international-economics.eu/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37">Consultar a base BACI do CEPII</a></p></noscript>
 
     <div id="world-content" class="markets-board" hidden>
       <section class="markets-export" aria-labelledby="world-trade-title">
         <p class="eyebrow">COMÉRCIO INTERNACIONAL · CEPII BACI</p>
-        <h2 id="world-trade-title">Comércio do recorte</h2>
+        <h2 id="world-trade-title" tabindex="-1">Comércio do recorte</h2>
         <p class="markets-context" id="world-selection"></p>
         <aside id="world-comex" class="card markets-card world-comex" aria-labelledby="world-comex-title" hidden>
           <p class="eyebrow">SÉRIE OFICIAL DO BRASIL</p>
@@ -147,7 +169,17 @@
       <aside class="card markets-card" aria-labelledby="world-venue-title">
         <p class="eyebrow">MERCADO FINANCEIRO</p>
         <h2 id="world-venue-title">Bolsas e cotações</h2>
-        <p id="world-venue-count" class="markets-context"></p>
+        <div class="world-filter world-venue-search">
+          <label for="world-venue-search">Buscar bolsa ou mercado</label>
+          <input id="world-venue-search" type="search" placeholder="Ex. Santiago, futuros ou Q13677" maxlength="80" aria-controls="world-venue" aria-describedby="world-venue-help">
+          <p id="world-venue-help" class="markets-context">Busque por nome, país, tipo ou identificador do catálogo. O relatório mantém as bolsas do país do recorte comercial.</p>
+          <label id="world-venue-scope" class="world-venue-scope">
+            <input id="world-venue-worldwide" type="checkbox">
+            Buscar em todos os países e territórios
+          </label>
+          <button id="world-venue-clear" class="button secondary" type="button" hidden>Limpar busca de bolsas</button>
+        </div>
+        <p id="world-venue-count" class="markets-context" role="status"></p>
         <div class="world-filter" id="world-venue-controls" hidden>
           <label for="world-venue">Bolsa ou mercado no catálogo</label>
           <select id="world-venue"></select>
