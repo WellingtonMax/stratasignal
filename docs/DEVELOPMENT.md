@@ -49,6 +49,18 @@ On HTTPS, compare the report's `source.snapshot_sha256` with the digest of the l
 
 **Mapa** reuses `carteira/world-land.svg` from the packaged public Site. The source manifest records its SHA-256 under `partner_map`. The report's `partner_geography` field carries approximate country anchors, the reference dataset version and partner names without an anchor. It follows the trade filters. See the [geospatial scope](GEO_SPATIAL_PT.md#mapa-público-de-parceiros-comerciais).
 
+### Atualização de Mercados globais
+
+O build publica `mercados/catalogo.json` e um arquivo por código em `mercados/comercio/`. Ele usa a carga pública reduzida versionada em `stratasignal/data/mercados-globais.json.gz`. O navegador verifica o SHA-256 de cada série antes de exibi-la. O manifesto da publicação registra o hash do catálogo, que também registra os hashes das três entradas. O build da carteira fictícia usa seu próprio manifesto.
+
+Para preparar uma revisão, baixe o arquivo HS22 da edição BACI selecionada, a página M49 e o resultado JSON da consulta Wikidata. Use as classes `Q11691`, `Q695817` e `Q2298435` em `P31`, com `P17` ligado ao país e `P297` ao código alfabético. Selecione `venue`, `label` em inglês, `type`, `iso` e `closed` opcional em `P576`. Para consultas grandes, obtenha os identificadores antes e use lotes com `VALUES ?venue`. Confira cobertura, URLs, datas e direitos de uso antes de substituir o arquivo versionado. [BACI HS22](https://www.cepii.fr/DATA_DOWNLOAD/baci/data/BACI_HS22_V202601.zip) · [ONU M49](https://unstats.un.org/unsd/methodology/m49/overview/) · [Wikidata Query Service](https://query.wikidata.org/)
+
+```bash
+python -m stratasignal.public_markets_world \
+  --baci BACI_HS22_V202601.zip --m49 m49.html --venues venues.json \
+  --checked-on 2026-11-08 --out /tmp/mercados-globais.json.gz
+```
+
 ### Curadoria de notícias oficiais
 
 O mesmo build consulta o feed Atom do Natural Resources Canada. A seleção editorial em `stratasignal/public_news.py` mantém títulos e resumos próprios e exige que a URL original apareça no feed oficial. O build registra o hash da resposta Atom, a atualização informada pela fonte e a data da consulta. Uma falha do feed impede a geração de um novo pacote. A publicação existente fica disponível. [Catálogo oficial de feeds](https://natural-resources.canada.ca/corporate/rss-feeds)

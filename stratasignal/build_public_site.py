@@ -12,7 +12,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from . import __version__
-from . import public_markets, public_news
+from . import public_markets, public_markets_world, public_news
 from .build_demo import build_demo
 from .market import month
 from .schema import InputError, day, rows, text_value, unique_object
@@ -175,8 +175,10 @@ def collect_news():
 def _write_markets(output, ui):
     market = output / "mercados"
     market.mkdir()
-    for source, target in (("markets.html", "index.html"), ("markets.js", "markets.js"),
-                           ("markets.css", "markets.css")):
+    for source, target in (("markets-world.html", "index.html"), ("markets.html", "nacional.html"),
+                           ("markets.js", "markets.js"), ("markets.css", "markets.css"),
+                           ("markets-world.js", "markets-world.js"), ("markets-world.css", "markets-world.css"),
+                           ("markets-quote.js", "markets-quote.js")):
         with (market / target).open("xb") as stream:
             stream.write((ui / source).read_bytes())
     snapshot = public_markets.SNAPSHOT
@@ -184,7 +186,7 @@ def _write_markets(output, ui):
     with (market / "dados.json").open("xb") as stream:
         stream.write(raw)
     return {"path": "mercados/dados.json", "sha256": hashlib.sha256(raw).hexdigest(),
-            "reviewed_on": snapshot["reviewed_on"]}
+            "reviewed_on": snapshot["reviewed_on"], "global": public_markets_world.write_snapshot(market)}
 
 
 def build_public_site(directory, source_commit=None, *, enable_ml=True):

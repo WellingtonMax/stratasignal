@@ -5,8 +5,10 @@ import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
+from zipfile import ZipFile
 
 from stratasignal.build_public_site import build_public_site, collect_comex, collect_news
+from stratasignal.public_markets_world import VERSION, YEARS, _aggregate
 from stratasignal.public_news import (
     EDITORIAL, FEED_URL, MAX_FEED_BYTES, MDIC_ARTICLE, MDIC_FEED_URL,
     MDIC_NOVEMBER_ARTICLE, MDIC_NOVEMBER_FEED_URL, SOURCE, parse_feed, parse_mdic_feed,
@@ -92,7 +94,16 @@ class PublicSiteTests(unittest.TestCase):
             self.assertFalse((output / "carteira/mercados").exists())
             self.assertIn('href="mercados/"', (output / "index.html").read_text(encoding="utf-8"))
             self.assertTrue((output / "mercados/index.html").is_file())
+            self.assertTrue((output / "mercados/nacional.html").is_file())
             self.assertTrue((output / "mercados/markets.js").is_file())
+            world = (output / markets["global"]["path"]).read_bytes()
+            self.assertEqual(markets["global"]["sha256"], hashlib.sha256(world).hexdigest())
+            catalog = json.loads(world)
+            self.assertIn("AQ", catalog["countries"])
+            self.assertIn("2603", catalog["products"])
+            self.assertEqual(catalog["products"].keys(), catalog["trade_sha256"].keys())
+            for code, expected in catalog["trade_sha256"].items():
+                self.assertEqual(hashlib.sha256((output / f"mercados/comercio/{code}.json").read_bytes()).hexdigest(), expected)
             news_bytes = (output / "news.json").read_bytes()
             self.assertEqual(json.loads(news_bytes), news.return_value)
             self.assertEqual(manifest["news_snapshot"]["sha256"], hashlib.sha256(news_bytes).hexdigest())
@@ -130,6 +141,25 @@ class PublicSiteTests(unittest.TestCase):
         with self.assertRaises(InputError):
             collect_comex()
         fetch.assert_called_once_with("/general/dates/updated")
+
+
+class WorldMarketsTests(unittest.TestCase):
+    def test_bilateral_flows_count_once_and_preserve_partial_weight(self):
+        with tempfile.TemporaryDirectory() as directory, ZipFile(Path(directory) / "trades.zip", "w") as archive:
+            for year in YEARS:
+                archive.writestr(f"BACI_HS22_Y{year}_V{VERSION}.csv", (
+                    "t,i,j,k,v,q\n"
+                    f"{year},1,2,260111,2.25,3.5\n"
+                    f"{year},1,3,260111,1.5,NA\n"
+                    f"{year},2,1,260112,0.0004,0\n"
+                ))
+            trade = {"2601": {}, "260111": {}}
+            counts = _aggregate(archive, {"260111": ["2601", "260111"], "260112": ["2601"]},
+                                {"1": "BR", "2": "AU", "3": None}, trade)
+        self.assertEqual(counts, {str(year): 3 for year in YEARS})
+        self.assertEqual(trade["2601"]["WORLD"][:2], [[3750, 3500, 2, 3], [3750, 3500, 2, 3]])
+        self.assertEqual(trade["2601"]["BR"][:2], [[3750, 3500, 1, 2], [0, 0, 1, 1]])
+        self.assertEqual(trade["260111"]["AU"][:2], [None, [2250, 3500, 1, 1]])
 
 
 class NewsFeedTests(unittest.TestCase):
