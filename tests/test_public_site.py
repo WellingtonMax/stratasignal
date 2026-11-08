@@ -73,6 +73,9 @@ class PublicSiteTests(unittest.TestCase):
                 "fob_usd": 1200, "kg": 700,
             }])
             self.assertEqual(manifest["trade_snapshot"]["sha256"], hashlib.sha256(public_bytes).hexdigest())
+            basemap = output / manifest["partner_map"]["basemap_path"]
+            self.assertEqual(manifest["partner_map"]["basemap_sha256"], hashlib.sha256(basemap.read_bytes()).hexdigest())
+            self.assertIn('href="carteira/world-land.svg"', (output / "index.html").read_text(encoding="utf-8"))
             self.assertEqual(manifest["dataset_kind"], "public_aggregate")
             self.assertEqual(demo["dataset_kind"], "synthetic")
             self.assertEqual(manifest["source_commit"], demo["source_commit"])

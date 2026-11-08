@@ -18,6 +18,27 @@
   const newsRetry = get("market-news-retry");
   const newsList = get("market-news-items");
   const newsPeriod = get("market-news-period");
+  const geographyContent = get("market-geo-content");
+  const geographyStatus = get("market-geo-status");
+  const geographyRows = get("market-geo-partners");
+  const geographySource = get("market-geo-source");
+  const svgNamespace = "http://www.w3.org/2000/svg";
+  // Reviewed Comex Stat names matched to Natural Earth 5.1.1 Admin 0 label points,
+  // rounded to tenths of a degree. Unknown names stay in the table and report.
+  const partnerAnchors = new Map([
+    ["Alemanha", [9.7, 51]], ["Angola", [18, -12.2]], ["Argentina", [-64.2, -33.5]],
+    ["Bélgica", [4.8, 50.8]], ["Bolívia", [-64.6, -16.7]], ["Brasil", [-49.6, -12.1]],
+    ["Canadá", [-101.9, 60.3]], ["Chile", [-72.3, -38.2]], ["China", [106.3, 32.5]],
+    ["Colômbia", [-73.2, 3.4]], ["Congo, República Democrática", [23.5, -1.9]],
+    ["Coreia do Sul", [128.1, 36.4]], ["Equador", [-78.2, -1.3]], ["Espanha", [-3.5, 40.1]],
+    ["Estados Unidos", [-97.5, 39.5]], ["França", [2.6, 46.7]], ["Indonésia", [101.9, -1]],
+    ["Japão", [138.4, 36.1]], ["México", [-102.3, 23.9]], ["Noruega", [9.7, 61.4]],
+    ["Países Baixos (Holanda)", [5.6, 52.4]], ["Paraguai", [-60.1, -21.7]],
+    ["Peru", [-72.9, -13]], ["Polônia", [19.5, 52]], ["Reino Unido", [-2.1, 54.4]],
+    ["República Dominicana", [-70.7, 19.1]], ["Rússia", [44.7, 58.2]], ["Sérvia", [20.8, 44.2]],
+    ["Tailândia", [101.1, 15.5]], ["Uruguai", [-56, -33]], ["Venezuela", [-64.6, 7.2]],
+    ["África do Sul", [23.7, -29.7]], ["Índia", [79.4, 22.7]],
+  ]);
   const newsSource = "Natural Resources Canada";
   const mdicSource = "MDIC · Brasil";
   const mdicFeed = get("market-news-mdic-feed").href;
@@ -197,12 +218,26 @@
     get("market-monthly").replaceChildren(...table);
   }
 
-  function renderRanking(records) {
-    const totals = new Map();
-    for (const row of records) totals.set(row.country, (totals.get(row.country) || 0) + row.fob_usd);
-    const total = sum(records, "fob_usd");
-    const top = [...totals].sort(([a, x], [b, y]) => y - x || a.localeCompare(b, "pt-BR")).slice(0, 5);
-    get("market-ranking").replaceChildren(...top.map(([label, amount]) => {
+  function summarizePartners(records) {
+    const groups = new Map();
+    for (const row of records) {
+      if (!groups.has(row.country)) groups.set(row.country, []);
+      groups.get(row.country).push(row);
+    }
+    return [...groups].map(([label, rows]) => ({
+      label, ...summarize(rows), anchor: partnerAnchors.get(label),
+    })).sort((a, b) => b.fob_usd - a.fob_usd || a.label.localeCompare(b.label, "pt-BR"));
+  }
+
+  function togglePartner(label) {
+    country.value = country.value === label ? "" : label;
+    render();
+  }
+
+  function renderRanking(partners) {
+    const total = sum(partners, "fob_usd");
+    const top = partners.slice(0, 5);
+    get("market-ranking").replaceChildren(...top.map(({label, fob_usd: amount}) => {
       const item = element("li");
       const button = element("button");
       button.type = "button";
@@ -210,13 +245,79 @@
       button.append(element("span", label), element("strong", money(amount)),
         element("small", total ? percent.format(amount / total) + " do valor FOB de todos os parceiros" : "Valor FOB total igual a zero"));
       button.addEventListener("click", () => {
-        country.value = country.value === label ? "" : label;
-        render();
+        togglePartner(label);
         country.focus();
       });
       item.append(button);
       return item;
     }));
+  }
+
+  function mapPin({label, anchor: [lon, lat]}, selected) {
+    const phi = lat * Math.PI / 180;
+    const pin = document.createElementNS(svgNamespace, "circle");
+    // The packaged Natural Earth outline uses a 1024 × 1024 Web Mercator world.
+    pin.setAttribute("cx", 1024 * (lon + 180) / 360);
+    pin.setAttribute("cy", 512 * (1 - Math.log(Math.tan(Math.PI / 4 + phi / 2)) / Math.PI));
+    pin.setAttribute("r", selected ? "16" : "8");
+    pin.setAttribute("class", selected ? "market-geo-pin selected" : "market-geo-pin");
+    const title = document.createElementNS(svgNamespace, "title");
+    title.textContent = label;
+    pin.append(title);
+    return pin;
+  }
+
+  function renderGeography(partners, scope) {
+    geographyContent.hidden = !partners.length;
+    const mapped = partners.filter(partner => partner.anchor);
+    geographyStatus.textContent = (partners.length ?
+      digits.format(mapped.length) + " de " + digits.format(partners.length) + " parceiros no mapa" :
+      "Nenhum parceiro com registros") + " · " + scope;
+    const selected = partners.find(partner => partner.label === country.value);
+    const pins = mapped.filter(partner => partner !== selected).map(partner => mapPin(partner, false));
+    if (selected?.anchor) pins.push(mapPin(selected, true));
+    get("market-geo-pins").replaceChildren(...pins);
+    get("market-geo-selection").textContent = !country.value ? "Todos os parceiros do período." :
+      country.value + (selected?.anchor ? " está destacado no mapa." :
+        selected ? " tem registros na tabela e ainda não possui ponto no mapa." : " está sem registros no período.");
+    get("market-geo-table-caption").textContent = scope;
+    const focusedLabel = geographyRows.contains(document.activeElement) ? document.activeElement.value : null;
+    let nextFocus;
+    const rows = partners.map(({label, fob_usd, kg, anchor}) => {
+      const row = element("tr");
+      const header = element("th");
+      header.scope = "row";
+      const button = element("button", label);
+      button.type = "button";
+      button.value = label;
+      button.className = "button secondary";
+      button.setAttribute("aria-pressed", String(label === country.value));
+      button.addEventListener("click", () => togglePartner(label));
+      if (label === focusedLabel) nextFocus = button;
+      header.append(button);
+      if (!anchor) header.append(element("small", "Sem ponto no mapa"));
+      row.append(header, element("td", digits.format(fob_usd)), element("td", digits.format(kg)));
+      return row;
+    });
+    geographyRows.replaceChildren(...rows);
+    nextFocus?.focus({preventScroll: true});
+  }
+
+  function reportGeography(partners) {
+    const points = [], partnersWithoutAnchor = [];
+    for (const {label, anchor} of partners) {
+      if (anchor) points.push({country: label, longitude: anchor[0], latitude: anchor[1]});
+      else partnersWithoutAnchor.push(label);
+    }
+    return {
+      kind: "approximate_country_anchors",
+      source: "Natural Earth · Admin 0 – Countries",
+      source_url: geographySource.href,
+      source_version: "5.1.1",
+      scale: "1:110m",
+      points,
+      partners_without_anchor: partnersWithoutAnchor,
+    };
   }
 
   const selectedMonths = () => period.value ? [period.value] : snapshot.months;
@@ -283,9 +384,9 @@
     const months = selectedMonths();
     const grouped = productFlow().filter(row => months.includes(row.month));
     const records = country.value ? grouped.filter(row => row.country === country.value) : grouped;
-    const span = monthSpan(months);
-    const scope = flow.selectedOptions[0].textContent + " · NCM " + product.value + " · " + span + " · " +
-      (country.value || "todos os países");
+    const scopeBase = flow.selectedOptions[0].textContent + " · NCM " + product.value + " · " + monthSpan(months);
+    const scope = scopeBase + " · " + (country.value || "todos os países");
+    const partners = summarizePartners(grouped);
     const totals = {...summarize(records), partner_count: new Set(records.map(row => row.country)).size};
     const monthly = months.map(month => ({month, ...summarize(records.filter(row => row.month === month))}));
     reportSlice = {
@@ -298,17 +399,19 @@
       totals,
       monthly,
       records,
+      partner_geography: reportGeography(partners.filter(partner => !country.value || partner.label === country.value)),
     };
     const quantity = records.length === 1 ? "1 registro agregado" : digits.format(records.length) + " registros agregados";
     status.textContent = (records.length ? quantity : "Nenhum registro neste recorte") + " · " + scope;
     results.hidden = records.length === 0;
+    renderGeography(partners, scopeBase);
     renderNews();
     if (!records.length) return;
     get("market-fob").textContent = money(totals.fob_usd);
     get("market-kg").textContent = digits.format(totals.kg);
     get("market-partners").textContent = digits.format(totals.partner_count);
     renderSeries(monthly, scope);
-    renderRanking(grouped);
+    renderRanking(partners);
   }
 
   function downloadReport() {
@@ -359,6 +462,7 @@
         "O relatório cobre o comércio exterior brasileiro por produto, fluxo, mês e país ou área parceira.",
         "Totais nulos indicam ausência de registros no recorte. Registros com valor zero são mantidos.",
         "Produção, dados empresariais, instalações e evidências geoespaciais não integram este recorte.",
+        "As coordenadas são referências aproximadas de países parceiros. O mapa não identifica locais de extração, instalação ou rota de transporte.",
         "As notícias dão contexto temático por mineral e não demonstram vínculos com transações ou códigos aduaneiros.",
       ],
     };
@@ -426,11 +530,14 @@
     retry.hidden = true;
     results.hidden = true;
     reportPanel.hidden = true;
+    geographyContent.hidden = true;
+    geographyStatus.textContent = "Carregando parceiros do comércio…";
     status.textContent = "Carregando dados públicos…";
     try {
       ({data: snapshot, sha256: snapshotSha256} = await readSnapshot("comex.json", validate));
       get("market-through").textContent = monthName(snapshot.months.at(-1));
       get("market-updated").textContent = calendar.format(new Date(snapshot.updated_on));
+      get("market-geo-updated").textContent = "Atualização do Comex Stat em " + get("market-updated").textContent + ".";
       get("market-retrieved").textContent = "Consulta do StrataSignal em " + calendar.format(new Date(snapshot.fetched_at)) + ".";
       get("market-stale").hidden = Date.now() - Date.parse(snapshot.updated_on) <= 45 * 86400000;
       options(period, "Todo o período", snapshot.months.map(value => [monthName(value), value]));
@@ -441,6 +548,7 @@
     } catch {
       get("market-retrieved").textContent = "Carga publicada indisponível.";
       status.textContent = "Não foi possível carregar o panorama. Tente novamente ou consulte o Comex Stat.";
+      geographyStatus.textContent = "Mapa indisponível enquanto a carga de comércio estiver indisponível.";
       retry.hidden = false;
     }
   }

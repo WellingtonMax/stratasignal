@@ -47,6 +47,8 @@ Use a new output directory. A failed query or invalid row prevents a new build. 
 
 On HTTPS, compare the report's `source.snapshot_sha256` with the digest of the loaded `comex.json` or with `trade_snapshot.sha256` in that publication's `source-manifest.json`. A later publication can replace those files. The digest identifies the input bytes and is null if the browser lacks Web Crypto. The report is generated locally from the public snapshots and requires no further requests.
 
+**Mapa** reuses `carteira/world-land.svg` from the packaged public Site. The source manifest records its SHA-256 under `partner_map`. The report's `partner_geography` field carries approximate country anchors, the reference dataset version and partner names without an anchor. It follows the trade filters. See the [geospatial scope](GEO_SPATIAL_PT.md#mapa-público-de-parceiros-comerciais).
+
 ### Curadoria de notícias oficiais
 
 O mesmo build consulta o feed Atom do Natural Resources Canada. A seleção editorial em `stratasignal/public_news.py` mantém títulos e resumos próprios e exige que a URL original apareça no feed oficial. O build registra o hash da resposta Atom, a atualização informada pela fonte e a data da consulta. Uma falha do feed impede a geração de um novo pacote. A publicação existente fica disponível. [Catálogo oficial de feeds](https://natural-resources.canada.ca/corporate/rss-feeds)

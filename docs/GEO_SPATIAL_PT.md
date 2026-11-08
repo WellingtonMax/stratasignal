@@ -4,9 +4,15 @@
 
 O explorador integrado à **Visão da carteira** representa as **participações declaradas por país** nas posições de aquisição de cada especificação mineral. O mapa não afirma conhecer coordenadas de minas, refinarias, portos, fornecedores ou rotas. País de origem pode significar extração, beneficiamento, refino ou embarque, dependendo do contrato e dos dados fornecidos.
 
-**Globo e satélite** no panorama público abre diretamente o atlas da carteira fictícia, com o globo voltado para o Brasil. Use **Globo** e **Mapa plano** para trocar a projeção mantendo o centro, o nível de zoom, as datas e o recorte da carteira. A área visível muda com a projeção. **Centralizar país** traz a âncora escolhida para o centro das duas vistas. Arraste ou use as setas com o mapa em foco. No toque, o gesto horizontal gira ou desloca a vista e o gesto vertical permite rolar a página. A lista de origens e a tabela continuam acessíveis.
+**Atlas fictício com satélite** no panorama público abre o atlas da carteira fictícia, com o globo voltado para o Brasil. Use **Globo** e **Mapa plano** para trocar a projeção mantendo o centro, o nível de zoom, as datas e o recorte da carteira. A área visível muda com a projeção. **Centralizar país** traz a âncora escolhida para o centro das duas vistas. Arraste ou use as setas com o mapa em foco. No toque, o gesto horizontal gira ou desloca a vista e o gesto vertical permite rolar a página. A lista de origens e a tabela continuam acessíveis.
 
 Os círculos têm tamanho proporcional à participação declarada de cada país para a especificação selecionada. A seleção de uma origem preenche o campo de país do simulador existente, **mas não executa uma nova simulação automaticamente**. Use o botão "Calcular cenário" para atualizar os resultados. O mapa não modifica as regras analíticas, os resultados exportados ou a natureza do conjunto.
+
+## Mapa público de parceiros comerciais
+
+**Mapa** no panorama mostra os parceiros com registros no produto, fluxo e período selecionados. A tabela reúne o valor FOB e o peso líquido de todos esses parceiros. A escolha pela tabela destaca o país e filtra os gráficos, as notícias e o relatório. A seleção continua ativa ao navegar dentro do panorama. O mês de publicação das notícias segue seu próprio seletor.
+
+O mapa reutiliza o contorno Natural Earth da carteira e plota as posições de rótulo `LABEL_X` e `LABEL_Y` da coleção Admin 0 – Countries 5.1.1, arredondadas a um décimo de grau. A correspondência é explícita para os nomes do Comex Stat. Parceiros sem correspondência ficam na tabela e na lista de lacunas do relatório. A posição serve para orientação por país, com círculos de tamanho fixo e um anel para a seleção. O navegador lê o contorno do próprio Site. [Coleção de países](https://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-admin-0-countries/) · [Condições de uso](https://www.naturalearthdata.com/about/terms-of-use/)
 
 ## Cartografia e observação por satélite
 

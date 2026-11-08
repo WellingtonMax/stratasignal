@@ -155,3 +155,11 @@ Existing report integrity manifests remain valid because their generated report 
 - No Chromium, Tab alcançou o seletor de notícias com foco visível. A 337 pixels CSS via zoom, o seletor manteve altura de 44 pixels e a página ficou sem rolagem horizontal. Trocar para novembro preservou os valores do comércio. Voltar ao período do comércio restaurou as notícias de outubro.
 - O JSON baixado por Enter registrou dois agregados de importação de carbonatos de lítio em outubro, com US$ 395 FOB e 2 kg, e um comunicado do MDIC em novembro. Registros, totais, filtros, item e hashes foram comparados às cargas.
 - Passaram 111 testes Python e 45 testes DOM após `npm ci --ignore-scripts`. A execução com `python -S` passou 103 testes e ignorou 8 dependentes de ML.
+
+## Mapa público de parceiros em 7 de novembro de 2026
+
+- A API do Comex Stat respondeu HTTP 429. A prévia reutilizou as cargas de comércio e notícias da versão 14 com igualdade de bytes e SHA-256 conferido nos manifestos. A consulta ao Comex Stat permanece datada de 7 de novembro às 19h18 de Brasília.
+- As 33 referências usadas foram comparadas aos campos `LABEL_X` e `LABEL_Y` da coleção Natural Earth Admin 0 – Countries 5.1.1. Os 31 nomes de parceiros da carga têm correspondência. O teste DOM mantém um nome sem posição na tabela e no relatório, como texto. [Coleção e termos](https://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-admin-0-countries/)
+- No Chromium, a tabela abriu com Enter, Tab alcançou a China com foco visível e Enter aplicou o filtro sem perder o foco. O mapa destacou a China e a seção de notícias exibiu a ausência de matérias para o recorte. A 337 pixels CSS via zoom, a largura de rolagem da página também foi 337 pixels. O mapa ocupou 279 pixels e o botão mediu 44 pixels de altura.
+- O JSON baixado por Enter registrou dois agregados de importação de grafita da China, somando US$ 145.658 FOB e 124.120 kg. Foram comparados registros, totais, coordenadas, escopo das notícias e hashes das cargas.
+- Passaram 111 testes Python e 46 testes DOM após `npm ci --ignore-scripts`. A execução com `python -S` passou 103 testes e ignorou 8 dependentes de ML.

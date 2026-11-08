@@ -204,6 +204,11 @@ def build_public_site(directory, source_commit=None, *, enable_ml=True):
                               "source": news["source"], "feed_url": public_news.FEED_URL,
                               "feed_updated_at": news["feed_updated_at"], "fetched_at": news["fetched_at"]},
             "synthetic_workbench": "carteira/source-manifest.json",
+            "partner_map": {
+                "basemap_path": "carteira/world-land.svg",
+                "basemap_sha256": hashlib.sha256((output / "carteira/world-land.svg").read_bytes()).hexdigest(),
+                "anchor_source": "Natural Earth · Admin 0 – Countries 5.1.1",
+            },
         }
         for key in ("mdic", "mdic_archives"):
             if key in news:

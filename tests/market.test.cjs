@@ -126,10 +126,12 @@ test("failed and invalid published loads expose a retry without enabling filters
   });
   assert.match(get("market-status").textContent, /Carregando/);
   assert.equal(get("market-report").hidden, true);
+  assert.equal(get("market-geo-content").hidden, true);
   await settle(get);
   assert.equal(get("market-retry").hidden, false);
   assert.equal(get("market-controls").disabled, true);
   assert.equal(get("market-report").hidden, true);
+  assert.match(get("market-geo-status").textContent, /Mapa indisponível/);
   get("market-retry").click();
   await settle(get);
   assert.equal(get("market-results").hidden, true);
@@ -139,6 +141,7 @@ test("failed and invalid published loads expose a retry without enabling filters
   assert.equal(get("market-retry").hidden, true);
   assert.equal(get("market-results").hidden, false);
   assert.equal(get("market-report").hidden, false);
+  assert.equal(get("market-geo-content").hidden, false);
   assert.equal(calls.length, 4);
   dom.window.close();
 });
@@ -163,6 +166,46 @@ function captureDownloads(window, get) {
   }
   return {files, download};
 }
+
+test("the public map and accessible partner table share the trade and news filters", async () => {
+  const news = {...newsSample, items: [{...newsItem, countries: ["Chile"]}]};
+  const {dom, window, get, change} = open(null, () => response(news));
+  const {download} = captureDownloads(window, get);
+  await settle(get);
+  await settle(get, "market-news-status");
+  const table = get("market-geo-partners");
+  const button = label => [...table.querySelectorAll("button")].find(choice => choice.value === label);
+  assert.match(get("market-geo-status").textContent, /1 de 2 parceiros no mapa/);
+  assert.equal(get("market-geo-pins").children.length, 1);
+  assert.match(button(foreignLabel).closest("th").textContent, /Sem ponto no mapa/);
+  assert.equal(table.querySelector("img"), null);
+  button("China").focus();
+  button("China").click();
+  assert.equal(window.document.activeElement, button("China"));
+  assert.equal(button("China").getAttribute("aria-pressed"), "true");
+  assert.equal(get("market-country").value, "China");
+  assert.equal(get("market-geo-pins").querySelector(".selected title").textContent, "China");
+  assert.equal(get("market-fob").textContent, "US$ 1.700");
+  const china = await download();
+  assert.deepEqual(china.partner_geography.points, [{country: "China", longitude: 106.3, latitude: 32.5}]);
+  assert.deepEqual(china.partner_geography.partners_without_anchor, []);
+  button(foreignLabel).click();
+  assert.deepEqual((await download()).partner_geography.partners_without_anchor, [foreignLabel]);
+  assert.equal(get("market-geo-pins").querySelector(".selected"), null);
+  change("market-period", "2025-02");
+  assert.equal(get("market-geo-content").hidden, true);
+  assert.match(get("market-geo-status").textContent, /Nenhum parceiro com registros/);
+  change("market-product", "28369100");
+  change("market-period", "2025-03");
+  button("Chile").click();
+  const chile = await download();
+  assert.equal(chile.filters.country, "Chile");
+  assert.equal(chile.news_context.items[0].countries[0], "Chile");
+  assert.deepEqual(chile.partner_geography.points.map(point => point.country), ["Chile"]);
+  button("Chile").click();
+  assert.equal(get("market-country").value, "");
+  dom.window.close();
+});
 
 test("the trade report captures active filters, source bytes, units and monthly gaps", async () => {
   const data = {...sample, records: sample.records.map(row => ({...row, ignored: "extra field"}))};
