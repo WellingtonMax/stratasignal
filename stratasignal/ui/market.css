@@ -24,6 +24,17 @@
 .market-edition strong{color:#fff;font-size:12px;letter-spacing:.04em;text-transform:uppercase}
 .market-edition span{color:#c9d9ed;font:12px ui-monospace,SFMono-Regular,Consolas,monospace}
 .market-edition a{display:inline-flex;align-items:center;min-height:44px;color:#fff;font-weight:650}
+.market-edition-history{margin-top:10px;border-top:1px solid #3a5677;padding-top:4px}
+.market-edition-history summary{min-height:44px;padding:12px 0;color:#fff;font-size:13px;font-weight:650;cursor:pointer}
+.market-edition-history summary span{color:#c9d9ed;font-weight:500}
+.market-release .market-edition-history>p{margin:0 0 9px;color:#c9d9ed;font-size:12px;line-height:1.5}
+.market-edition-history ol{display:grid;gap:8px;list-style:none;margin:0;padding:0}
+.market-edition-history li{display:grid;gap:3px;padding:9px 10px;border:1px solid #4e6b8d;border-radius:7px;background:#0b2340}
+.market-edition-history li[aria-current=true]{border-color:#7eb4f4}
+.market-edition-history strong{color:#fff;font-size:12px}
+.market-edition-history code{color:#c9d9ed;font-size:11px;overflow-wrap:anywhere}
+.market-edition-history small{color:#c9d9ed;line-height:1.45}
+.market-edition-history a{display:inline-flex;align-items:center;min-height:44px;color:#fff;font-size:12px;font-weight:650}
 .market-release dl{display:grid;gap:11px;margin:20px 0 13px;border-block:1px solid #3a5677;padding-block:14px}
 .market-release dl div{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;align-items:baseline}
 .market-release dt{font-size:12px;color:#c9d9ed}

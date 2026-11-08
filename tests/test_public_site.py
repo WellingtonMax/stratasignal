@@ -142,6 +142,7 @@ class PublicSiteTests(unittest.TestCase):
             self.assertEqual(len(editions), 2)
             self.assertEqual(json.loads((output / editions[1]["path"]).read_text()), previous)
             self.assertEqual(editions[1]["sha256"], hashlib.sha256(retained.read_bytes()).hexdigest())
+            self.assertNotEqual(editions[0]["sha256"], editions[1]["sha256"])
 
     @patch("stratasignal.build_public_site.collect_news")
     @patch("stratasignal.build_public_site._fetch")

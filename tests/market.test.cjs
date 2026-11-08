@@ -56,7 +56,18 @@ function response(data) {
   return {ok: true, arrayBuffer: async () => bytes.buffer};
 }
 
-function open(fetcher, newsFetcher, query = "") {
+function editionManifest(current = sample, previous = {...sample, fetched_at: "2025-04-08T12:01:00Z"}) {
+  const edition = data => {
+    const sha256 = createHash("sha256").update(JSON.stringify(data)).digest("hex");
+    return {path: `edicoes/comex-${sha256}.json`, sha256, updated_on: data.updated_on, fetched_at: data.fetched_at};
+  };
+  const editions = [edition(current), edition(previous)];
+  return {dataset_kind: "public_aggregate", trade_snapshot: {
+    sha256: editions[0].sha256, edition_path: editions[0].path, editions,
+  }};
+}
+
+function open(fetcher, newsFetcher, query = "", manifestFetcher) {
   const dom = new JSDOM(html, {runScripts: "outside-only", url: `https://example.invalid/${query}`});
   const {window} = dom;
   const get = id => window.document.getElementById(id);
@@ -67,6 +78,7 @@ function open(fetcher, newsFetcher, query = "") {
     calls.push({url, options});
     const attempts = calls.filter(call => call.url === url).length;
     if (url === "news.json") return newsFetcher ? newsFetcher(attempts) : response(newsSample);
+    if (url === "source-manifest.json") return manifestFetcher ? manifestFetcher(attempts) : response(editionManifest());
     assert.equal(url, "comex.json");
     return fetcher ? fetcher(attempts) : response(sample);
   };
@@ -90,11 +102,17 @@ test("the panorama groups verified amounts and preserves missing months and iner
   assert.deepEqual(calls.map(call => [call.url, call.options.credentials, call.options.redirect]), [
     ["comex.json", "omit", "error"],
     ["news.json", "omit", "error"],
+    ["source-manifest.json", "omit", "error"],
   ]);
   assert.equal(get("market-controls").disabled, false);
   assert.equal(get("market-edition").hidden, false);
   assert.match(get("market-edition-id").textContent, /^SHA-256 [0-9a-f]{12}…$/);
   assert.match(get("market-edition-download").href, /\/edicoes\/comex-[0-9a-f]{64}\.json$/);
+  assert.equal(get("market-edition-history").hidden, false);
+  assert.equal(get("market-edition-list").children.length, 2);
+  assert.match(get("market-edition-list").textContent, /Edição em uso.*Edição anterior/s);
+  assert.match(get("market-edition-list").textContent, /mesma data de atualização informada pela fonte/);
+  assert.equal(get("market-edition-list").querySelectorAll("a").length, 2);
   assert.equal(get("market-fob").textContent, "US$ 2.000");
   assert.equal(get("market-kg").textContent, "1.000");
   assert.equal(get("market-partners").textContent, "2");
@@ -117,7 +135,7 @@ test("the panorama groups verified amounts and preserves missing months and iner
   get("market-clear").click();
   assert.equal(get("market-fob").textContent, "US$ 2.000");
   assert.equal(window.document.activeElement, get("market-product"));
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 3);
   dom.window.close();
 });
 
@@ -145,7 +163,7 @@ test("failed and invalid published loads expose a retry without enabling filters
   assert.equal(get("market-results").hidden, false);
   assert.equal(get("market-report").hidden, false);
   assert.equal(get("market-geo-content").hidden, false);
-  assert.equal(calls.length, 4);
+  assert.equal(calls.length, 5);
   dom.window.close();
 });
 
@@ -290,7 +308,7 @@ test("the trade report captures active filters, source bytes, units and monthly 
   const zero = await download();
   assert.equal(zero.totals.kg, 0);
   assert.deepEqual(zero.records, [sample.records[1]]);
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 3);
   dom.window.close();
 });
 
@@ -328,7 +346,7 @@ test("curated news and the report share mineral, month and country without apply
   change("market-period", "2025-02");
   assert.equal(get("market-news-items").hidden, true);
   assert.equal((await download()).news_context.status, "no_matches");
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 3);
   dom.window.close();
 });
 
@@ -349,7 +367,7 @@ test("a rejected news link leaves commerce available and a valid retry restores 
   assert.equal(get("market-news-items").hidden, false);
   assert.equal(get("market-news-retry").hidden, true);
   assert.equal(get("market-news-period").disabled, false);
-  assert.deepEqual(calls.map(call => call.url), ["comex.json", "news.json", "news.json"]);
+  assert.deepEqual(calls.map(call => call.url), ["comex.json", "news.json", "source-manifest.json", "news.json"]);
   dom.window.close();
 });
 

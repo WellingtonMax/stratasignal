@@ -90,6 +90,8 @@ Os critérios são condições de entrega, não funcionalidades já publicadas. 
 
 O Panorama mostra o identificador abreviado da carga que efetivamente alimentou os gráficos e oferece o JSON congelado em uma rota content-addressed. O relatório aponta para essa mesma edição e mantém separada a rota mutável da publicação corrente. Ao preparar uma nova publicação, o operador pode reter a edição anterior já conferida. O manifesto enumera ambas com hash, atualização da fonte e data de consulta. A ausência de registros permanece nula no relatório, enquanto um registro publicado com valor zero continua sendo zero observado.
 
+O cartão da fonte oferece um histórico expansível quando há ao menos duas edições. Cada linha identifica a edição em uso ou anterior, seu hash abreviado, a data informada pela fonte e o download congelado. Hashes distintos são descritos como arquivos diferentes que exigem revisão; a interface não os chama de correção, irregularidade ou erro. Se a data da fonte não mudou, isso também fica explícito.
+
 ## Contratos de dados e estados
 
 - **Escopo:** filtros ativos e contagens por fonte. Período da série, corte da carteira e aquisição da imagem são relógios diferentes.
