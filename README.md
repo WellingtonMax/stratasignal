@@ -8,6 +8,8 @@
 
 **[Explore the public trade panorama and partner map](https://stratasignal.com.br/#mapa)** for official Brazilian trade statistics. The [fictional workbench](https://stratasignal.com.br/carteira/) uses synthetic procurement data. Private imports use the local workbench.
 
+**[Explore mineral markets](https://stratasignal.com.br/mercados/)** for iron ore exports in Brazil and Australia and optional delayed quotes for selected listed miners.
+
 ![StrataSignal UX foundation with one fictional specification shared by map and allocation chart](docs/images/workbench-ux01.png)
 
 ## The service a customer receives
@@ -25,6 +27,7 @@ An analyst reviews a bounded procurement dataset and delivers a private HTML dec
 | Operational intelligence | Descriptive delivery rates and Wilson intervals, completed-delivery P90, overdue orders, cost-based origin dependencies and a bounded stress matrix |
 | Public-data preparation | Streaming importer for the MDIC's documented local CSV layout, with explicit NCM, flow and period |
 | Public trade panorama | Publication-time Comex Stat snapshot for graphite and lithium carbonates. The partner map and keyboard-accessible table share the trade filters, with an independent publication month for curated news and a JSON report with both periods and sources. |
+| Mineral markets | Reviewed national iron ore export totals for Brazil and Australia, with dated sources and in-country period comparisons. A country-specific watchlist can show delayed exchange quotes in an optional TradingView iframe. |
 | Public news context | Curated Canadian lithium news and Brazilian mineral policy context for graphite, filtered by mineral, publication month and country and exported with per-source provenance |
 | Local workbench | Import JSON or map operational CSV columns; review inputs, run analysis, simulate, compare periods and download reports |
 | Geospatial explorer | Globe and flat map with country allocations, optional dated NASA imagery in both projections, synchronized comparisons, and a shortcut to the supply shock simulator |

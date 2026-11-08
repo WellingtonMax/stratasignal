@@ -163,3 +163,10 @@ Existing report integrity manifests remain valid because their generated report 
 - No Chromium, a tabela abriu com Enter, Tab alcançou a China com foco visível e Enter aplicou o filtro sem perder o foco. O mapa destacou a China e a seção de notícias exibiu a ausência de matérias para o recorte. A 337 pixels CSS via zoom, a largura de rolagem da página também foi 337 pixels. O mapa ocupou 279 pixels e o botão mediu 44 pixels de altura.
 - O JSON baixado por Enter registrou dois agregados de importação de grafita da China, somando US$ 145.658 FOB e 124.120 kg. Foram comparados registros, totais, coordenadas, escopo das notícias e hashes das cargas.
 - Passaram 111 testes Python e 46 testes DOM após `npm ci --ignore-scripts`. A execução com `python -S` passou 103 testes e ignorou 8 dependentes de ML.
+
+## Mercados minerais em 7 de novembro de 2026
+
+- Os valores publicados pelo MDIC e pelo DISR foram conferidos nas tabelas de exportação de minério de ferro. No Chromium, o Brasil exibiu US$ 22,18 bilhões FOB e variação de −5,7% no acumulado de janeiro a outubro de 2026. O seletor trocou para A$ 118,73 bilhões e +2,1% no exercício australiano de 2025–26.
+- Na prévia, a TradingView mostrou preços em BRL para VALE3 e CMIN3 e em AUD para RIO, com mercado fechado e avisos de atraso de 15 minutos na B3 e 20 minutos na ASX. A 337 pixels CSS via zoom, a seleção de país e a abertura da tabela funcionaram por teclado. A página e a tabela mantiveram a largura útil sem rolagem lateral.
+- O build oficial consultou 79 registros do Comex Stat às 02h11 UTC de 8 de novembro e quatro notícias selecionadas. O pacote preservou os bytes e horários dessa coleta. Os manifestos mantêm a carga oficial separada da carteira sintética com ML demonstrativo.
+- Passaram 111 testes Python e 49 testes DOM após `npm ci --ignore-scripts`. A execução com `python -S` passou 103 testes e ignorou 8 dependentes de ML. Os testes de Mercados cobrem moeda, fonte, atualização, recuperação após rejeição de destino inválido e criação e remoção do iframe opcional.

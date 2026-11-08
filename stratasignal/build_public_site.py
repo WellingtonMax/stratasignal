@@ -12,7 +12,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from . import __version__
-from . import public_news
+from . import public_markets, public_news
 from .build_demo import build_demo
 from .market import month
 from .schema import InputError, day, rows, text_value, unique_object
@@ -172,6 +172,21 @@ def collect_news():
     return news
 
 
+def _write_markets(output, ui):
+    market = output / "mercados"
+    market.mkdir()
+    for source, target in (("markets.html", "index.html"), ("markets.js", "markets.js"),
+                           ("markets.css", "markets.css")):
+        with (market / target).open("xb") as stream:
+            stream.write((ui / source).read_bytes())
+    snapshot = public_markets.SNAPSHOT
+    raw = (json.dumps(snapshot, ensure_ascii=False, allow_nan=False, indent=2) + "\n").encode("utf-8")
+    with (market / "dados.json").open("xb") as stream:
+        stream.write(raw)
+    return {"path": "mercados/dados.json", "sha256": hashlib.sha256(raw).hexdigest(),
+            "reviewed_on": snapshot["reviewed_on"]}
+
+
 def build_public_site(directory, source_commit=None, *, enable_ml=True):
     if source_commit is not None and not re.fullmatch(r"[0-9a-f]{40}", source_commit):
         raise InputError("Commit de origem inválido")
@@ -203,6 +218,7 @@ def build_public_site(directory, source_commit=None, *, enable_ml=True):
             "news_snapshot": {"path": "news.json", "sha256": hashlib.sha256(news_bytes).hexdigest(),
                               "source": news["source"], "feed_url": public_news.FEED_URL,
                               "feed_updated_at": news["feed_updated_at"], "fetched_at": news["fetched_at"]},
+            "markets_snapshot": _write_markets(output, ui),
             "synthetic_workbench": "carteira/source-manifest.json",
             "partner_map": {
                 "basemap_path": "carteira/world-land.svg",
