@@ -6,7 +6,7 @@
 
 [UX architecture and implementation backlog, in Portuguese](docs/UX_DESIGN_PT.md) · [Market research and business model, in Portuguese](docs/MARKET_RESEARCH_PT.md) · [Sample report](demo/report.html) · [Monthly comparison](demo/monthly/report.html) (download HTML and open locally) · [Methodology](docs/METHODOLOGY.md) · [Security](SECURITY.md) · [Verification](docs/VERIFICATION.md) · [Migration record](docs/MIGRATION.md)
 
-**[Explore the public trade panorama](https://stratasignal-workbench.wellingtonl-maxim.chatgpt.site/)** for official Brazilian trade statistics. The [fictional workbench](https://stratasignal-workbench.wellingtonl-maxim.chatgpt.site/carteira/) uses synthetic procurement data. Private imports use the local workbench.
+**[Explore the public trade panorama and partner map](https://stratasignal.com.br/#mapa)** for official Brazilian trade statistics. The [fictional workbench](https://stratasignal.com.br/carteira/) uses synthetic procurement data. Private imports use the local workbench.
 
 ![StrataSignal UX foundation with one fictional specification shared by map and allocation chart](docs/images/workbench-ux01.png)
 
@@ -24,8 +24,8 @@ An analyst reviews a bounded procurement dataset and delivers a private HTML dec
 | Temporal stability | Three additional chronological windows; predictions require at least two valid windows and improvement over their baselines in at least two thirds |
 | Operational intelligence | Descriptive delivery rates and Wilson intervals, completed-delivery P90, overdue orders, cost-based origin dependencies and a bounded stress matrix |
 | Public-data preparation | Streaming importer for the MDIC's documented local CSV layout, with explicit NCM, flow and period |
-| Public trade panorama | Publication-time Comex Stat API snapshot for graphite and lithium carbonates, with product, flow, month and country filters and a traceable JSON report of the active selection |
-| Public news context | Curated official Canadian releases about lithium, filtered by mineral, publication month and country, with source links and separate context in the JSON report |
+| Public trade panorama | Publication-time Comex Stat snapshot for graphite and lithium carbonates. The partner map and keyboard-accessible table share the trade filters, with an independent publication month for curated news and a JSON report with both periods and sources. |
+| Public news context | Curated Canadian lithium news and Brazilian mineral policy context for graphite, filtered by mineral, publication month and country and exported with per-source provenance |
 | Local workbench | Import JSON or map operational CSV columns; review inputs, run analysis, simulate, compare periods and download reports |
 | Geospatial explorer | Globe and flat map with country allocations, optional dated NASA imagery in both projections, synchronized comparisons, and a shortcut to the supply shock simulator |
 | Private delivery | Local analysis; loopback-only UI connection; no remote customer-data service, telemetry, external fonts or third-party AI calls |

@@ -1,4 +1,4 @@
-"""Curated release notes matched to the official Natural Resources Canada feed."""
+"""Curated release notes matched to official mineral news feeds."""
 
 import hashlib
 from datetime import datetime, timezone
@@ -13,6 +13,47 @@ FEED_URL = (
     "&format=atom&atomtitle=Natural%20Resources%20Canada"
 )
 ARTICLE_ROOT = "https://www.canada.ca/en/natural-resources-canada/news/"
+MDIC_SOURCE = "MDIC · Brasil"
+MDIC_ARCHIVE = "https://www.gov.br/mdic/pt-br/assuntos/noticias/2026/setembro"
+MDIC_FEED_URL = MDIC_ARCHIVE + "/RSS"
+MDIC_ARTICLE = MDIC_ARCHIVE + "/presidente-sanciona-politica-nacional-de-minerais-criticos-e-estrategicos"
+MDIC_NOVEMBER_ARCHIVE = "https://www.gov.br/mdic/pt-br/assuntos/noticias/2026/novembro"
+MDIC_NOVEMBER_FEED_URL = MDIC_NOVEMBER_ARCHIVE + "/RSS"
+MDIC_NOVEMBER_ARTICLE = MDIC_NOVEMBER_ARCHIVE + "/governo-federal-aprova-lista-brasileira-de-minerais-criticos-e-estrategicos"
+MDIC_EDITORIAL = {
+    MDIC_FEED_URL: {
+        "url": MDIC_ARTICLE,
+        "title": "Brasil estabelece política para minerais críticos e estratégicos",
+        "summary": (
+            "A sanção da política nacional criou instrumentos para desenvolver cadeias minerais no Brasil, "
+            "da pesquisa ao beneficiamento e à transformação. O comunicado trata da política setorial."
+        ),
+        "possible_impact": (
+            "A política pode influenciar investimentos na cadeia da grafita. "
+            "O efeito depende das medidas de implementação e dos projetos que avancem."
+        ),
+        "published_on": "2026-09-16",
+        "ncm": "25041000",
+    },
+    MDIC_NOVEMBER_FEED_URL: {
+        "url": MDIC_NOVEMBER_ARTICLE,
+        "title": "Grafita e lítio entram no grupo de maior prioridade da lista federal",
+        "summary": (
+            "O CIMCE aprovou uma lista de 27 minerais. Grafita e lítio ficaram no grupo "
+            "de maior prioridade da política nacional de minerais críticos e estratégicos."
+        ),
+        "possible_impact": (
+            "A classificação pode orientar o fomento a projetos. O efeito sobre investimentos e oferta "
+            "dependerá das medidas de implementação e da execução dos projetos."
+        ),
+        "published_on": "2026-11-05",
+        "ncm": "25041000",
+        "related_ncms": ["28369100"],
+    },
+}
+RDF = "{http://www.w3.org/1999/02/22-rdf-syntax-ns#}"
+RSS = "{http://purl.org/rss/1.0/}"
+DC = "{http://purl.org/dc/elements/1.1/}"
 MAX_FEED_BYTES = 512 * 1024
 MAX_FEED_ENTRIES = 50
 ATOM = "{http://www.w3.org/2005/Atom}"
@@ -56,17 +97,21 @@ EDITORIAL = {
 }
 
 
-def parse_feed(raw, fetched_at):
-    """Read bounded Atom metadata. All displayed text and links are editorially reviewed."""
+def _read_xml(raw):
     if len(raw) > MAX_FEED_BYTES:
-        raise InputError("Feed do Natural Resources Canada excede 512 KiB")
+        raise InputError("Feed de notícias excede 512 KiB")
     try:
         xml = raw.decode("utf-8")
         if "<!DOCTYPE" in xml or "<!ENTITY" in xml:
             raise InputError("Declaração XML proibida no feed de notícias")
-        feed = ElementTree.fromstring(xml)
+        return ElementTree.fromstring(xml)
     except (UnicodeDecodeError, ElementTree.ParseError, ValueError) as error:
         raise InputError("Feed de notícias inválido") from error
+
+
+def parse_feed(raw, fetched_at):
+    """Read bounded Atom metadata. All displayed text and links are editorially reviewed."""
+    feed = _read_xml(raw)
     if feed.tag != ATOM + "feed" or feed.findtext(ATOM + "title") != SOURCE:
         raise InputError("Identidade inesperada no feed de notícias")
     try:
@@ -101,3 +146,47 @@ def parse_feed(raw, fetched_at):
         "feed_entries": len(entries),
         "items": items,
     }
+
+
+def parse_mdic_feed(raw, fetched_at, *, feed_url=MDIC_FEED_URL):
+    """Match a reviewed Brazilian policy announcement to its official monthly RSS archive."""
+    feed = _read_xml(raw)
+    channel = feed.find(RSS + "channel")
+    editorial = MDIC_EDITORIAL.get(feed_url)
+    if editorial is None or feed.tag != RDF + "RDF" or channel is None or channel.get(RDF + "about") != feed_url:
+        raise InputError("Identidade inesperada no feed do MDIC")
+    entries = feed.findall(RSS + "item")
+    if len(entries) > MAX_FEED_ENTRIES:
+        raise InputError("Feed do MDIC excede o limite de entradas")
+    article = editorial["url"]
+    matched = [
+        entry for entry in entries
+        if entry.get(RDF + "about") == article and entry.findtext(RSS + "link") == article
+    ]
+    published_on = editorial["published_on"]
+    items = []
+    if matched:
+        for entry in matched:
+            try:
+                date = datetime.fromisoformat(entry.findtext(DC + "date", ""))
+                if date.utcoffset() is None or date.date().isoformat() != published_on or date > fetched_at:
+                    raise ValueError
+            except ValueError as error:
+                raise InputError("Data de publicação divergente no feed do MDIC") from error
+        items.append({
+            **editorial,
+            "source_id": "mdic",
+            "feed_url": feed_url,
+            "event_on": published_on,
+            "countries": ["Brasil"],
+            "companies": [],
+            "topic": "Política mineral",
+        })
+    return {
+        "source": MDIC_SOURCE,
+        "feed_url": feed_url,
+        "feed_updated_at": None,
+        "fetched_at": fetched_at.isoformat(timespec="seconds"),
+        "feed_sha256": hashlib.sha256(raw).hexdigest(),
+        "feed_entries": len(entries),
+    }, items

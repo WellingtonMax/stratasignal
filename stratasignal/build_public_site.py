@@ -138,19 +138,38 @@ def collect_comex():
     }
 
 
-def collect_news():
-    """Read the fixed public Atom endpoint without following redirects."""
-    request = Request(public_news.FEED_URL, headers={
-        "Accept": "application/atom+xml, application/xml", "User-Agent": f"StrataSignal/{__version__}",
+def _read_news_feed(url):
+    request = Request(url, headers={
+        "Accept": "application/atom+xml, application/rss+xml, application/rdf+xml, application/xml",
+        "User-Agent": f"StrataSignal/{__version__}",
     })
     try:
         with build_opener(_NoRedirect()).open(request, timeout=20) as response:
-            if response.headers.get_content_type() not in {"application/atom+xml", "application/xml", "text/xml"}:
+            if response.headers.get_content_type() not in {
+                "application/atom+xml", "application/rss+xml", "application/rdf+xml", "application/xml", "text/xml",
+            }:
                 raise InputError("O feed de notícias retornou um formato inesperado")
             raw = response.read(public_news.MAX_FEED_BYTES + 1)
     except (URLError, TimeoutError) as error:
-        raise InputError("Não foi possível consultar o feed do Natural Resources Canada") from error
-    return public_news.parse_feed(raw, datetime.now(timezone.utc))
+        raise InputError(f"Não foi possível consultar o feed oficial {url}") from error
+    return raw
+
+
+def collect_news():
+    """Read the fixed public news feeds without following redirects."""
+    canada = _read_news_feed(public_news.FEED_URL)
+    news = public_news.parse_feed(canada, datetime.now(timezone.utc))
+    news["mdic_archives"] = []
+    for feed_url in public_news.MDIC_EDITORIAL:
+        raw = _read_news_feed(feed_url)
+        metadata, items = public_news.parse_mdic_feed(raw, datetime.now(timezone.utc), feed_url=feed_url)
+        if feed_url == public_news.MDIC_FEED_URL:
+            news["mdic"] = metadata
+        else:
+            news["mdic_archives"].append(metadata)
+        news["items"].extend(items)
+    news["items"].sort(key=lambda item: item["published_on"], reverse=True)
+    return news
 
 
 def build_public_site(directory, source_commit=None, *, enable_ml=True):
@@ -185,7 +204,15 @@ def build_public_site(directory, source_commit=None, *, enable_ml=True):
                               "source": news["source"], "feed_url": public_news.FEED_URL,
                               "feed_updated_at": news["feed_updated_at"], "fetched_at": news["fetched_at"]},
             "synthetic_workbench": "carteira/source-manifest.json",
+            "partner_map": {
+                "basemap_path": "carteira/world-land.svg",
+                "basemap_sha256": hashlib.sha256((output / "carteira/world-land.svg").read_bytes()).hexdigest(),
+                "anchor_source": "Natural Earth · Admin 0 – Countries 5.1.1",
+            },
         }
+        for key in ("mdic", "mdic_archives"):
+            if key in news:
+                manifest["news_snapshot"][key] = news[key]
         with (output / "source-manifest.json").open("x", encoding="utf-8", newline="\n") as stream:
             stream.write(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
     except Exception:
