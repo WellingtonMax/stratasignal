@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; frame-src https://www.tradingview-widget.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="description" content="Compare períodos de exportação de minério de ferro e consulte ações ligadas à mineração no Brasil e na Austrália.">
+  <title>StrataSignal · Mercados minerais</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../app.css">
+  <link rel="stylesheet" href="../market.css">
+  <link rel="stylesheet" href="markets.css">
+  <script src="markets.js" defer></script>
+</head>
+<body class="market-page markets-page">
+  <a href="#main" class="skip">Pular para o conteúdo</a>
+  <header class="market-header">
+    <div class="market-header-inner">
+      <a class="brand" href="../" aria-label="StrataSignal, panorama público">
+        <span class="brand-symbol" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>strata<b>signal</b><small>INTELIGÊNCIA MINERAL</small></span>
+      </a>
+      <nav aria-label="Áreas do StrataSignal">
+        <a href="../#explorar">Panorama</a>
+        <a href="../#mapa">Mapa</a>
+        <a href="./" aria-current="page">Mercados</a>
+        <a href="../#noticias">Notícias</a>
+        <a href="../carteira/">Carteira fictícia <span aria-hidden="true">↗</span></a>
+      </nav>
+    </div>
+  </header>
+  <main id="main">
+    <section class="markets-banner" aria-labelledby="markets-title">
+      <div>
+        <p class="eyebrow"><span class="market-dot" aria-hidden="true"></span> OBSERVATÓRIO PÚBLICO · MINÉRIO DE FERRO</p>
+        <h1 id="markets-title">Mercados minerais</h1>
+        <p>Quanto o país exportou em minério de ferro e quais mineradoras acompanhar na bolsa local.</p>
+      </div>
+      <div class="markets-filter">
+        <label for="markets-country">País</label>
+        <select id="markets-country" aria-describedby="markets-country-help" disabled>
+          <option value="BR">Brasil</option>
+          <option value="AU">Austrália</option>
+        </select>
+        <small id="markets-country-help">O país selecionado define as exportações e a bolsa exibida.</small>
+      </div>
+    </section>
+    <p id="markets-status" class="market-status" role="status">Carregando dados de mercado…</p>
+    <button id="markets-retry" class="button secondary" type="button" hidden>Tentar novamente</button>
+    <noscript><p>Ative o JavaScript para trocar de país ou consulte as fontes <a href="https://balanca.economia.gov.br/balanca/publicacoes_dados_consolidados/pg.html">do Brasil</a> e <a href="https://www.industry.gov.au/publications/resources-and-energy-quarterly-september-2026">da Austrália</a>.</p></noscript>
+    <div id="markets-content" class="markets-board" hidden>
+      <section class="markets-export" aria-labelledby="markets-export-title">
+        <p class="eyebrow">ECONOMIA MINERAL</p>
+        <h2 id="markets-export-title">Exportação de minério de ferro</h2>
+        <p class="markets-context" id="markets-period"></p>
+        <dl class="markets-stats">
+          <div><dt>Valor exportado</dt><dd id="markets-value"></dd><small id="markets-value-unit"></small></div>
+          <div><dt>Volume exportado</dt><dd id="markets-volume"></dd><small id="markets-volume-unit"></small></div>
+          <div><dt>Variação do valor</dt><dd id="markets-change"></dd><small id="markets-change-period"></small></div>
+        </dl>
+        <article class="card markets-card" aria-labelledby="markets-chart-title">
+          <h3 id="markets-chart-title">Valor exportado por período</h3>
+          <div id="markets-bars" class="markets-bars" aria-hidden="true"></div>
+          <details class="market-table markets-table">
+            <summary>Ver valores em tabela</summary>
+            <div class="table-wrap" role="region" aria-label="Tabela de exportações de minério de ferro" tabindex="0">
+              <table>
+                <caption id="markets-caption"></caption>
+                <thead><tr><th scope="col">Período</th><th scope="col" id="markets-money-col"></th><th scope="col" id="markets-weight-col"></th></tr></thead>
+                <tbody id="markets-rows"></tbody>
+              </table>
+            </div>
+          </details>
+          <p id="markets-source-date" class="markets-context"></p>
+          <a id="markets-source" class="markets-source" href="#main"></a>
+          <p id="markets-stale" class="market-status market-notice" hidden>O recorte pode estar desatualizado. Consulte a publicação oficial para conferir revisões.</p>
+          <p class="markets-context">As fontes usam moedas, calendários e bases de peso próprios. A variação compara períodos do mesmo país.</p>
+        </article>
+      </section>
+      <section class="card markets-card markets-equities" aria-labelledby="markets-equity-title">
+        <p class="eyebrow" id="markets-exchange"></p>
+        <h2 id="markets-equity-title">Ações ligadas ao minério de ferro</h2>
+        <p class="markets-context">Seleção de empresas listadas. O preço de uma ação é por papel e a moeda depende da bolsa.</p>
+        <ul id="markets-symbols" class="markets-symbols"></ul>
+        <p class="markets-context" id="markets-quote-help">Cotações com atraso, fornecidas pela TradingView. Ao exibir, seu navegador se conecta ao serviço externo. Os links dos ativos ficam disponíveis se o gráfico não carregar.</p>
+        <button id="markets-quote-toggle" class="button" type="button" aria-describedby="markets-quote-help" aria-controls="markets-quote" aria-pressed="false">Exibir cotações</button>
+        <div id="markets-quote" class="markets-quote" hidden>
+          <div id="markets-quote-frame"></div>
+          <a class="markets-source" href="https://br.tradingview.com/">Gráfico e cotações pela TradingView</a>
+        </div>
+      </section>
+    </div>
+  </main>
+  <footer class="market-footer"><span>STRATASIGNAL · OBSERVATÓRIO PÚBLICO</span><a href="../#mapa">Voltar ao mapa de parceiros</a></footer>
+</body>
+</html>
