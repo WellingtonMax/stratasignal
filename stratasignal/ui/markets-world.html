@@ -83,6 +83,10 @@
             <div><dt>Volume em <span id="world-volume-year"></span></dt><dd id="world-volume"></dd><small id="world-volume-coverage"></small></div>
             <div><dt>Variação anual do valor</dt><dd id="world-change"></dd><small id="world-change-period"></small></div>
           </dl>
+          <dl class="world-benchmarks" aria-label="Comparação com o mercado mundial">
+            <div><dt>Participação mundial em <span id="world-share-year"></span></dt><dd id="world-share"></dd><small id="world-share-context"></small></div>
+            <div><dt>Posição no recorte em <span id="world-position-year"></span></dt><dd id="world-position"></dd><small id="world-position-context"></small></div>
+          </dl>
           <article class="card markets-card" aria-labelledby="world-chart-title">
             <h3 id="world-chart-title">Valor por ano</h3>
             <div id="world-bars" class="markets-bars" aria-hidden="true"></div>
@@ -96,6 +100,21 @@
                 </table>
               </div>
             </details>
+            <section class="world-share-history" aria-labelledby="world-share-history-title">
+              <h3 id="world-share-history-title">Participação no comércio mundial</h3>
+              <p class="markets-context">Parcela do valor FOB reconciliado no mesmo produto, fluxo e ano.</p>
+              <div id="world-share-bars" class="markets-bars" aria-hidden="true"></div>
+              <details class="market-table markets-table">
+                <summary>Ver participação em tabela</summary>
+                <div class="table-wrap" role="region" aria-label="Tabela de participação no comércio mundial por ano" tabindex="0">
+                  <table>
+                    <caption id="world-share-caption"></caption>
+                    <thead><tr><th scope="col">Ano</th><th scope="col">País ou território</th><th scope="col">Mundo</th><th scope="col">Participação</th></tr></thead>
+                    <tbody id="world-share-rows"></tbody>
+                  </table>
+                </div>
+              </details>
+            </section>
           </article>
         </div>
         <section id="world-rank" class="card markets-card market-ranking world-ranking" aria-labelledby="world-rank-title" hidden>
@@ -105,6 +124,14 @@
         </section>
         <p id="world-trade-date" class="markets-context"></p>
         <p class="markets-context">BACI reconcilia declarações dos parceiros. Fluxo ausente é uma lacuna da carga. Peso parcial soma os fluxos com quantidade disponível. Os totais podem incluir reexportações e áreas sem código de país.</p>
+        <div class="world-report-action">
+          <div>
+            <h3>Relatório verificável do recorte</h3>
+            <p class="markets-context">Baixe os mesmos anos, unidades e lacunas exibidos, com filtros, cobertura e SHA-256 da série comercial.</p>
+          </div>
+          <button id="world-download" class="button" type="button" disabled>Baixar relatório JSON</button>
+        </div>
+        <p id="world-download-status" class="market-status" role="status"></p>
         <div class="market-source-links">
           <a class="markets-source" href="https://www.international-economics.eu/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37">CEPII · BACI HS 2022 · Licença Ouverte 2.0</a>
           <a class="markets-source" href="https://unstats.un.org/unsd/methodology/m49/overview/">Códigos geográficos · ONU M49</a>

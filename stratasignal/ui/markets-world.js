@@ -10,6 +10,7 @@
   const number = new Intl.NumberFormat("pt-BR", {maximumFractionDigits: 2});
   const compact = new Intl.NumberFormat("pt-BR", {notation: "compact", maximumFractionDigits: 2});
   const percent = new Intl.NumberFormat("pt-BR", {style: "percent", maximumFractionDigits: 1, signDisplay: "exceptZero"});
+  const sharePercent = new Intl.NumberFormat("pt-BR", {style: "percent", maximumFractionDigits: 1});
   const dates = new Intl.DateTimeFormat("pt-BR", {dateStyle: "short", timeZone: "UTC"});
   const regions = new Intl.DisplayNames(["pt-BR"], {type: "region"});
   const collator = new Intl.Collator("pt-BR", {sensitivity: "base"});
@@ -23,6 +24,7 @@
   let catalog, countries, products, venues;
   let selection = {...defaults};
   let tradeRequest = 0;
+  let reportSlice;
 
   function element(tag, text) {
     const node = document.createElement(tag);
@@ -143,6 +145,9 @@
     const year = years.at(-1);
     const valueSlot = (years.length - 1) * 2 + slot;
     const periods = years.map((_, index) => series[selection.pais]?.[2 * index + slot]);
+    const worldPeriods = years.map((_, index) => series.WORLD?.[2 * index + slot]);
+    const sharePeriods = periods.map((cell, index) => cell && worldPeriods[index]?.[0] > 0
+      ? (selection.pais === "WORLD" ? 1 : cell[0] / worldPeriods[index][0]) : null);
     const current = periods.at(-1);
     const previous = periods.at(-2);
     const empty = get("empty");
@@ -180,8 +185,40 @@
       row.append(label, element("td", cell ? number.format(cell[0]) : "Sem registro"), weight);
       return row;
     }));
+    get("share-caption").textContent = `${region(selection.pais)} · ${flows[selection.fluxo]} · participação mundial por ano`;
+    get("share-bars").replaceChildren(...years.map((year, index) => {
+      const bar = element("div", "");
+      bar.className = "markets-bar";
+      const share = sharePeriods[index];
+      const meter = document.createElement("meter");
+      meter.max = 1;
+      meter.value = share ?? 0;
+      bar.append(element("span", year), meter, element("strong", share === null ? "Indisponível" : sharePercent.format(share)));
+      return bar;
+    }));
+    get("share-rows").replaceChildren(...years.map((year, index) => {
+      const row = document.createElement("tr");
+      const label = element("th", year);
+      label.scope = "row";
+      row.append(label,
+        element("td", periods[index] ? number.format(periods[index][0]) : "Sem registro"),
+        element("td", worldPeriods[index] ? number.format(worldPeriods[index][0]) : "Sem registro"),
+        element("td", sharePeriods[index] === null ? "Indisponível" : sharePercent.format(sharePeriods[index])));
+      return row;
+    }));
     const ranked = catalog.countries.filter(code => series[code]?.[valueSlot])
       .sort((left, right) => series[right][valueSlot][0] - series[left][valueSlot][0] || collator.compare(region(left), region(right)));
+    const worldCurrent = series.WORLD?.[valueSlot];
+    const share = current && worldCurrent?.[0] > 0 ? current[0] / worldCurrent[0] : null;
+    const rank = selection.pais === "WORLD" ? null : ranked.indexOf(selection.pais) + 1 || null;
+    get("share-year").textContent = get("position-year").textContent = year;
+    get("share").textContent = selection.pais === "WORLD" && current ? "100%" : share === null ? "Indisponível" : sharePercent.format(share);
+    get("share-context").textContent = selection.pais === "WORLD" ? "Total mundial reconciliado" :
+      share === null ? "País ou total mundial sem valor comparável" : money(current[0]) + " de " + money(worldCurrent[0]);
+    get("position").textContent = selection.pais === "WORLD" ? "—" : rank === null ? "Indisponível" : number.format(rank) + "º";
+    get("position-context").textContent = selection.pais === "WORLD" ? "Selecione um país ou território" :
+      rank === null ? "Sem posição entre " + ranked.length + " áreas com registro" :
+        "de " + number.format(ranked.length) + " países e territórios com registro";
     get("rank").hidden = !ranked.length;
     get("rank-meta").textContent = `${flows[selection.fluxo]} de ${year} · ${ranked.length} países e territórios com registro`;
     get("ranking").replaceChildren(...ranked.slice(0, 5).map(code => {
@@ -194,6 +231,48 @@
       item.append(button);
       return item;
     }));
+    reportSlice = {
+      filters: {
+        country_code: selection.pais,
+        country: region(selection.pais),
+        country_role: selection.pais === "WORLD" ? "world_total" : selection.fluxo === "export" ? "reporter_exporter" : "reporter_importer",
+        hs_code: selection.produto,
+        product: catalog.products[selection.produto][0],
+        flow: selection.fluxo,
+      },
+      observations: years.map((year, index) => {
+        const cell = periods[index];
+        return cell ? {
+          year,
+          status: "observed",
+          fob_usd: cell[0],
+          net_weight_kg: cell[1],
+          weight_coverage: {flows_with_weight: cell[2], total_flows: cell[3], status: cell[2] === cell[3] ? "complete" : "partial"},
+        } : {year, status: "no_record", fob_usd: null, net_weight_kg: null, weight_coverage: null};
+      }),
+      ranking: {
+        year,
+        scope: `Países e territórios identificados com ${flows[selection.fluxo].toLowerCase()} registradas`,
+        countries_with_record: ranked.length,
+        top_five: ranked.slice(0, 5).map(code => ({country_code: code, country: region(code), fob_usd: series[code][valueSlot][0]})),
+      },
+      world_benchmark: {
+        year,
+        world_fob_usd: worldCurrent?.[0] ?? null,
+        country_share: selection.pais === "WORLD" && current ? 1 : share,
+        country_rank: rank,
+        countries_with_record: ranked.length,
+        history: years.map((year, index) => ({
+          year,
+          country_fob_usd: periods[index]?.[0] ?? null,
+          world_fob_usd: worldPeriods[index]?.[0] ?? null,
+          country_share: sharePeriods[index],
+          status: sharePeriods[index] === null ? "unavailable" : "observed",
+        })),
+      },
+    };
+    get("download").disabled = false;
+    get("download-status").textContent = "Relatório pronto para o recorte atual.";
     status.textContent = `${region(selection.pais)} · ${periods.filter(Boolean).length} de ${years.length} anos com registro`;
   }
 
@@ -201,6 +280,9 @@
     const request = ++tradeRequest;
     const {pais, produto, fluxo} = selection;
     get("trade").hidden = get("rank").hidden = get("empty").hidden = retry.hidden = true;
+    reportSlice = undefined;
+    get("download").disabled = true;
+    get("download-status").textContent = "Aguardando a série comercial do recorte.";
     get("selection").textContent = `${region(pais)} · ${flows[fluxo]} · ${catalog.products[produto][0]} · HS ${produto}`;
     status.textContent = "Carregando o recorte comercial…";
     try {
@@ -220,8 +302,64 @@
     } catch {
       if (request !== tradeRequest) return;
       status.textContent = "Recorte comercial indisponível. O catálogo de bolsas continua disponível.";
+      get("download-status").textContent = "Relatório indisponível porque a série comercial não pôde ser verificada.";
       retry.hidden = false;
     }
+  }
+
+  function downloadReport() {
+    if (!catalog || !reportSlice) return;
+    const countryVenues = venues.filter(([country]) => selection.pais === "WORLD" || country === selection.pais);
+    const report = {
+      report_type: "stratasignal_world_mineral_trade_slice",
+      schema_version: 1,
+      dataset_kind: catalog.dataset_kind,
+      generated_at: new Date().toISOString(),
+      source: {
+        name: "CEPII BACI HS 2022",
+        url: "https://www.international-economics.eu/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37",
+        release: catalog.release,
+        published_on: catalog.published_on,
+        checked_on: catalog.checked_on,
+        years: catalog.years,
+        license: "Licence Ouverte 2.0",
+        trade_shard_url: new URL(`comercio/${selection.produto}.json`, document.baseURI).href,
+        trade_shard_sha256: catalog.trade_sha256[selection.produto],
+        quality: "Fluxos bilaterais reconciliados e estimados em equivalente FOB pelo CEPII.",
+      },
+      units: {fob_usd: "USD correntes, equivalente FOB", net_weight_kg: "quilogramas de peso líquido disponível"},
+      ...reportSlice,
+      exchange_registry: {
+        source: "Wikidata CC0, com perfil oficial da B3 no registro BR-B3",
+        checked_on: catalog.checked_on,
+        status: countryVenues.length ? "available" : "no_matches",
+        records: countryVenues.map(([country, id, name, kinds]) => ({country_code: country, id, name, kinds})),
+        note: "O cadastro auxilia a descoberta. Não comprova atividade atual, cobertura de ativos ou disponibilidade de cotação.",
+      },
+      interpretation: {
+        observations: "Os valores e pesos anuais acima são agregados publicados no recorte selecionado.",
+        inferences: [],
+        predictions: [],
+      },
+      limits: [
+        "Um código HS descreve mercadorias aduaneiras e não comprova espécie, teor, origem física ou etapa industrial.",
+        "Recortes de família e detalhe HS são alternativas e não devem ser somados, pois podem duplicar comércio.",
+        "Ausência de registro é uma lacuna da carga e não equivale a valor zero.",
+        "Peso parcial soma somente fluxos com quantidade disponível.",
+        "Cotações, preços de referência, produção, capitalização, empresas e instalações exigem fontes distintas e não integram este arquivo.",
+      ],
+    };
+    const blob = new Blob([JSON.stringify(report, null, 2) + "\n"], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const link = element("a");
+    link.href = url;
+    link.download = `stratasignal-mercado-${selection.pais.toLowerCase()}-${selection.produto}-${selection.fluxo}.json`;
+    link.hidden = true;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    get("download-status").textContent = "Relatório gerado com os filtros e a procedência do recorte atual.";
   }
 
   async function load() {
@@ -313,6 +451,7 @@
     get("quote-status").textContent = "Cotação fechada.";
     get("show-quote").focus();
   });
+  get("download").addEventListener("click", downloadReport);
   retry.addEventListener("click", () => catalog ? renderTrade() : load());
   load();
 })();
