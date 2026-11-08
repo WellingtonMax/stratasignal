@@ -92,6 +92,9 @@ test("the panorama groups verified amounts and preserves missing months and iner
     ["news.json", "omit", "error"],
   ]);
   assert.equal(get("market-controls").disabled, false);
+  assert.equal(get("market-edition").hidden, false);
+  assert.match(get("market-edition-id").textContent, /^SHA-256 [0-9a-f]{12}…$/);
+  assert.match(get("market-edition-download").href, /\/edicoes\/comex-[0-9a-f]{64}\.json$/);
   assert.equal(get("market-fob").textContent, "US$ 2.000");
   assert.equal(get("market-kg").textContent, "1.000");
   assert.equal(get("market-partners").textContent, "2");
@@ -253,7 +256,9 @@ test("the trade report captures active filters, source bytes, units and monthly 
   assert.equal(files.at(-1).name, "stratasignal-comex-25041000-import.json");
   assert.equal(report.dataset_kind, "public_aggregate");
   assert.equal(report.schema_version, 1);
-  assert.equal(report.source.snapshot_url, "https://example.invalid/comex.json");
+  const sourceHash = createHash("sha256").update(JSON.stringify(data)).digest("hex");
+  assert.equal(report.source.snapshot_url, `https://example.invalid/edicoes/comex-${sourceHash}.json`);
+  assert.equal(report.source.mutable_snapshot_url, "https://example.invalid/comex.json");
   assert.equal(report.source.snapshot_sha256, createHash("sha256").update(JSON.stringify(data)).digest("hex"));
   assert.equal(report.source.updated_on, sample.updated_on);
   assert.equal(report.source.fetched_at, sample.fetched_at);

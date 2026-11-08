@@ -24,6 +24,7 @@ LOOKBACK = 3
 MAX_BYTES = 1024 * 1024
 MAX_ROWS = 2000
 MAX_SAFE_INTEGER = 2**53 - 1
+EDITION_DIRECTORY = "edicoes"
 
 
 class _NoRedirect(HTTPRedirectHandler):
@@ -138,6 +139,68 @@ def collect_comex():
     }
 
 
+def _validated_snapshot_bytes(path):
+    """Read a retained public edition and reject malformed or unbounded input."""
+    raw = Path(path).read_bytes()
+    if len(raw) > MAX_BYTES:
+        raise InputError("Edição retida do Comex Stat excede 1 MiB")
+    try:
+        snapshot = json.loads(raw.decode("utf-8"), object_pairs_hook=unique_object)
+    except (UnicodeDecodeError, ValueError, RecursionError) as error:
+        raise InputError("Edição retida do Comex Stat é inválida") from error
+    if not isinstance(snapshot, dict) or snapshot.get("schema_version") != 1 or \
+            snapshot.get("dataset_kind") != "public_aggregate" or \
+            snapshot.get("source") != "Comex Stat · SECEX/MDIC":
+        raise InputError("Contrato inesperado na edição retida do Comex Stat")
+    months = snapshot.get("months")
+    records = snapshot.get("records")
+    if not isinstance(months, list) or not 1 <= len(months) <= 12 or \
+            not all(isinstance(value, str) and month(value) == value for value in months) or \
+            months != sorted(set(months)) or not isinstance(records, list) or len(records) > 4000:
+        raise InputError("Cobertura inválida na edição retida do Comex Stat")
+    seen = set()
+    for record in records:
+        if not isinstance(record, dict) or record.get("ncm") not in PRODUCTS or \
+                record.get("flow") not in FLOWS or record.get("month") not in months or \
+                not isinstance(record.get("country"), str) or not record["country"].strip() or \
+                len(record["country"]) > 100 or type(record.get("fob_usd")) is not int or \
+                type(record.get("kg")) is not int or min(record["fob_usd"], record["kg"]) < 0 or \
+                max(record["fob_usd"], record["kg"]) > MAX_SAFE_INTEGER:
+            raise InputError("Registro inválido na edição retida do Comex Stat")
+        key = (record["month"], record["ncm"], record["flow"], record["country"].casefold())
+        if key in seen:
+            raise InputError("Registro duplicado na edição retida do Comex Stat")
+        seen.add(key)
+    day(snapshot.get("updated_on"))
+    try:
+        datetime.fromisoformat(snapshot.get("fetched_at"))
+    except (TypeError, ValueError) as error:
+        raise InputError("Data inválida na edição retida do Comex Stat") from error
+    return raw, snapshot
+
+
+def _write_trade_editions(output, snapshot_bytes, retained_snapshots):
+    editions = output / EDITION_DIRECTORY
+    editions.mkdir()
+    candidates = [(snapshot_bytes, json.loads(snapshot_bytes))]
+    candidates.extend(_validated_snapshot_bytes(path) for path in retained_snapshots)
+    result = []
+    for raw, snapshot in candidates:
+        digest = hashlib.sha256(raw).hexdigest()
+        relative = f"{EDITION_DIRECTORY}/comex-{digest}.json"
+        target = output / relative
+        if not target.exists():
+            with target.open("xb") as stream:
+                stream.write(raw)
+        result.append({
+            "path": relative,
+            "sha256": digest,
+            "updated_on": snapshot["updated_on"],
+            "fetched_at": snapshot["fetched_at"],
+        })
+    return list({edition["sha256"]: edition for edition in result}.values())
+
+
 def _read_news_feed(url):
     request = Request(url, headers={
         "Accept": "application/atom+xml, application/rss+xml, application/rdf+xml, application/xml",
@@ -189,7 +252,7 @@ def _write_markets(output, ui):
             "reviewed_on": snapshot["reviewed_on"], "global": public_markets_world.write_snapshot(market)}
 
 
-def build_public_site(directory, source_commit=None, *, enable_ml=True):
+def build_public_site(directory, source_commit=None, *, enable_ml=True, retained_trade_snapshots=()):
     if source_commit is not None and not re.fullmatch(r"[0-9a-f]{40}", source_commit):
         raise InputError("Commit de origem inválido")
     output = Path(directory)
@@ -209,6 +272,7 @@ def build_public_site(directory, source_commit=None, *, enable_ml=True):
                 stream.write((ui / name).read_bytes())
         with (output / "comex.json").open("xb") as stream:
             stream.write(snapshot_bytes)
+        editions = _write_trade_editions(output, snapshot_bytes, retained_trade_snapshots)
         with (output / "news.json").open("xb") as stream:
             stream.write(news_bytes)
         manifest = {
@@ -216,7 +280,8 @@ def build_public_site(directory, source_commit=None, *, enable_ml=True):
             "source_repository": "https://github.com/WellingtonMax/stratasignal",
             "private_file_import": False, "dataset_kind": "public_aggregate",
             "trade_snapshot": {"path": "comex.json", "sha256": hashlib.sha256(snapshot_bytes).hexdigest(),
-                               "source": snapshot["source"], "fetched_at": snapshot["fetched_at"]},
+                               "source": snapshot["source"], "fetched_at": snapshot["fetched_at"],
+                               "edition_path": editions[0]["path"], "editions": editions},
             "news_snapshot": {"path": "news.json", "sha256": hashlib.sha256(news_bytes).hexdigest(),
                               "source": news["source"], "feed_url": public_news.FEED_URL,
                               "feed_updated_at": news["feed_updated_at"], "fetched_at": news["fetched_at"]},
@@ -244,9 +309,11 @@ def main():
     parser.add_argument("--out", required=True)
     parser.add_argument("--source-commit")
     parser.add_argument("--without-ml", action="store_true")
+    parser.add_argument("--retain-trade-snapshot", action="append", default=[])
     args = parser.parse_args()
     try:
-        build_public_site(args.out, args.source_commit, enable_ml=not args.without_ml)
+        build_public_site(args.out, args.source_commit, enable_ml=not args.without_ml,
+                          retained_trade_snapshots=args.retain_trade_snapshot)
     except (InputError, OSError) as error:
         parser.error(str(error))
 

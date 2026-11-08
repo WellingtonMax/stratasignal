@@ -438,7 +438,8 @@
         url: "https://comexstat.mdic.gov.br/pt/home",
         updated_on: snapshot.updated_on,
         fetched_at: snapshot.fetched_at,
-        snapshot_url: new URL("comex.json", document.baseURI).href,
+        snapshot_url: new URL("edicoes/comex-" + snapshotSha256 + ".json", document.baseURI).href,
+        mutable_snapshot_url: new URL("comex.json", document.baseURI).href,
         snapshot_sha256: snapshotSha256,
         quality: "Estatísticas aduaneiras agregadas sujeitas a revisão pela fonte.",
       },
@@ -551,6 +552,15 @@
       get("market-updated").textContent = calendar.format(new Date(snapshot.updated_on));
       get("market-geo-updated").textContent = "Atualização do Comex Stat em " + get("market-updated").textContent + ".";
       get("market-retrieved").textContent = "Consulta do StrataSignal em " + calendar.format(new Date(snapshot.fetched_at)) + ".";
+      const edition = get("market-edition");
+      if (snapshotSha256) {
+        get("market-edition-id").textContent = "SHA-256 " + snapshotSha256.slice(0, 12) + "…";
+        get("market-edition-download").href = "edicoes/comex-" + snapshotSha256 + ".json";
+        get("market-edition-download").download = "stratasignal-comex-" + snapshotSha256.slice(0, 12) + ".json";
+        edition.hidden = false;
+      } else {
+        edition.hidden = true;
+      }
       get("market-stale").hidden = Date.now() - Date.parse(snapshot.updated_on) <= 45 * 86400000;
       options(period, "Todo o período", snapshot.months.map(value => [monthName(value), value]));
       refreshCountries();
@@ -558,6 +568,7 @@
       controls.disabled = false;
       reportPanel.hidden = false;
     } catch {
+      get("market-edition").hidden = true;
       get("market-retrieved").textContent = "Carga publicada indisponível.";
       status.textContent = "Não foi possível carregar o panorama. Tente novamente ou consulte o Comex Stat.";
       geographyStatus.textContent = "Mapa indisponível enquanto a carga de comércio estiver indisponível.";

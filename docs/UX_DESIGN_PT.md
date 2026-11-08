@@ -86,6 +86,10 @@ Em Inteligência operacional, a seção Situação dos pedidos por mês filtra p
 
 Os critérios são condições de entrega, não funcionalidades já publicadas. Persistência, autenticação e conectores não serão expandidos apenas para sustentar uma maquete. A próxima etapa deve reutilizar esta fundação e continuar a branch/PR de UX existente enquanto estiver aberta, conciliando eventuais mudanças remotas antes de editar.
 
+### Edições verificáveis do Comex Stat
+
+O Panorama mostra o identificador abreviado da carga que efetivamente alimentou os gráficos e oferece o JSON congelado em uma rota content-addressed. O relatório aponta para essa mesma edição e mantém separada a rota mutável da publicação corrente. Ao preparar uma nova publicação, o operador pode reter a edição anterior já conferida. O manifesto enumera ambas com hash, atualização da fonte e data de consulta. A ausência de registros permanece nula no relatório, enquanto um registro publicado com valor zero continua sendo zero observado.
+
 ## Contratos de dados e estados
 
 - **Escopo:** filtros ativos e contagens por fonte. Período da série, corte da carteira e aquisição da imagem são relógios diferentes.
