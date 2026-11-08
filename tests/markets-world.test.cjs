@@ -33,7 +33,7 @@ const sample = {
   trade_sha256: Object.fromEntries(Object.entries(series).map(([code, data]) => [code, digest(data)])),
 };
 
-function open(fetcher, query = "") {
+function open(fetcher, query = "", catalog = sample) {
   const dom = new JSDOM(html, {runScripts: "outside-only", url: `https://example.invalid/mercados/${query}`});
   const {window} = dom;
   const get = id => window.document.getElementById(`world-${id}`);
@@ -51,7 +51,7 @@ function open(fetcher, query = "") {
   window.fetch = async (url, options) => {
     assert.equal(options.credentials, "omit");
     assert.equal(options.redirect, "error");
-    const value = url === "catalogo.json" ? sample : await fetcher(url, series[url.match(/\d+/)?.[0]]);
+    const value = url === "catalogo.json" ? catalog : await fetcher(url, series[url.match(/\d+/)?.[0]]);
     const bytes = new TextEncoder().encode(JSON.stringify(value));
     return {ok: true, arrayBuffer: async () => bytes.buffer};
   };
@@ -98,6 +98,30 @@ test("world filters distinguish zero, missing flow, and partial weight and keep 
   assert.equal(get("value").textContent, "Sem registro");
   assert.equal(get("empty").hidden, false);
   assert.equal(get("venue-controls").hidden, true);
+});
+
+test("only the Brazilian graphite slice links to the official snapshot with the same flow", async t => {
+  const graphite = {code: "250410", series: {}};
+  const catalog = {
+    ...sample,
+    products: {...sample.products, "250410": ["Grafita natural em pó ou escamas", "hs6", null]},
+    trade_sha256: {...sample.trade_sha256, "250410": digest(graphite)},
+  };
+  const {dom, get, input} = open((url, data) => url === "comercio/250410.json" ? graphite : data,
+    "?pais=BR&produto=250410&fluxo=export", catalog);
+  t.after(() => dom.window.close());
+  await settled(get);
+  assert.equal(get("empty").hidden, false);
+  assert.equal(get("comex").hidden, false);
+  assert.equal(get("comex-link").href, "https://example.invalid/?ncm=25041000&fluxo=export#explorar");
+  input("flow", "import");
+  assert.equal(get("comex-link").href, "https://example.invalid/?ncm=25041000&fluxo=import#explorar");
+  input("country", "CL");
+  assert.equal(get("comex").hidden, true);
+  input("country", "BR");
+  input("product", "2601");
+  await settled(get);
+  assert.equal(get("comex").hidden, true);
 });
 
 test("a changed trade shard is rejected and recovered without blocking venue and quote access", async t => {

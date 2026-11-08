@@ -48,6 +48,8 @@ Training labels precede each cutoff. All three artificial windows improve on the
 
 ## Reproduce
 
+O [ADR 0001](adr/0001-publicacao-e-fronteira-privada.md) registra a comparação entre código, manifesto e Site, e a conferência em navegador do piloto Brasil e grafita.
+
 ```bash
 python -m pip install -r requirements-ml.txt
 python -m unittest discover -s tests -v
