@@ -181,4 +181,6 @@ Existing report integrity manifests remain valid because their generated report 
 
 - O JSON exportado congela o país ou total mundial, o papel do país no fluxo, o produto HS, os três anos, unidades, lacunas, cobertura de peso, ranking do último ano e registros de bolsas do recorte.
 - O arquivo inclui versão e datas do BACI, licença e SHA-256 da série verificada pelo navegador. Observações ficam separadas de listas vazias de inferências e previsões. Os limites excluem preços, produção, capitalização, empresas e instalações.
+- A página também compara o valor do país com o total mundial reconciliado do mesmo produto, fluxo e ano. A posição usa somente países e territórios identificados com registro e informa o denominador. O total mundial recebe 100% e não recebe posição.
+- O mesmo benchmark integra o relatório JSON, com ano, total mundial, participação, posição e cobertura do ranking. Estados sem valor comparável permanecem indisponíveis.
 - `npm ci --ignore-scripts && npm test` passou 52 testes de interação, incluindo estados observado, zero, fluxo ausente, peso parcial e país sem bolsa. A suíte Python passou 112 testes. Com `python -S`, 104 passaram e 8 dependentes de ML foram ignorados. `git diff --check` não encontrou erros.

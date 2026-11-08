@@ -183,6 +183,17 @@
     }));
     const ranked = catalog.countries.filter(code => series[code]?.[valueSlot])
       .sort((left, right) => series[right][valueSlot][0] - series[left][valueSlot][0] || collator.compare(region(left), region(right)));
+    const worldCurrent = series.WORLD?.[valueSlot];
+    const share = current && worldCurrent?.[0] > 0 ? current[0] / worldCurrent[0] : null;
+    const rank = selection.pais === "WORLD" ? null : ranked.indexOf(selection.pais) + 1 || null;
+    get("share-year").textContent = get("position-year").textContent = year;
+    get("share").textContent = selection.pais === "WORLD" && current ? "100%" : share === null ? "Indisponível" : percent.format(share);
+    get("share-context").textContent = selection.pais === "WORLD" ? "Total mundial reconciliado" :
+      share === null ? "País ou total mundial sem valor comparável" : money(current[0]) + " de " + money(worldCurrent[0]);
+    get("position").textContent = selection.pais === "WORLD" ? "—" : rank === null ? "Indisponível" : number.format(rank) + "º";
+    get("position-context").textContent = selection.pais === "WORLD" ? "Selecione um país ou território" :
+      rank === null ? "Sem posição entre " + ranked.length + " áreas com registro" :
+        "de " + number.format(ranked.length) + " países e territórios com registro";
     get("rank").hidden = !ranked.length;
     get("rank-meta").textContent = `${flows[selection.fluxo]} de ${year} · ${ranked.length} países e territórios com registro`;
     get("ranking").replaceChildren(...ranked.slice(0, 5).map(code => {
@@ -219,6 +230,13 @@
         scope: `Países e territórios identificados com ${flows[selection.fluxo].toLowerCase()} registradas`,
         countries_with_record: ranked.length,
         top_five: ranked.slice(0, 5).map(code => ({country_code: code, country: region(code), fob_usd: series[code][valueSlot][0]})),
+      },
+      world_benchmark: {
+        year,
+        world_fob_usd: worldCurrent?.[0] ?? null,
+        country_share: selection.pais === "WORLD" && current ? 1 : share,
+        country_rank: rank,
+        countries_with_record: ranked.length,
       },
     };
     get("download").disabled = false;

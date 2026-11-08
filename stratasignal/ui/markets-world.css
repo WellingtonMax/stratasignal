@@ -56,6 +56,36 @@
   margin-block: 14px;
 }
 
+.world-benchmarks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: -4px 0 16px;
+}
+
+.world-benchmarks > div {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid #c8d4e3;
+  border-left: 3px solid var(--blue);
+  border-radius: 8px;
+  background: #f7fafc;
+}
+
+.world-benchmarks dt,
+.world-benchmarks small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.world-benchmarks dd {
+  margin: 4px 0;
+  color: var(--navy);
+  font-size: clamp(22px, 2.2vw, 32px);
+  font-weight: 650;
+  letter-spacing: -.03em;
+}
+
 .world-quote-actions {
   display: flex;
   flex-wrap: wrap;
@@ -106,6 +136,7 @@
 
 @media (max-width: 740px) {
   .world-filters { grid-template-columns: minmax(0, 1fr); }
+  .world-benchmarks { grid-template-columns: minmax(0, 1fr); }
   .world-report-action { align-items: stretch; flex-direction: column; }
   .world-report-action .button { width: 100%; }
 }
