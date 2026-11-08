@@ -196,3 +196,10 @@ Existing report integrity manifests remain valid because their generated report 
 - O mesmo benchmark integra o relatório JSON, com ano, total mundial, participação, posição e cobertura do ranking. Estados sem valor comparável permanecem indisponíveis.
 - A evolução de participação repete o cálculo para cada ano disponível e oferece gráfico com tabela equivalente. O JSON preserva valor do país, total mundial, parcela e estado observado ou indisponível em cada período.
 - `npm ci --ignore-scripts && npm test` passou 52 testes de interação, incluindo estados observado, zero, fluxo ausente, peso parcial e país sem bolsa. A suíte Python passou 112 testes. Com `python -S`, 104 passaram e 8 dependentes de ML foram ignorados. `git diff --check` não encontrou erros.
+
+## Busca de bolsas e cobertura do recorte em 8 de novembro de 2026
+
+- Na prévia de `/mercados/`, o cartão de comércio mostrou 3 de 3 anos para o Brasil, de 2022 a 2024 no BACI 202601. O cadastro mostrou 5 registros no recorte e cobertura de 152 dos 250 países e territórios do catálogo. A consulta de cotações permaneceu separada.
+- Com o Brasil selecionado, a busca local por `santiago acoes` retornou nenhum resultado. Ao marcar a opção mundial com Espaço, o seletor encontrou Santiago Stock Exchange, 1 de 1.038 vínculos de bolsas e mercados. A série permaneceu no Brasil e nenhum iframe de cotação foi criado. Limpar a busca com Enter devolveu o foco ao campo. O teste DOM também conferiu o JSON restrito ao recorte comercial e a lacuna de comércio e cadastro na Antártida.
+- Em quadros com viewport de 320, 768 e 1280 px CSS no Chromium, a largura rolável coincidiu com a largura útil. O campo e a área clicável do seletor de escopo mediram 44 px. A consulta por `Q13677` em 320 px encontrou a New York Stock Exchange.
+- `python -m unittest discover -s tests -v` passou 114 testes. Com `python -S`, 106 passaram e 8 opcionais de ML foram ignorados. `npm ci --ignore-scripts` e `npm test` concluíram com 56 testes de interação aprovados. `git diff --check` passou. O empacotamento canônico de Mercados reproduziu os bytes do catálogo, da carga nacional e dos 185 arquivos BACI da versão 23.

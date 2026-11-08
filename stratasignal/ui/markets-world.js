@@ -6,6 +6,8 @@
   const countrySelect = get("country");
   const productSelect = get("product");
   const flowSelect = get("flow");
+  const venueSearch = get("venue-search");
+  const venueWorldwide = get("venue-worldwide");
   const retry = get("retry");
   const number = new Intl.NumberFormat("pt-BR", {maximumFractionDigits: 2});
   const compact = new Intl.NumberFormat("pt-BR", {notation: "compact", maximumFractionDigits: 2});
@@ -122,14 +124,39 @@
 
   function renderVenues() {
     const select = get("venue");
-    const options = venues.flatMap(([country, , label], index) => selection.pais === "WORLD" || country === selection.pais
-      ? [new Option(selection.pais === "WORLD" ? `${region(country)} · ${label}` : label, String(index))] : []);
+    const active = select.value;
+    const worldwide = selection.pais === "WORLD" || venueWorldwide.checked;
+    const terms = normalized(venueSearch.value).split(/\s+/).filter(Boolean);
+    const scope = worldwide ? "Todos os países e territórios" : region(selection.pais);
+    const options = [];
+    let total = 0;
+    for (const [index, [country, id, name, kinds]] of venues.entries()) {
+      if (!worldwide && country !== selection.pais) continue;
+      total += 1;
+      const countryName = region(country);
+      const searchable = normalized(`${name} ${countryName} ${id} ${kinds.join(" ")}`);
+      if (terms.every(term => searchable.includes(term))) {
+        const label = worldwide ? `${countryName} · ${name}` : name;
+        options.push(new Option(label, String(index)));
+      }
+    }
     select.replaceChildren(...options);
+    if (options.some(option => option.value === active)) select.value = active;
     get("venue-controls").hidden = !options.length;
-    get("venue-count").textContent = options.length
-      ? `${options.length} ${options.length === 1 ? "registro" : "registros"} no catálogo · ${region(selection.pais)}`
-      : `${region(selection.pais)} · Sem bolsa identificada neste catálogo`;
+    get("venue-scope").hidden = selection.pais === "WORLD";
+    get("venue-clear").hidden = venueSearch.value === "";
+    const count = options.length === 1 ? "1 registro" : `${number.format(options.length)} registros`;
+    const result = total === 0 ? "Sem registro de bolsa neste catálogo"
+      : options.length === 0 ? "Nenhum resultado para esta busca"
+      : terms.length ? `${count} de ${number.format(total)}` : count;
+    get("venue-count").textContent = `${scope} · ${result}`;
     renderVenue();
+  }
+
+  function renderVenueCoverage() {
+    const total = venues.filter(([country]) => selection.pais === "WORLD" || country === selection.pais).length;
+    const count = total === 1 ? "1 registro no catálogo" : `${number.format(total)} registros no catálogo`;
+    get("coverage-venues").textContent = `${region(selection.pais)} · ${total ? count : "Sem registro no catálogo"}`;
     const curated = ["BR", "AU"].includes(selection.pais);
     get("curated").hidden = !curated;
     if (curated) get("curated").href = `nacional.html?pais=${selection.pais}#markets-equity-title`;
@@ -390,18 +417,28 @@
         produto: Object.hasOwn(data.products, query.get("produto")) ? query.get("produto") : defaults.produto,
         fluxo: Object.hasOwn(flows, query.get("fluxo")) ? query.get("fluxo") : defaults.fluxo,
       };
-      get("coverage").textContent = `${data.countries.length} países e territórios · ${products.length} recortes aduaneiros · ${new Set(venues.map(venue => venue[1])).size} bolsas e mercados no catálogo`;
-      get("trade-date").textContent = `BACI ${data.release} · ${data.years[0]}–${data.years.at(-1)} · Edição de ${dates.format(new Date(data.published_on))}`;
-      get("venues-date").textContent = `Wikidata · CC0 · Consulta de ${dates.format(new Date(data.checked_on))} UTC`;
+      const venueAreas = new Set(venues.map(venue => venue[0])).size;
+      const venueIds = new Set(venues.map(venue => venue[1])).size;
+      get("coverage").textContent = `${number.format(data.countries.length)} países e territórios · ${number.format(products.length)} recortes HS · ${number.format(venueIds)} bolsas e mercados cadastrados`;
+      const tradeSource = `BACI ${data.release} · ${data.years[0]}–${data.years.at(-1)} · Edição de ${dates.format(new Date(data.published_on))}`;
+      get("trade-date").textContent = get("coverage-trade-source").textContent = tradeSource;
+      const venueDate = dates.format(new Date(data.checked_on));
+      get("venues-date").textContent = `Wikidata · CC0 · Consulta de ${venueDate} UTC`;
+      get("coverage-venue-source").textContent =
+        `Wikidata e B3 · ${number.format(venueAreas)} de ${number.format(data.countries.length)} países e territórios · Consulta de ${venueDate}`;
+      get("coverage-trade-link").hidden = get("coverage-venue-card").hidden = get("coverage-quote-card").hidden = false;
       get("controls").disabled = false;
       get("content").hidden = false;
       renderOptions();
       renderVenues();
+      renderVenueCoverage();
       await renderTrade();
     } catch {
       catalog = undefined;
       get("controls").disabled = true;
       get("content").hidden = true;
+      get("coverage-trade-link").hidden = get("coverage-venue-card").hidden = get("coverage-quote-card").hidden = true;
+      get("coverage-trade-source").textContent = "";
       status.textContent = "Catálogo mundial indisponível. Tente novamente ou abra as séries nacionais.";
       retry.hidden = false;
     }
@@ -409,8 +446,11 @@
 
   function update(field, value) {
     selection[field] = value;
-    history.replaceState(null, "", `?${new URLSearchParams(selection)}`);
-    if (field === "pais") renderVenues();
+    history.replaceState(null, "", `?${new URLSearchParams(selection)}${location.hash}`);
+    if (field === "pais") {
+      renderVenues();
+      renderVenueCoverage();
+    }
     renderTrade();
   }
 
@@ -433,6 +473,13 @@
   get("country-search").addEventListener("input", renderOptions);
   get("product-search").addEventListener("input", renderOptions);
   get("venue").addEventListener("change", renderVenue);
+  venueSearch.addEventListener("input", renderVenues);
+  venueWorldwide.addEventListener("change", renderVenues);
+  get("venue-clear").addEventListener("click", () => {
+    venueSearch.value = "";
+    renderVenues();
+    venueSearch.focus();
+  });
   get("reset").addEventListener("click", () => {
     selection = {...defaults};
     get("country-search").value = get("product-search").value = "";

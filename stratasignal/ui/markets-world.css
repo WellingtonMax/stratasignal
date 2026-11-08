@@ -52,6 +52,86 @@
   min-height: 44px;
 }
 
+.world-coverage {
+  margin-block: 20px 24px;
+}
+
+.world-coverage h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.world-coverage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 12px;
+}
+
+.world-coverage-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 14px 16px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  overflow-wrap: anywhere;
+}
+
+.world-coverage-card h3 {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.world-coverage-value {
+  margin: 0 0 4px;
+  color: var(--navy);
+  font-weight: 650;
+}
+
+.world-coverage-card .markets-context {
+  margin-bottom: 0;
+}
+
+.world-coverage-card .markets-source {
+  margin-top: auto;
+}
+
+.world-coverage-card button {
+  min-height: 44px;
+}
+
+.world-venue-search {
+  margin-bottom: 8px;
+}
+
+.world-venue-search .markets-context {
+  margin: 0;
+}
+
+.world-venue-scope {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.world-venue-scope input {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  accent-color: var(--blue);
+}
+
+#world-trade-title:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 4px;
+}
+
 .world-comex,
 .world-ranking {
   margin-block: 14px;
