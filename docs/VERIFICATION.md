@@ -50,6 +50,12 @@ Training labels precede each cutoff. All three artificial windows improve on the
 
 O [ADR 0001](adr/0001-publicacao-e-fronteira-privada.md) registra a comparação entre código, manifesto e Site, e a conferência em navegador do piloto Brasil e grafita.
 
+## Edições verificáveis do Comex Stat em 8 de novembro de 2026
+
+- O build cria uma rota content-addressed para os mesmos bytes de `comex.json` e inclui o caminho, SHA-256, data de atualização e consulta no manifesto. A preparação da publicação pode reter uma edição anterior validada sem reserializá-la.
+- Um teste constrói duas edições com valores revisados e reproduz integralmente a edição anterior. Outro rejeita uma edição retida com métrica booleana e remove o diretório parcial. Os testes do relatório mantêm a distinção entre mês sem registro, total nulo e registro publicado com zero.
+- Passaram 114 testes Python com dependências, 106 no caminho `python -S` com 8 opcionais ignorados, e 55 testes DOM após `npm ci --ignore-scripts`. A conferência de navegador e a publicação serão registradas após a validação do pacote final.
+
 ```bash
 python -m pip install -r requirements-ml.txt
 python -m unittest discover -s tests -v

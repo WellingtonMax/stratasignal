@@ -75,6 +75,9 @@ class PublicSiteTests(unittest.TestCase):
                 "fob_usd": 1200, "kg": 700,
             }])
             self.assertEqual(manifest["trade_snapshot"]["sha256"], hashlib.sha256(public_bytes).hexdigest())
+            edition = manifest["trade_snapshot"]["editions"][0]
+            self.assertEqual(edition["path"], manifest["trade_snapshot"]["edition_path"])
+            self.assertEqual((output / edition["path"]).read_bytes(), public_bytes)
             basemap = output / manifest["partner_map"]["basemap_path"]
             self.assertEqual(manifest["partner_map"]["basemap_sha256"], hashlib.sha256(basemap.read_bytes()).hexdigest())
             self.assertIn('href="carteira/world-land.svg"', (output / "index.html").read_text(encoding="utf-8"))
@@ -116,6 +119,47 @@ class PublicSiteTests(unittest.TestCase):
                 build_public_site(output)
             self.assertEqual(fetch.call_count, 3)
             news.assert_called_once_with()
+
+    @patch("stratasignal.build_public_site.collect_news")
+    @patch("stratasignal.build_public_site._fetch")
+    def test_build_retains_two_content_addressed_trade_editions(self, fetch, news):
+        fetch.side_effect = [reply(metadata()), reply({"list": [trade_record()]}), reply({"list": []})]
+        news.return_value = parse_feed(atom_feed(next(iter(EDITORIAL))), FETCHED_AT)
+        previous = {
+            "schema_version": 1, "dataset_kind": "public_aggregate", "source": "Comex Stat · SECEX/MDIC",
+            "updated_on": "2025-01-31", "fetched_at": "2025-02-01T12:00:00+00:00",
+            "months": ["2024-10", "2024-11", "2024-12"], "response_sha256": {},
+            "records": [{"month": "2024-12", "ncm": "25041000", "country": "China",
+                         "flow": "import", "fob_usd": 1100, "kg": 700}],
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            retained = Path(directory) / "previous.json"
+            retained.write_text(json.dumps(previous, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            output = build_public_site(Path(directory) / "site", "b" * 40, enable_ml=False,
+                                       retained_trade_snapshots=[retained])
+            manifest = json.loads((output / "source-manifest.json").read_text())
+            editions = manifest["trade_snapshot"]["editions"]
+            self.assertEqual(len(editions), 2)
+            self.assertEqual(json.loads((output / editions[1]["path"]).read_text()), previous)
+            self.assertEqual(editions[1]["sha256"], hashlib.sha256(retained.read_bytes()).hexdigest())
+
+    @patch("stratasignal.build_public_site.collect_news")
+    @patch("stratasignal.build_public_site._fetch")
+    def test_build_rejects_malformed_retained_trade_edition(self, fetch, news):
+        fetch.side_effect = [reply(metadata()), reply({"list": [trade_record()]}), reply({"list": []})]
+        news.return_value = parse_feed(atom_feed(next(iter(EDITORIAL))), FETCHED_AT)
+        with tempfile.TemporaryDirectory() as directory:
+            retained = Path(directory) / "previous.json"
+            retained.write_text(json.dumps({
+                "schema_version": 1, "dataset_kind": "public_aggregate", "source": "Comex Stat · SECEX/MDIC",
+                "updated_on": "2025-01-31", "fetched_at": "2025-02-01T12:00:00+00:00",
+                "months": ["2024-12"], "records": [{"month": "2024-12", "ncm": "25041000",
+                    "country": "China", "flow": "import", "fob_usd": True, "kg": 700}],
+            }), encoding="utf-8")
+            with self.assertRaisesRegex(InputError, "Registro inválido"):
+                build_public_site(Path(directory) / "site", "b" * 40, enable_ml=False,
+                                  retained_trade_snapshots=[retained])
+            self.assertFalse((Path(directory) / "site").exists())
 
     @patch("stratasignal.build_public_site._fetch")
     def test_invalid_or_duplicate_public_records_do_not_build(self, fetch):

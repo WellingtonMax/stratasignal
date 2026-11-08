@@ -38,4 +38,6 @@ O JSON baixado na prévia conferiu com gráfico e tabela. Exportações de agost
 
 O próximo contrato do Comex Stat precisa fixar o grão e a edição da classificação, manter duas revisões recuperáveis e distinguir ausência de registro de zero observado. A publicação que adotar o contrato deverá preservar uma edição anterior verificável e mostrar o estado da fonte quando falhar uma atualização.
 
+O incremento SS02 implementa a primeira parte desse contrato. Cada pacote passa a expor a carga corrente em uma rota content-addressed e pode carregar a edição aprovada anterior sem alterar seus bytes. O Panorama mostra a edição efetivamente lida, e o relatório aponta para o mesmo arquivo congelado. O manifesto lista as edições retidas. O grão permanece mês × NCM × fluxo × país parceiro, com FOB em USD correntes e peso líquido em quilogramas. A classificação ainda é identificada pelo NCM de oito dígitos informado na consulta. O próximo incremento deverá versionar explicitamente a edição da tabela NCM e testar uma correção de classificação, sem inferi-la apenas do código.
+
 Para reverter uma publicação, selecionar no Site a versão aprovada anterior e conferir manifesto, rota e relatório após a reversão. Para reverter esta navegação no código, reverter o commit do atalho e reconstruir o pacote com a carga aprovada.
