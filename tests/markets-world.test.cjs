@@ -32,6 +32,15 @@ function open(fetcher, query = "") {
   const {window} = dom;
   const get = id => window.document.getElementById(`world-${id}`);
   window.TextDecoder = TextDecoder;
+  const downloads = [];
+  window.Blob = class Blob {
+    constructor(parts, options) { this.parts = parts; this.type = options.type; }
+  };
+  window.URL.createObjectURL = blob => { downloads.push({blob}); return "blob:report"; };
+  window.URL.revokeObjectURL = () => {};
+  window.HTMLAnchorElement.prototype.click = function () {
+    if (this.download) downloads.at(-1).filename = this.download;
+  };
   Object.defineProperty(window.crypto, "subtle", {value: webcrypto.subtle});
   window.fetch = async (url, options) => {
     assert.equal(options.credentials, "omit");
@@ -45,7 +54,7 @@ function open(fetcher, query = "") {
     get(id).value = value;
     get(id).dispatchEvent(new window.Event(type));
   };
-  return {dom, get, input, window};
+  return {dom, downloads, get, input, window};
 }
 
 async function settled(get) {
@@ -104,4 +113,33 @@ test("a changed trade shard is rejected and recovered without blocking venue and
   assert.equal(frame.getAttribute("sandbox"), "allow-scripts allow-same-origin");
   get("hide-quote").click();
   assert.equal(get("quote").querySelector("iframe"), null);
+});
+
+test("world report freezes filters, observations, coverage, registry, source hash, and explicit limits", async t => {
+  const {dom, downloads, get, input} = open((_, value) => value, "?pais=CL&produto=2603&fluxo=export");
+  t.after(() => dom.window.close());
+  await settled(get);
+  assert.equal(get("download").disabled, false);
+  get("download").click();
+  assert.equal(downloads.length, 1);
+  assert.equal(downloads[0].filename, "stratasignal-mercado-cl-2603-export.json");
+  const report = JSON.parse(downloads[0].blob.parts.join(""));
+  assert.equal(report.report_type, "stratasignal_world_mineral_trade_slice");
+  assert.deepEqual(report.filters, {
+    country_code: "CL", country: "Chile", country_role: "reporter_exporter",
+    hs_code: "2603", product: "Minério de cobre", flow: "export",
+  });
+  assert.equal(report.source.trade_shard_sha256, sample.trade_sha256["2603"]);
+  assert.equal(report.observations[0].status, "no_record");
+  assert.equal(report.observations[1].weight_coverage.status, "partial");
+  assert.equal(report.observations[2].fob_usd, 6000);
+  assert.equal(report.exchange_registry.records[0].name, "<img src=x onerror=alert(1)>");
+  assert.deepEqual(report.interpretation.predictions, []);
+  assert.match(report.limits.join(" "), /não comprova espécie/);
+  input("country", "AQ");
+  await settled(get);
+  get("download").click();
+  const empty = JSON.parse(downloads[1].blob.parts.join(""));
+  assert.equal(empty.exchange_registry.status, "no_matches");
+  assert.equal(empty.observations[2].status, "no_record");
 });

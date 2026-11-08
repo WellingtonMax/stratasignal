@@ -176,3 +176,9 @@ Existing report integrity manifests remain valid because their generated report 
 - A carga BACI 202601 reuniu 493.177 fluxos selecionados de 2022 a 2024. O catálogo validado tem 250 países e territórios, 185 recortes HS e 1.017 identificadores de bolsas e mercados em 152 países e áreas. Foram conferidos os hashes do catálogo e dos 185 arquivos de comércio. A publicação preserva os bytes e datas das cargas do Panorama e mantém a carteira separada como sintética.
 - No Chromium, a busca de Chile e cobre mostrou US$ 31 bilhões de exportações em 2024 e peso disponível em 21 de 22 fluxos. A troca por teclado para importações exibiu US$ 81.111.975 na tabela e o cadastro mostrou a bolsa de Santiago. Antártida exibiu lacuna de comércio e de bolsas. O gráfico de `NYSE:FCX` mostrou preço com atraso de 15 minutos. A série nacional brasileira de ferro permaneceu acessível.
 - A 337 pixels CSS via zoom, a tabela abriu com Enter e coube em 275 pixels. A página e a tabela mantiveram a largura útil sem rolagem lateral. Passaram 112 testes Python e 51 testes DOM. Com `python -S`, 104 passaram e 8 dependentes de ML foram ignorados.
+
+## Relatório do recorte global em 8 de novembro de 2026 UTC
+
+- O JSON exportado congela o país ou total mundial, o papel do país no fluxo, o produto HS, os três anos, unidades, lacunas, cobertura de peso, ranking do último ano e registros de bolsas do recorte.
+- O arquivo inclui versão e datas do BACI, licença e SHA-256 da série verificada pelo navegador. Observações ficam separadas de listas vazias de inferências e previsões. Os limites excluem preços, produção, capitalização, empresas e instalações.
+- `npm ci --ignore-scripts && npm test` passou 52 testes de interação, incluindo estados observado, zero, fluxo ausente, peso parcial e país sem bolsa. A suíte Python passou 112 testes. Com `python -S`, 104 passaram e 8 dependentes de ML foram ignorados. `git diff --check` não encontrou erros.

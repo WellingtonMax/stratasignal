@@ -78,6 +78,34 @@
   white-space: normal;
 }
 
+.world-report-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-block: 18px 4px;
+  padding: 16px;
+  border: 1px solid #c8d4e3;
+  border-radius: 8px;
+  background: #f7fafc;
+}
+
+.world-report-action h3,
+.world-report-action p {
+  margin: 0;
+}
+
+.world-report-action p {
+  margin-top: 4px;
+}
+
+.world-report-action .button {
+  flex: 0 0 auto;
+  min-height: 44px;
+}
+
 @media (max-width: 740px) {
   .world-filters { grid-template-columns: minmax(0, 1fr); }
+  .world-report-action { align-items: stretch; flex-direction: column; }
+  .world-report-action .button { width: 100%; }
 }
