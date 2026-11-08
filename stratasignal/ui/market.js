@@ -163,6 +163,66 @@
     return {...data, items, brazilSources, canadaCount};
   }
 
+  function validateEditionManifest(data) {
+    const hash = value => typeof value === "string" && /^[0-9a-f]{64}$/.test(value);
+    const instant = value => typeof value === "string" && Number.isFinite(Date.parse(value));
+    const trade = data?.trade_snapshot;
+    if (data?.dataset_kind !== "public_aggregate" || !trade || !hash(trade.sha256) ||
+        typeof trade.edition_path !== "string" || !Array.isArray(trade.editions) ||
+        trade.editions.length < 1 || trade.editions.length > 12) {
+      throw new Error("Invalid edition manifest");
+    }
+    const seen = new Set();
+    for (const edition of trade.editions) {
+      if (!edition || !hash(edition.sha256) || edition.path !== "edicoes/comex-" + edition.sha256 + ".json" ||
+          !validDate(edition.updated_on) || !instant(edition.fetched_at) || seen.has(edition.sha256)) {
+        throw new Error("Invalid trade edition");
+      }
+      seen.add(edition.sha256);
+    }
+    if (trade.sha256 !== snapshotSha256 || trade.edition_path !== "edicoes/comex-" + trade.sha256 + ".json" ||
+        !seen.has(trade.sha256)) {
+      throw new Error("Edition does not match snapshot");
+    }
+    return data;
+  }
+
+  function renderEditionHistory(manifest) {
+    const editions = manifest.trade_snapshot.editions;
+    const current = editions.find(edition => edition.sha256 === snapshotSha256);
+    const list = get("market-edition-list");
+    list.replaceChildren();
+    for (const edition of editions) {
+      const active = edition.sha256 === snapshotSha256;
+      const item = element("li");
+      if (active) item.setAttribute("aria-current", "true");
+      item.append(element("strong", active ? "Edição em uso" : "Edição anterior"));
+      item.append(element("code", edition.sha256.slice(0, 12) + "…"));
+      const sameSourceDate = !active && edition.updated_on === current.updated_on;
+      item.append(element("small", active ?
+        "Fonte atualizada em " + calendar.format(new Date(edition.updated_on)) + "." :
+        (sameSourceDate ? "Arquivo diferente, com a mesma data de atualização informada pela fonte." :
+          "Arquivo diferente; fonte atualizada em " + calendar.format(new Date(edition.updated_on)) + ".")));
+      const link = element("a", active ? "Baixar esta edição ↓" : "Baixar edição anterior ↓");
+      link.href = edition.path;
+      link.download = "stratasignal-comex-" + edition.sha256.slice(0, 12) + ".json";
+      item.append(link);
+      list.append(item);
+    }
+    get("market-edition-count").textContent = "(" + digits.format(editions.length) + ")";
+    get("market-edition-history").hidden = editions.length < 2;
+  }
+
+  async function loadEditionHistory() {
+    get("market-edition-history").hidden = true;
+    try {
+      const {data} = await readSnapshot("source-manifest.json", validateEditionManifest);
+      renderEditionHistory(data);
+    } catch {
+      get("market-edition-history").hidden = true;
+    }
+  }
+
   function productFlow() {
     return snapshot.records.filter(row => row.ncm === product.value && row.flow === flow.value);
   }
@@ -558,8 +618,10 @@
         get("market-edition-download").href = "edicoes/comex-" + snapshotSha256 + ".json";
         get("market-edition-download").download = "stratasignal-comex-" + snapshotSha256.slice(0, 12) + ".json";
         edition.hidden = false;
+        await loadEditionHistory();
       } else {
         edition.hidden = true;
+        get("market-edition-history").hidden = true;
       }
       get("market-stale").hidden = Date.now() - Date.parse(snapshot.updated_on) <= 45 * 86400000;
       options(period, "Todo o período", snapshot.months.map(value => [monthName(value), value]));
@@ -569,6 +631,7 @@
       reportPanel.hidden = false;
     } catch {
       get("market-edition").hidden = true;
+      get("market-edition-history").hidden = true;
       get("market-retrieved").textContent = "Carga publicada indisponível.";
       status.textContent = "Não foi possível carregar o panorama. Tente novamente ou consulte o Comex Stat.";
       geographyStatus.textContent = "Mapa indisponível enquanto a carga de comércio estiver indisponível.";

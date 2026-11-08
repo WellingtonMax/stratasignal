@@ -56,6 +56,8 @@ O [ADR 0001](adr/0001-publicacao-e-fronteira-privada.md) registra a comparação
 - Um teste constrói duas edições com valores revisados e reproduz integralmente a edição anterior. Outro rejeita uma edição retida com métrica booleana e remove o diretório parcial. Os testes do relatório mantêm a distinção entre mês sem registro, total nulo e registro publicado com zero.
 - Passaram 114 testes Python com dependências, 106 no caminho `python -S` com 8 opcionais ignorados, e 55 testes DOM após `npm ci --ignore-scripts`.
 - O pacote candidato consultou 79 registros do Comex Stat, criou a edição `fcc050cbc928…` e reteve a edição pública anterior `e1298fa75069…`, preservando seus bytes. No Chromium, a prova de edição apareceu na ficha da fonte com nome acessível, hash abreviado e link para o JSON content-addressed. Em 1363 px, a largura rolável foi 1348 px. Um quadro de 320 px confirmou a mesma ficha, filtros e ação de download na árvore de acessibilidade.
+- O histórico expansível valida o manifesto contra o hash dos bytes efetivamente carregados, limita a doze edições e rejeita caminhos que não sejam content-addressed. O teste DOM apresenta a edição corrente e a anterior, seus dois downloads e a distinção textual entre arquivo diferente e correção comprovada.
+- Na prévia gerenciada em 1363 × 936 px, o histórico abriu por teclado/controle nativo, anunciou duas edições na árvore de acessibilidade e exibiu os dois cartões sem rolagem horizontal. A edição anterior informou explicitamente que o arquivo difere apesar da mesma data de atualização da fonte.
 
 ```bash
 python -m pip install -r requirements-ml.txt
