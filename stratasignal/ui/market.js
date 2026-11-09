@@ -42,6 +42,7 @@
   const geographyRows = get("market-geo-partners");
   const geographySource = get("market-geo-source");
   const focusPartner = get("market-geo-focus");
+  const clearPartner = get("market-geo-clear");
   const svgNamespace = "http://www.w3.org/2000/svg";
   // Reviewed Comex Stat names matched to Natural Earth 5.1.1 Admin 0 label points,
   // rounded to tenths of a degree. Unknown names stay in the table and report.
@@ -399,6 +400,20 @@
       money(selected.fob_usd) + " FOB · " + digits.format(selected.kg) + " kg" +
         (selected.anchor ? "" : " · Sem ponto no mapa") :
       country.value ? "Sem registros neste período." : "Selecione um país para ver o valor e o peso.";
+    const context = get("market-geo-context");
+    const totalFob = sum(partners, "fob_usd");
+    const share = selected && totalFob ? selected.fob_usd / totalFob : 0;
+    const rank = selected ? partners.indexOf(selected) + 1 : 0;
+    context.hidden = !selected;
+    clearPartner.hidden = !selected;
+    if (selected) {
+      get("market-geo-rank").textContent = percent.format(share) + " do valor FOB do recorte · " +
+        rank + "º de " + digits.format(partners.length) + " parceiros";
+      const progress = get("market-geo-share");
+      progress.setAttribute("aria-valuenow", String(Math.round(share * 1000) / 10));
+      progress.setAttribute("aria-valuetext", percent.format(share) + " do valor FOB do recorte");
+      get("market-geo-share-fill").style.setProperty("--market-share", (share * 100) + "%");
+    }
     renderMapFocus(selected);
     get("market-geo-table-caption").textContent = scope;
     const focusedLabel = geographyRows.contains(document.activeElement) ? document.activeElement.value : null;
@@ -820,6 +835,10 @@
     focusPartner.addEventListener("click", () => {
       zoomedCountry = zoomedCountry ? null : country.value;
       renderMapFocus({label: country.value, anchor: partnerAnchors.get(country.value)});
+    });
+    clearPartner.addEventListener("click", () => {
+      togglePartner(country.value);
+      country.focus();
     });
     get("market-download").addEventListener("click", downloadReport);
     retry.addEventListener("click", load);

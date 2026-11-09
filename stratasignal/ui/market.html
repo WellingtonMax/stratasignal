@@ -156,7 +156,14 @@
             <p class="eyebrow">PARCEIRO EM FOCO</p>
             <h3 id="market-geo-selection"></h3>
             <p id="market-geo-amount"></p>
+            <div id="market-geo-context" class="market-geo-context" hidden>
+              <p id="market-geo-rank"></p>
+              <div id="market-geo-share" class="market-geo-share" role="progressbar" aria-label="Participação do parceiro no valor FOB do recorte" aria-valuemin="0" aria-valuemax="100">
+                <span id="market-geo-share-fill"></span>
+              </div>
+            </div>
             <button id="market-geo-focus" type="button" class="button secondary" aria-pressed="false" disabled>Aproximar parceiro</button>
+            <button id="market-geo-clear" type="button" class="button secondary" hidden>Ver todos os parceiros</button>
             <a class="button secondary" id="market-chart-link" href="/">Ver gráficos do recorte <span aria-hidden="true">→</span></a>
             <p id="market-geo-updated" class="market-news-note"></p>
             <p class="market-news-note">Os pontos são referências aproximadas de países, sem escala de volume, rotas de transporte ou localização de instalações. Base e pontos de referência do <a id="market-geo-source" href="https://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-admin-0-countries/">Natural Earth · 1:110m</a>.</p>
