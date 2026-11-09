@@ -20,8 +20,9 @@ MDIC_ARTICLE = MDIC_ARCHIVE + "/presidente-sanciona-politica-nacional-de-minerai
 MDIC_NOVEMBER_ARCHIVE = "https://www.gov.br/mdic/pt-br/assuntos/noticias/2026/novembro"
 MDIC_NOVEMBER_FEED_URL = MDIC_NOVEMBER_ARCHIVE + "/RSS"
 MDIC_NOVEMBER_ARTICLE = MDIC_NOVEMBER_ARCHIVE + "/governo-federal-aprova-lista-brasileira-de-minerais-criticos-e-estrategicos"
+MDIC_NOVEMBER_SEMINAR = MDIC_NOVEMBER_ARCHIVE + "/agenda-de-minerais-criticos-e-estrategicos-e-prioridade-absoluta-para-o-governo-afirma-marcio-elias"
 MDIC_EDITORIAL = {
-    MDIC_FEED_URL: {
+    MDIC_FEED_URL: ({
         "url": MDIC_ARTICLE,
         "title": "Brasil estabelece política para minerais críticos e estratégicos",
         "summary": (
@@ -34,8 +35,8 @@ MDIC_EDITORIAL = {
         ),
         "published_on": "2026-09-16",
         "ncm": "25041000",
-    },
-    MDIC_NOVEMBER_FEED_URL: {
+    },),
+    MDIC_NOVEMBER_FEED_URL: ({
         "url": MDIC_NOVEMBER_ARTICLE,
         "title": "Grafita e lítio entram no grupo de maior prioridade da lista federal",
         "summary": (
@@ -49,7 +50,22 @@ MDIC_EDITORIAL = {
         "published_on": "2026-11-05",
         "ncm": "25041000",
         "related_ncms": ["28369100"],
-    },
+    }, {
+        "url": MDIC_NOVEMBER_SEMINAR,
+        "title": "MDIC apresenta próximos passos da política mineral em seminário na Câmara",
+        "summary": (
+            "O ministério apresentou temas para a regulamentação da política mineral, entre eles a lista "
+            "de minerais atendidos, as diretrizes de industrialização e a triagem de investimentos. "
+            "Grafita e lítio foram citados no debate."
+        ),
+        "possible_impact": (
+            "As regras podem orientar quais projetos entram nas prioridades do governo. "
+            "O efeito sobre a indústria depende da regulamentação e da execução."
+        ),
+        "published_on": "2026-11-03",
+        "ncm": "25041000",
+        "related_ncms": ["28369100"],
+    }),
 }
 RDF = "{http://www.w3.org/1999/02/22-rdf-syntax-ns#}"
 RSS = "{http://purl.org/rss/1.0/}"
@@ -149,7 +165,7 @@ def parse_feed(raw, fetched_at):
 
 
 def parse_mdic_feed(raw, fetched_at, *, feed_url=MDIC_FEED_URL):
-    """Match a reviewed Brazilian policy announcement to its official monthly RSS archive."""
+    """Match reviewed Brazilian policy announcements to their official monthly RSS archive."""
     feed = _read_xml(raw)
     channel = feed.find(RSS + "channel")
     editorial = MDIC_EDITORIAL.get(feed_url)
@@ -158,14 +174,16 @@ def parse_mdic_feed(raw, fetched_at, *, feed_url=MDIC_FEED_URL):
     entries = feed.findall(RSS + "item")
     if len(entries) > MAX_FEED_ENTRIES:
         raise InputError("Feed do MDIC excede o limite de entradas")
-    article = editorial["url"]
-    matched = [
-        entry for entry in entries
-        if entry.get(RDF + "about") == article and entry.findtext(RSS + "link") == article
-    ]
-    published_on = editorial["published_on"]
     items = []
-    if matched:
+    for story in editorial:
+        article = story["url"]
+        matched = [
+            entry for entry in entries
+            if entry.get(RDF + "about") == article and entry.findtext(RSS + "link") == article
+        ]
+        if not matched:
+            continue
+        published_on = story["published_on"]
         for entry in matched:
             try:
                 date = datetime.fromisoformat(entry.findtext(DC + "date", ""))
@@ -174,7 +192,7 @@ def parse_mdic_feed(raw, fetched_at, *, feed_url=MDIC_FEED_URL):
             except ValueError as error:
                 raise InputError("Data de publicação divergente no feed do MDIC") from error
         items.append({
-            **editorial,
+            **story,
             "source_id": "mdic",
             "feed_url": feed_url,
             "event_on": published_on,

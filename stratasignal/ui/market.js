@@ -8,14 +8,25 @@
   };
   const product = get("market-product");
   const flow = get("market-flow");
-  const addressFilters = {ncm: product, fluxo: flow};
+  const view = document.body.dataset.view;
+  const newsView = view === "noticias";
+  const narrow = window.matchMedia?.("(max-width: 700px)").matches;
+  if (narrow && view === "mapa") get("market-trade-disclosure").open = false;
+  if (narrow && newsView) get("market-news-disclosure").open = false;
   const query = new URLSearchParams(location.search);
-  for (const [key, select] of Object.entries(addressFilters)) {
-    const value = query.get(key);
-    if (Array.from(select.options).some(option => option.value === value)) select.value = value;
+  const legacyPage = view === "panorama" && { "#mapa": "/mapa/", "#noticias": "/noticias/" }[location.hash];
+  if (legacyPage) {
+    location.replace(legacyPage + location.search);
+    return;
   }
+  const selectValue = (select, value) => {
+    if (Array.from(select.options).some(option => option.value === value)) select.value = value;
+  };
+  selectValue(product, query.get("ncm"));
+  selectValue(flow, query.get("fluxo"));
   const period = get("market-period");
   const country = get("market-country");
+  const tradeControls = get("market-controls");
   const status = get("market-status");
   const retry = get("market-retry");
   const results = get("market-results");
@@ -24,10 +35,13 @@
   const newsRetry = get("market-news-retry");
   const newsList = get("market-news-items");
   const newsPeriod = get("market-news-period");
+  const newsMineral = get("market-news-mineral");
+  const newsCountry = get("market-news-country");
   const geographyContent = get("market-geo-content");
   const geographyStatus = get("market-geo-status");
   const geographyRows = get("market-geo-partners");
   const geographySource = get("market-geo-source");
+  const focusPartner = get("market-geo-focus");
   const svgNamespace = "http://www.w3.org/2000/svg";
   // Reviewed Comex Stat names matched to Natural Earth 5.1.1 Admin 0 label points,
   // rounded to tenths of a degree. Unknown names stay in the table and report.
@@ -61,6 +75,8 @@
   const money = value => "US$ " + digits.format(value);
   const validDate = value => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) &&
     Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
+  const addressMonths = [...new Set(query.getAll(newsView ? "publicado" : "noticias_mes").slice(0, 12))]
+    .filter(month => validDate(month + "-01")).sort();
   const integer = value => Number.isSafeInteger(value) && value >= 0;
   const sum = (records, metric) => records.reduce((total, record) => total + record[metric], 0);
   const options = (select, defaultLabel, items) => {
@@ -69,6 +85,9 @@
   let snapshot, snapshotSha256, reportSlice;
   let news, newsSha256;
   let newsState = "loading";
+  let scopedNewsMonths = newsView && addressMonths.length > 1 ? addressMonths : [];
+  let pendingCountry = query.get("pais");
+  let zoomedCountry = null;
 
   function validate(data) {
     const codes = new Set(Array.from(product.options, option => option.value));
@@ -160,6 +179,7 @@
     if (brazilSources.some(source => source.curated_entries > source.feed_entries) || canadaCount > data.feed_entries) {
       throw new Error("Invalid news coverage");
     }
+    items.sort((first, second) => second.published_on.localeCompare(first.published_on));
     return {...data, items, brazilSources, canadaCount};
   }
 
@@ -204,7 +224,7 @@
         (sameSourceDate ? "Arquivo diferente, com a mesma data de atualização informada pela fonte." :
           "Arquivo diferente; fonte atualizada em " + calendar.format(new Date(edition.updated_on)) + ".")));
       const link = element("a", active ? "Baixar esta edição ↓" : "Baixar edição anterior ↓");
-      link.href = edition.path;
+      link.href = "/" + edition.path;
       link.download = "stratasignal-comex-" + edition.sha256.slice(0, 12) + ".json";
       item.append(link);
       list.append(item);
@@ -216,7 +236,7 @@
   async function loadEditionHistory() {
     get("market-edition-history").hidden = true;
     try {
-      const {data} = await readSnapshot("source-manifest.json", validateEditionManifest);
+      const {data} = await readSnapshot("/source-manifest.json", validateEditionManifest);
       renderEditionHistory(data);
     } catch {
       get("market-edition-history").hidden = true;
@@ -227,12 +247,12 @@
     return snapshot.records.filter(row => row.ncm === product.value && row.flow === flow.value);
   }
 
-  const matchesMineral = item => item.ncm === product.value || item.related_ncms?.includes(product.value);
+  const matchesMineral = (item, code) => !code || item.ncm === code || item.related_ncms?.includes(code);
 
   function refreshCountries() {
-    const previous = country.value;
+    const previous = pendingCountry ?? country.value;
     const available = [...new Set(productFlow().map(row => row.country))].sort((a, b) => a.localeCompare(b, "pt-BR"));
-    const mentioned = news?.items.filter(matchesMineral).flatMap(item => item.countries) ?? [];
+    const mentioned = news?.items.filter(item => matchesMineral(item, product.value)).flatMap(item => item.countries) ?? [];
     const extra = [...new Set(mentioned)].filter(label => !available.includes(label)).sort((a, b) => a.localeCompare(b, "pt-BR"));
     options(country, "Todos os países", available.map(label => [label, label]));
     if (extra.length) {
@@ -242,6 +262,7 @@
       country.append(group);
     }
     country.value = available.includes(previous) || extra.includes(previous) ? previous : "";
+    if (country.value || newsState !== "loading") pendingCountry = null;
     get("market-country-label").textContent = flow.value === "import" ? "País de origem" : "País de destino";
   }
 
@@ -296,8 +317,9 @@
   }
 
   function togglePartner(label) {
+    pendingCountry = null;
     country.value = country.value === label ? "" : label;
-    render();
+    applyTradeFilters();
   }
 
   function renderRanking(partners) {
@@ -319,18 +341,47 @@
     }));
   }
 
-  function mapPin({label, anchor: [lon, lat]}, selected) {
+  function projectAnchor([lon, lat]) {
     const phi = lat * Math.PI / 180;
-    const pin = document.createElementNS(svgNamespace, "circle");
     // The packaged Natural Earth outline uses a 1024 × 1024 Web Mercator world.
-    pin.setAttribute("cx", 1024 * (lon + 180) / 360);
-    pin.setAttribute("cy", 512 * (1 - Math.log(Math.tan(Math.PI / 4 + phi / 2)) / Math.PI));
-    pin.setAttribute("r", selected ? "16" : "8");
-    pin.setAttribute("class", selected ? "market-geo-pin selected" : "market-geo-pin");
+    return [1024 * (lon + 180) / 360, 512 * (1 - Math.log(Math.tan(Math.PI / 4 + phi / 2)) / Math.PI)];
+  }
+
+  function mapPin({label, anchor}, selected) {
+    const [x, y] = projectAnchor(anchor);
+    const marker = document.createElementNS(svgNamespace, "g");
+    marker.setAttribute("class", "market-geo-marker" + (selected ? " selected" : ""));
     const title = document.createElementNS(svgNamespace, "title");
     title.textContent = label;
-    pin.append(title);
-    return pin;
+    marker.append(title);
+    const circles = selected ? [[24, "market-geo-halo"], [10, "market-geo-pin"]] : [[8, "market-geo-pin"]];
+    for (const [radius, className] of [...circles, [23, "market-geo-hit"]]) {
+      const circle = document.createElementNS(svgNamespace, "circle");
+      circle.setAttribute("cx", x);
+      circle.setAttribute("cy", y);
+      circle.setAttribute("r", radius);
+      circle.setAttribute("class", className);
+      marker.append(circle);
+    }
+    marker.addEventListener("click", () => togglePartner(label));
+    return marker;
+  }
+
+  function renderMapFocus(selected) {
+    const scene = get("market-geo-scene");
+    if (!selected?.anchor || zoomedCountry !== selected.label) zoomedCountry = null;
+    focusPartner.disabled = !selected?.anchor;
+    focusPartner.setAttribute("aria-pressed", String(Boolean(zoomedCountry)));
+    if (!zoomedCountry) {
+      scene.style.transform = "";
+      return;
+    }
+    const [x, y] = projectAnchor(selected.anchor);
+    const zoom = 1.8;
+    // Clamp the pan to the visible bounds of the packaged map.
+    const dx = Math.max(1024 * (1 - zoom), Math.min(0, 512 - zoom * x));
+    const dy = Math.max(820 * (1 - zoom), Math.min(200 * (1 - zoom), 510 - zoom * y));
+    scene.style.transform = `translate(${dx}px, ${dy}px) scale(${zoom})`;
   }
 
   function renderGeography(partners, scope) {
@@ -338,14 +389,17 @@
     const mapped = partners.filter(partner => partner.anchor);
     geographyStatus.textContent = (partners.length ?
       digits.format(mapped.length) + " de " + digits.format(partners.length) + " parceiros no mapa" :
-      "Nenhum parceiro com registros") + " · " + scope;
+      "Nenhum parceiro com registros") + " · " + scope + (country.value ? " · " + country.value : "");
     const selected = partners.find(partner => partner.label === country.value);
     const pins = mapped.filter(partner => partner !== selected).map(partner => mapPin(partner, false));
     if (selected?.anchor) pins.push(mapPin(selected, true));
     get("market-geo-pins").replaceChildren(...pins);
-    get("market-geo-selection").textContent = !country.value ? "Todos os parceiros do período." :
-      country.value + (selected?.anchor ? " está destacado no mapa." :
-        selected ? " tem registros na tabela e ainda não possui ponto no mapa." : " está sem registros no período.");
+    get("market-geo-selection").textContent = country.value || "Todos os parceiros";
+    get("market-geo-amount").textContent = selected ?
+      money(selected.fob_usd) + " FOB · " + digits.format(selected.kg) + " kg" +
+        (selected.anchor ? "" : " · Sem ponto no mapa") :
+      country.value ? "Sem registros neste período." : "Selecione um país para ver o valor e o peso.";
+    renderMapFocus(selected);
     get("market-geo-table-caption").textContent = scope;
     const focusedLabel = geographyRows.contains(document.activeElement) ? document.activeElement.value : null;
     let nextFocus;
@@ -387,11 +441,14 @@
   }
 
   const selectedMonths = () => period.value ? [period.value] : snapshot.months;
-  const newsMonths = () => newsPeriod.value ? [newsPeriod.value] : selectedMonths();
+  const newsMonths = () => newsPeriod.value ? [newsPeriod.value] : newsView ? scopedNewsMonths : selectedMonths();
   function relatedNews() {
     const months = newsMonths();
-    return news?.items.filter(item => matchesMineral(item) && months.includes(item.published_on.slice(0, 7)) &&
-      (!country.value || item.countries.includes(country.value))) ?? [];
+    const mineral = newsView ? newsMineral.value : product.value;
+    const place = newsView ? newsCountry.value : country.value;
+    return news?.items.filter(item => matchesMineral(item, mineral) &&
+      (!months.length || months.includes(item.published_on.slice(0, 7))) &&
+      (!place || item.countries.includes(place))) ?? [];
   }
 
   function newsCard(item) {
@@ -418,7 +475,7 @@
     link.className = "market-news-link";
     link.href = item.url;
     link.setAttribute("aria-label", "Ler publicação original sobre " + item.title);
-    card.append(topic, element("h3", item.title), dates, element("p", item.summary));
+    card.append(topic, element(newsView ? "h2" : "h3", item.title), dates, element("p", item.summary));
     if (item.companies.length) {
       const companies = element("p", "Empresas citadas · " + item.companies.join(", "));
       companies.className = "market-news-meta";
@@ -429,18 +486,23 @@
   }
 
   function renderNews() {
-    newsPeriod.disabled = !news || !snapshot;
-    if (!news || !snapshot) {
+    const available = Boolean(news && (newsView || !tradeControls.disabled));
+    get("market-news-controls").disabled = newsPeriod.disabled = !available;
+    if (!available) {
       newsList.hidden = true;
       newsNotice.textContent = newsState === "unavailable" ? "A carga publicada de notícias está indisponível." :
         newsState === "loading" ? "Carregando notícias…" : "Aguardando o recorte de comércio para filtrar as notícias.";
       return;
     }
     const items = relatedNews();
-    const mineral = product.selectedOptions[0].dataset.mineral;
+    const mineral = newsView ? newsMineral.selectedOptions[0].textContent : product.selectedOptions[0].dataset.mineral;
+    const months = newsMonths();
+    const place = newsView ? newsCountry.value : country.value;
     const count = items.length ? items.length + (items.length === 1 ? " publicação" : " publicações") :
       "Nenhuma notícia da curadoria neste recorte";
-    const scope = count + " · " + mineral + " · " + monthSpan(newsMonths()) + " · " + (country.value || "todos os países");
+    const filters = newsView ? [newsMineral.value && mineral, months.length && monthSpan(months), place].filter(Boolean) :
+      [mineral, monthSpan(months), place || "todos os países"];
+    const scope = [count, ...(filters.length ? filters : ["Mais recentes primeiro"])].join(" · ");
     if (newsNotice.textContent !== scope) newsNotice.textContent = scope;
     newsList.replaceChildren(...items.map(newsCard));
     newsList.hidden = !items.length;
@@ -451,7 +513,7 @@
     baciLink.hidden = product.value !== "25041000";
     if (!baciLink.hidden) {
       const query = new URLSearchParams({pais: "BR", produto: "250410", fluxo: flow.value});
-      baciLink.href = `mercados/?${query}`;
+      baciLink.href = `/mercados/?${query}`;
     }
     const months = selectedMonths();
     const grouped = productFlow().filter(row => months.includes(row.month));
@@ -478,6 +540,7 @@
     results.hidden = records.length === 0;
     renderGeography(partners, scopeBase);
     renderNews();
+    updateRouteLinks();
     if (!records.length) return;
     get("market-fob").textContent = money(totals.fob_usd);
     get("market-kg").textContent = digits.format(totals.kg);
@@ -498,8 +561,8 @@
         url: "https://comexstat.mdic.gov.br/pt/home",
         updated_on: snapshot.updated_on,
         fetched_at: snapshot.fetched_at,
-        snapshot_url: new URL("edicoes/comex-" + snapshotSha256 + ".json", document.baseURI).href,
-        mutable_snapshot_url: new URL("comex.json", document.baseURI).href,
+        snapshot_url: new URL("/edicoes/comex-" + snapshotSha256 + ".json", location.href).href,
+        mutable_snapshot_url: new URL("/comex.json", location.href).href,
         snapshot_sha256: snapshotSha256,
         quality: "Estatísticas aduaneiras agregadas sujeitas a revisão pela fonte.",
       },
@@ -514,7 +577,7 @@
         source: {
           name: newsSource,
           catalog_url: get("market-news-feed").href,
-          snapshot_url: new URL("news.json", document.baseURI).href,
+          snapshot_url: new URL("/news.json", location.href).href,
           snapshot_sha256: newsSha256 ?? null,
           feed_sha256: news?.feed_sha256 ?? null,
           feed_updated_at: news?.feed_updated_at ?? null,
@@ -567,7 +630,7 @@
     newsState = "loading";
     renderNews();
     try {
-      ({data: news, sha256: newsSha256} = await readSnapshot("news.json", validateNews));
+      ({data: news, sha256: newsSha256} = await readSnapshot("/news.json", validateNews));
       newsState = "available";
       const coverage = get("market-news-coverage");
       coverage.textContent = newsSource + " · Curadoria de " + digits.format(news.canadaCount) + " entre " + digits.format(news.feed_entries) +
@@ -587,19 +650,33 @@
       }
       const oldest = Math.min(Date.parse(news.fetched_at), ...news.brazilSources.map(source => Date.parse(source.fetched_at)));
       get("market-news-stale").hidden = Date.now() - oldest <= 30 * 86400000;
-      const months = [...new Set(news.items.map(item => item.published_on.slice(0, 7)))].sort().reverse();
-      options(newsPeriod, "Mesmo período do comércio", months.map(month => [monthName(month), month]));
-      if (snapshot) refreshCountries();
+      const latest = Math.max(Date.parse(news.fetched_at), ...news.brazilSources.map(source => Date.parse(source.fetched_at)));
+      get("market-news-edition").textContent = "Feeds consultados em " + timestamp.format(latest) + " UTC.";
+      configureNewsPeriod();
+      selectValue(newsPeriod, addressMonths.length === 1 ? addressMonths[0] : "");
+      if (newsView) {
+        const countries = [...new Set(news.items.flatMap(item => item.countries))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+        options(newsCountry, "Todos os países", countries.map(label => [label, label]));
+        selectValue(newsMineral, query.get("mineral"));
+        const place = query.get("pais_citado");
+        if (place && place.length <= 100 && !countries.includes(place)) newsCountry.add(new Option(place, place));
+        selectValue(newsCountry, place);
+      }
+      if (!tradeControls.disabled) {
+        refreshCountries();
+        render();
+        return;
+      }
     } catch {
       newsState = "unavailable";
+      get("market-news-edition").textContent = "Edição publicada indisponível.";
       newsRetry.hidden = false;
     }
     renderNews();
   }
 
   async function load() {
-    const controls = get("market-controls");
-    controls.disabled = true;
+    tradeControls.disabled = true;
     retry.hidden = true;
     results.hidden = true;
     reportPanel.hidden = true;
@@ -607,7 +684,7 @@
     geographyStatus.textContent = "Carregando parceiros do comércio…";
     status.textContent = "Carregando dados públicos…";
     try {
-      ({data: snapshot, sha256: snapshotSha256} = await readSnapshot("comex.json", validate));
+      ({data: snapshot, sha256: snapshotSha256} = await readSnapshot("/comex.json", validate));
       get("market-through").textContent = monthName(snapshot.months.at(-1));
       get("market-updated").textContent = calendar.format(new Date(snapshot.updated_on));
       get("market-geo-updated").textContent = "Atualização do Comex Stat em " + get("market-updated").textContent + ".";
@@ -615,21 +692,23 @@
       const edition = get("market-edition");
       if (snapshotSha256) {
         get("market-edition-id").textContent = "SHA-256 " + snapshotSha256.slice(0, 12) + "…";
-        get("market-edition-download").href = "edicoes/comex-" + snapshotSha256 + ".json";
+        get("market-edition-download").href = "/edicoes/comex-" + snapshotSha256 + ".json";
         get("market-edition-download").download = "stratasignal-comex-" + snapshotSha256.slice(0, 12) + ".json";
         edition.hidden = false;
-        await loadEditionHistory();
+        if (view === "panorama") await loadEditionHistory();
       } else {
         edition.hidden = true;
         get("market-edition-history").hidden = true;
       }
       get("market-stale").hidden = Date.now() - Date.parse(snapshot.updated_on) <= 45 * 86400000;
       options(period, "Todo o período", snapshot.months.map(value => [monthName(value), value]));
+      selectValue(period, query.get("mes"));
       refreshCountries();
+      tradeControls.disabled = false;
       render();
-      controls.disabled = false;
       reportPanel.hidden = false;
     } catch {
+      tradeControls.disabled = true;
       get("market-edition").hidden = true;
       get("market-edition-history").hidden = true;
       get("market-retrieved").textContent = "Carga publicada indisponível.";
@@ -639,29 +718,91 @@
     }
   }
 
-  function saveFiltersToAddress() {
-    const url = new URL(location.href);
-    for (const [key, select] of Object.entries(addressFilters)) url.searchParams.set(key, select.value);
-    history.replaceState(history.state, "", url);
+  function configureNewsPeriod() {
+    const months = [...new Set([...news.items.map(item => item.published_on.slice(0, 7)), ...addressMonths])]
+      .sort().reverse();
+    const defaultLabel = newsView ? (scopedNewsMonths.length ? monthSpan(scopedNewsMonths) : "Todos os meses") :
+      "Mesmo período do comércio";
+    options(newsPeriod, defaultLabel, months.map(month => [monthName(month), month]));
   }
 
-  for (const select of [product, flow]) select.addEventListener("change", () => {
-    saveFiltersToAddress();
-    refreshCountries();
+  const tradeFilters = {ncm: product, fluxo: flow, mes: period, pais: country, noticias_mes: newsPeriod};
+  function tradeQuery() {
+    const params = new URLSearchParams();
+    for (const [key, select] of Object.entries(tradeFilters)) {
+      const value = newsView ? query.get(key) : select.value;
+      if (value && value.length <= 100) params.set(key, value);
+    }
+    return params;
+  }
+
+  const route = (path, params) => params.size ? path + "?" + params : path;
+  function updateRouteLinks() {
+    const trade = tradeQuery();
+    const panorama = route("/", trade);
+    const map = route("/mapa/", trade);
+    document.querySelector('[data-market-nav="panorama"]').href = panorama;
+    document.querySelector('[data-market-nav="mapa"]').href = map;
+    get("market-chart-link").href = panorama;
+    get("market-map-link").href = map;
+    if (newsView) return;
+    document.querySelector('[data-market-nav="noticias"]').href = route("/noticias/", trade);
+    const newsContext = new URLSearchParams(trade);
+    newsContext.set("mineral", product.value);
+    if (country.value) newsContext.set("pais_citado", country.value);
+    for (const month of newsMonths()) newsContext.append("publicado", month);
+    get("market-context-news").href = route("/noticias/", newsContext);
+  }
+
+  function applyTradeFilters() {
+    history.replaceState(history.state, "", route(location.pathname, tradeQuery()) + location.hash);
     render();
-  });
-  for (const select of [period, country]) select.addEventListener("change", render);
-  newsPeriod.addEventListener("change", renderNews);
-  get("market-clear").addEventListener("click", () => {
-    product.selectedIndex = flow.selectedIndex = period.selectedIndex = country.selectedIndex = newsPeriod.selectedIndex = 0;
-    saveFiltersToAddress();
-    refreshCountries();
-    render();
-    product.focus();
-  });
-  get("market-download").addEventListener("click", downloadReport);
-  retry.addEventListener("click", load);
+  }
+
+  function applyNewsFilters() {
+    const params = tradeQuery();
+    if (newsMineral.value) params.set("mineral", newsMineral.value);
+    if (newsCountry.value) params.set("pais_citado", newsCountry.value);
+    for (const month of newsMonths()) params.append("publicado", month);
+    history.replaceState(history.state, "", route(location.pathname, params));
+    renderNews();
+  }
+
+  if (newsView) {
+    updateRouteLinks();
+    for (const select of [newsMineral, newsCountry, newsPeriod]) select.addEventListener("change", applyNewsFilters);
+    get("market-news-clear").addEventListener("click", () => {
+      scopedNewsMonths = [];
+      configureNewsPeriod();
+      newsMineral.selectedIndex = newsCountry.selectedIndex = 0;
+      applyNewsFilters();
+      newsMineral.focus();
+    });
+  } else {
+    for (const select of [product, flow]) select.addEventListener("change", () => {
+      pendingCountry = null;
+      refreshCountries();
+      applyTradeFilters();
+    });
+    for (const select of [period, country, newsPeriod]) select.addEventListener("change", () => {
+      if (select === country) pendingCountry = null;
+      applyTradeFilters();
+    });
+    get("market-clear").addEventListener("click", () => {
+      pendingCountry = null;
+      product.selectedIndex = flow.selectedIndex = period.selectedIndex = country.selectedIndex = newsPeriod.selectedIndex = 0;
+      refreshCountries();
+      applyTradeFilters();
+      product.focus();
+    });
+    focusPartner.addEventListener("click", () => {
+      zoomedCountry = zoomedCountry ? null : country.value;
+      renderMapFocus({label: country.value, anchor: partnerAnchors.get(country.value)});
+    });
+    get("market-download").addEventListener("click", downloadReport);
+    retry.addEventListener("click", load);
+    load();
+  }
   newsRetry.addEventListener("click", loadNews);
-  load();
   loadNews();
 })();

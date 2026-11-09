@@ -65,6 +65,10 @@ python -m stratasignal.public_markets_world \
 
 ### Curadoria de notícias oficiais
 
+O build gera as páginas do Panorama, Mapa e Notícias a partir do mesmo layout. Panorama e Mapa compartilham `ncm`, `fluxo`, `mes`, `pais` e `noticias_mes` no endereço. A edição geral em `/noticias/` consulta somente `/news.json`. O atalho de contexto envia `mineral`, `pais_citado` e os meses `publicado`. Essa seleção afeta a leitura, enquanto os parâmetros de comércio permitem voltar ao recorte original.
+
+Em 9 de novembro de 2026, a prévia foi conferida em desktop e a 320 e 768 px. A navegação por teclado abriu Mapa, Panorama e Notícias no topo, preservou a China no recorte comercial e mostrou cinco comunicados na edição geral. O filtro Brasil e novembro retornou dois itens. A aproximação, a tabela de parceiros, o endereço antigo `/#mapa` e o download do JSON também foram exercitados.
+
 O mesmo build consulta o feed Atom do Natural Resources Canada. A seleção editorial em `stratasignal/public_news.py` mantém títulos e resumos próprios e exige que a URL original apareça no feed oficial. O build registra o hash da resposta Atom, a atualização informada pela fonte e a data da consulta. Uma falha do feed impede a geração de um novo pacote. A publicação existente fica disponível. [Catálogo oficial de feeds](https://natural-resources.canada.ca/corporate/rss-feeds)
 
 A primeira cobertura foi conferida em 7 de novembro de 2026. Inclui dois comunicados sobre lítio entre 50 entradas do feed. Datas de publicação e de evento vêm dos comunicados conferidos. O conteúdo original, as imagens e as marcas do emissor ficam na fonte. Os termos do governo canadense distinguem reprodução não comercial de redistribuição comercial. A curadoria publica texto próprio, metadados factuais e links. [Termos do Canada.ca](https://www.canada.ca/en/transparency/terms.html)

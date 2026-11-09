@@ -7,38 +7,37 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="description" content="Compare os fluxos de grafita natural e carbonatos de lítio no comércio exterior brasileiro, com dados públicos do Comex Stat.">
   <title>StrataSignal · Panorama mineral do Brasil</title>
-  <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="app.css">
-  <link rel="stylesheet" href="market.css">
-  <script src="market.js" defer></script>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/app.css">
+  <link rel="stylesheet" href="/market.css">
+  <script src="/market.js" defer></script>
 </head>
-<body class="market-page">
+<body class="market-page" data-view="panorama">
   <a href="#main" class="skip">Pular para o conteúdo</a>
   <header class="market-header">
     <div class="market-header-inner">
-      <a class="brand" href="./" aria-label="StrataSignal, panorama público">
+      <a class="brand" href="/" aria-label="StrataSignal, panorama público">
         <span class="brand-symbol" aria-hidden="true"><i></i><i></i><i></i></span>
         <span>strata<b>signal</b><small>INTELIGÊNCIA MINERAL</small></span>
       </a>
       <nav aria-label="Áreas do StrataSignal">
-        <a href="#explorar" aria-current="page">Panorama</a>
-        <a href="#mapa">Mapa</a>
-        <a href="mercados/">Mercados</a>
-        <a href="#noticias">Notícias</a>
-        <a href="carteira/">Carteira fictícia <span aria-hidden="true">↗</span></a>
+        <a data-market-nav="panorama" href="/" aria-current="page">Panorama</a>
+        <a data-market-nav="mapa" href="/mapa/">Mapa</a>
+        <a href="/mercados/">Mercados</a>
+        <a data-market-nav="noticias" href="/noticias/">Notícias</a>
+        <a href="/carteira/" aria-label="Carteira fictícia">Carteira</a>
       </nav>
     </div>
   </header>
-  <main id="main">
-    <section class="market-hero" aria-labelledby="market-title">
+  <main id="main" tabindex="-1">
+    <section class="market-hero market-panorama-only" aria-labelledby="market-title">
       <div class="market-hero-copy">
         <p class="eyebrow"><span class="market-dot" aria-hidden="true"></span> OBSERVATÓRIO PÚBLICO · BRASIL</p>
-        <h1 id="market-title">Comércio mineral<br>do Brasil.</h1>
-        <p>Veja quanto o Brasil importa e exporta de grafita natural e carbonatos de lítio, e com quais países negocia.</p>
+        <h1 id="market-title">Comércio mineral do Brasil</h1>
+        <p>Compare importações e exportações de grafita natural e carbonatos de lítio por mês e país parceiro.</p>
         <div class="market-hero-actions">
-          <a class="button primary" href="#mapa">Ver mapa dos parceiros <span aria-hidden="true">↓</span></a>
-          <a class="button market-atlas-link" href="#explorar">Filtrar comércio <span aria-hidden="true">↓</span></a>
-          <a class="button market-atlas-link" href="carteira/#atlas">Atlas fictício com satélite <span aria-hidden="true">↗</span></a>
+          <a class="button primary" href="#explorar">Comparar fluxos <span aria-hidden="true">↓</span></a>
+          <a class="button market-atlas-link" id="market-map-link" href="/mapa/">Explorar no mapa <span aria-hidden="true">→</span></a>
         </div>
       </div>
       <aside class="market-release" aria-labelledby="market-source-title">
@@ -62,43 +61,44 @@
         </details>
       </aside>
     </section>
-    <section id="explorar" aria-labelledby="market-explore-title" tabindex="-1">
-      <div class="market-section-title">
-        <div><p class="eyebrow">BRASIL E PARCEIROS COMERCIAIS</p><h2 id="market-explore-title">Explore os fluxos</h2></div>
+    <section class="market-page-intro market-map-only" aria-labelledby="market-map-title">
+      <div>
+        <p class="eyebrow"><span class="market-dot" aria-hidden="true"></span> GEOGRAFIA DO COMÉRCIO</p>
+        <h1 id="market-map-title">Parceiros do Brasil</h1>
+        <p>Veja os países do recorte. Toque em um ponto do mapa ou escolha um parceiro na lista.</p>
+      </div>
+    </section>
+    <section id="explorar" class="market-trade-only" aria-labelledby="market-explore-title" tabindex="-1">
+      <div class="market-section-title market-panorama-only">
+        <h2 id="market-explore-title">Recorte do comércio</h2>
         <a href="#fonte">Fonte e metodologia ↓</a>
       </div>
-      <fieldset id="market-controls" class="market-filters" disabled>
-        <legend class="market-visually-hidden">Filtros do panorama</legend>
-        <label for="market-product">Produto
-          <select id="market-product">
-            <option value="25041000" data-mineral="grafita">Grafita natural em pó ou escamas</option>
-            <option value="28369100" data-mineral="lítio">Carbonatos de lítio</option>
-          </select>
-        </label>
-        <label for="market-flow">Fluxo
-          <select id="market-flow"><option value="import">Importações</option><option value="export">Exportações</option></select>
-        </label>
-        <label for="market-period">Período do comércio
-          <select id="market-period"><option value="">Todo o período</option></select>
-        </label>
-        <label for="market-country"><span id="market-country-label">País de origem</span>
-          <select id="market-country"><option value="">Todos os países</option></select>
-        </label>
-        <button type="button" id="market-clear" class="button secondary">Limpar filtros</button>
-      </fieldset>
+      <details id="market-trade-disclosure" class="market-filter-panel" open>
+        <summary class="market-map-only">Filtros do mapa</summary>
+        <fieldset id="market-controls" class="market-filters" disabled>
+          <legend class="market-visually-hidden">Filtros do comércio</legend>
+          <label for="market-product">Produto
+            <select id="market-product">
+              <option value="25041000" data-mineral="grafita">Grafita natural em pó ou escamas</option>
+              <option value="28369100" data-mineral="lítio">Carbonatos de lítio</option>
+            </select>
+          </label>
+          <label for="market-flow">Fluxo
+            <select id="market-flow"><option value="import">Importações</option><option value="export">Exportações</option></select>
+          </label>
+          <label for="market-period">Período do comércio
+            <select id="market-period"><option value="">Todo o período</option></select>
+          </label>
+          <label for="market-country"><span id="market-country-label">País de origem</span>
+            <select id="market-country"><option value="">Todos os países</option></select>
+          </label>
+          <button type="button" id="market-clear" class="button secondary">Limpar filtros</button>
+        </fieldset>
+      </details>
       <p id="market-stale" class="market-notice" hidden>O corte tem mais de 45 dias. Confira na fonte se há uma publicação posterior.</p>
-      <p id="market-status" class="market-status" role="status">Carregando dados públicos…</p>
+      <p id="market-status" class="market-status market-panorama-only" role="status">Carregando dados públicos…</p>
       <button type="button" id="market-retry" class="button secondary" hidden>Tentar carregar novamente</button>
       <noscript><p>Ative o JavaScript para usar os filtros ou consulte o Comex Stat na seção de fontes.</p></noscript>
-      <section id="market-report" class="market-report" aria-labelledby="market-report-title" hidden>
-        <div>
-          <h3 id="market-report-title">Relatório do recorte</h3>
-          <p id="market-report-description">Registros de comércio, referências geográficas e notícias do recorte, com datas e fontes.</p>
-        </div>
-        <button type="button" id="market-download" class="button primary" aria-describedby="market-report-description">
-          Baixar relatório JSON <span aria-hidden="true">↓</span>
-        </button>
-      </section>
       <div id="market-results" hidden>
         <dl class="market-stats" aria-label="Indicadores do recorte">
           <div><dt>Valor total FOB</dt><dd id="market-fob"></dd><small>US$ correntes</small></div>
@@ -131,21 +131,21 @@
         </div>
       </div>
     </section>
-    <section id="mapa" class="market-geo" aria-labelledby="market-geo-title" tabindex="-1">
-      <div class="market-section-title">
-        <div><p class="eyebrow">COMEX STAT · SECEX/MDIC</p><h2 id="market-geo-title">Mapa dos parceiros do Brasil</h2></div>
-        <div class="market-source-links">
-          <a href="#explorar">Editar filtros ↑</a>
-          <a href="#noticias">Ver notícias do recorte ↓</a>
-        </div>
-      </div>
-      <p id="market-geo-status" class="market-status">Carregando parceiros do comércio…</p>
+    <section id="mapa" class="market-geo market-map-only" aria-labelledby="market-geo-title" tabindex="-1">
+      <h2 id="market-geo-title" class="market-visually-hidden">Mapa dos parceiros do Brasil</h2>
+      <p id="market-geo-status" class="market-status" role="status">Carregando parceiros do comércio…</p>
       <div id="market-geo-content" class="card market-geo-content" hidden>
         <div class="market-geo-layout">
           <figure class="market-geo-figure">
             <svg id="market-geo-world" viewBox="0 200 1024 620" aria-hidden="true" focusable="false">
-              <image href="carteira/world-land.svg" width="1024" height="1024"/>
-              <g id="market-geo-pins"></g>
+              <defs><pattern id="market-geo-grid" width="64" height="64" patternUnits="userSpaceOnUse">
+                <path d="M 64 0 H 0 V 64" fill="none" stroke="#2E5279" stroke-width="1"/>
+              </pattern></defs>
+              <rect x="0" y="200" width="1024" height="620" fill="url(#market-geo-grid)"/>
+              <g id="market-geo-scene">
+                <image href="/carteira/world-land.svg" width="1024" height="1024"/>
+                <g id="market-geo-pins"></g>
+              </g>
             </svg>
             <figcaption class="market-geo-caption">
               <span><i class="market-geo-dot" aria-hidden="true"></i> Parceiro com registros</span>
@@ -153,15 +153,18 @@
             </figcaption>
           </figure>
           <div class="market-geo-notes">
-            <h3>Seleção no mapa</h3>
-            <p id="market-geo-selection"></p>
+            <p class="eyebrow">PARCEIRO EM FOCO</p>
+            <h3 id="market-geo-selection"></h3>
+            <p id="market-geo-amount"></p>
+            <button id="market-geo-focus" type="button" class="button secondary" aria-pressed="false" disabled>Aproximar parceiro</button>
+            <a class="button secondary" id="market-chart-link" href="/">Ver gráficos do recorte <span aria-hidden="true">→</span></a>
             <p id="market-geo-updated" class="market-news-note"></p>
             <p class="market-news-note">Os pontos são referências aproximadas de países, sem escala de volume, rotas de transporte ou localização de instalações. Base e pontos de referência do <a id="market-geo-source" href="https://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-admin-0-countries/">Natural Earth · 1:110m</a>.</p>
           </div>
         </div>
         <details class="market-table market-geo-table">
-          <summary>Ver e filtrar parceiros em tabela</summary>
-          <p class="market-news-note">Selecione um parceiro para filtrar gráficos, notícias e relatório. Selecione-o novamente para voltar a todos.</p>
+          <summary>Explorar parceiros em tabela</summary>
+          <p class="market-news-note">Use a tabela para conferir valores e selecionar um país. Selecione-o novamente para voltar a todos.</p>
           <div class="table-wrap" role="region" aria-label="Tabela de parceiros comerciais" tabindex="0">
             <table>
               <caption id="market-geo-table-caption"></caption>
@@ -172,34 +175,79 @@
         </details>
       </div>
       <noscript><p>Ative o JavaScript para explorar os parceiros da carga publicada.</p></noscript>
+      <aside class="market-atlas-note">
+        <p><strong>Quer ver imagens de satélite?</strong> O atlas da Carteira reúne cenas datadas com locais demonstrativos.</p>
+        <a class="button secondary" href="/carteira/#atlas">Abrir atlas fictício <span aria-hidden="true">↗</span></a>
+      </aside>
     </section>
-    <section id="noticias" class="market-news" aria-labelledby="market-news-title" tabindex="-1">
-      <div class="market-section-title">
-        <div><p class="eyebrow">BRASIL E MUNDO</p><h2 id="market-news-title">Notícias da cadeia mineral</h2></div>
-        <a href="#explorar">Editar mineral e país ↑</a>
+    <section id="noticias" class="market-news" aria-labelledby="market-context-title" tabindex="-1">
+      <div class="market-page-intro market-news-only">
+        <div>
+          <p class="eyebrow"><span class="market-dot" aria-hidden="true"></span> CURADORIA · BRASIL E MUNDO</p>
+          <h1 id="market-news-title">Notícias da cadeia mineral</h1>
+          <p>Comunicados oficiais sobre minerais, projetos e políticas. Confira a publicação original e o possível impacto na cadeia.</p>
+        </div>
+        <div class="market-news-edition">
+          <strong>Edição de notícias</strong>
+          <p id="market-news-edition">Consultando a edição publicada…</p>
+          <small>Os feeds são consultados a cada nova edição do painel.</small>
+        </div>
       </div>
-      <p class="market-news-note">Comunicados selecionados sobre política mineral no Brasil e lítio no exterior. As notícias seguem o mineral e o país citado.</p>
-      <label class="market-news-filter" for="market-news-period">Período das notícias
-        <select id="market-news-period" aria-describedby="market-news-period-help" disabled>
-          <option value="">Mesmo período do comércio</option>
-        </select>
-      </label>
-      <p id="market-news-period-help" class="market-news-note">Escolha um mês de publicação para ler notícias de outro período. A cobertura e os valores do comércio permanecem vinculados ao período do comércio.</p>
-      <p id="market-news-coverage" class="market-news-note" hidden></p>
-      <p id="market-news-mdic-coverage" class="market-news-note" hidden></p>
-      <p id="market-news-mdic-november-coverage" class="market-news-note" hidden></p>
+      <div class="market-section-title market-trade-only"><h2 id="market-context-title">Notícias do recorte</h2></div>
+      <details id="market-news-disclosure" class="market-filter-panel" open>
+        <summary class="market-news-only">Filtrar notícias</summary>
+        <fieldset class="market-filters market-news-filters" id="market-news-controls" disabled>
+          <legend class="market-visually-hidden">Filtros de notícias</legend>
+          <label class="market-news-only" for="market-news-mineral">Mineral
+            <select id="market-news-mineral">
+              <option value="">Todos os minerais</option>
+              <option value="25041000">Grafita</option>
+              <option value="28369100">Lítio</option>
+            </select>
+          </label>
+          <label class="market-news-only" for="market-news-country">País citado
+            <select id="market-news-country"><option value="">Todos os países</option></select>
+          </label>
+          <label for="market-news-period">Mês de publicação
+            <select id="market-news-period" aria-describedby="market-news-period-help" disabled>
+              <option value="">Mesmo período do comércio</option>
+            </select>
+          </label>
+          <button type="button" id="market-news-clear" class="button secondary market-news-only">Limpar filtros</button>
+        </fieldset>
+        <p id="market-news-period-help" class="market-news-note">
+          <span class="market-trade-only">O mês das notícias pode ser diferente do período comercial no relatório.</span>
+          <span class="market-news-only">Filtre por mineral, país citado e mês de publicação.</span>
+        </p>
+      </details>
       <p id="market-news-stale" class="market-notice" hidden>Uma consulta tem mais de 30 dias. Confira a fonte para ver publicações posteriores.</p>
       <p id="market-news-status" class="market-status" role="status">Carregando notícias…</p>
       <button type="button" id="market-news-retry" class="button secondary" hidden>Tentar carregar notícias</button>
-      <ul id="market-news-items" class="market-news-list" hidden></ul>
-      <div class="market-source-links">
-        <a id="market-news-feed" href="https://natural-resources.canada.ca/corporate/rss-feeds">Catálogo de feeds do Canadá ↗</a>
-        <a id="market-news-mdic-feed" href="https://www.gov.br/mdic/pt-br/assuntos/noticias/2026/setembro/RSS" hidden>RSS do MDIC · setembro ↗</a>
-        <a id="market-news-mdic-november-feed" href="https://www.gov.br/mdic/pt-br/assuntos/noticias/2026/novembro/RSS" hidden>RSS do MDIC · novembro ↗</a>
-      </div>
-      <noscript><p>Ative o JavaScript para filtrar a curadoria pelo recorte do panorama.</p></noscript>
+      <a class="button secondary market-trade-only" id="market-context-news" href="/noticias/">Ler notícias do recorte <span aria-hidden="true">→</span></a>
+      <ul id="market-news-items" class="market-news-list market-news-only" hidden></ul>
+      <details class="market-news-sources market-news-only">
+        <summary>Fontes, cobertura e datas de consulta</summary>
+        <p id="market-news-coverage" class="market-news-note" hidden></p>
+        <p id="market-news-mdic-coverage" class="market-news-note" hidden></p>
+        <p id="market-news-mdic-november-coverage" class="market-news-note" hidden></p>
+        <div class="market-source-links">
+          <a id="market-news-feed" href="https://natural-resources.canada.ca/corporate/rss-feeds">Catálogo de feeds do Canadá ↗</a>
+          <a id="market-news-mdic-feed" href="https://www.gov.br/mdic/pt-br/assuntos/noticias/2026/setembro/RSS" hidden>RSS do MDIC · setembro ↗</a>
+          <a id="market-news-mdic-november-feed" href="https://www.gov.br/mdic/pt-br/assuntos/noticias/2026/novembro/RSS" hidden>RSS do MDIC · novembro ↗</a>
+        </div>
+      </details>
+      <noscript><p>Ative o JavaScript para ler a edição publicada de notícias.</p></noscript>
     </section>
-    <section id="fonte" class="market-method" aria-labelledby="market-method-title">
+    <section id="market-report" class="market-report market-trade-only" aria-labelledby="market-report-title" hidden>
+      <div>
+        <h2 id="market-report-title">Relatório do recorte</h2>
+        <p id="market-report-description">Registros de comércio, referências geográficas e notícias relacionadas, com datas e fontes.</p>
+      </div>
+      <button type="button" id="market-download" class="button primary" aria-describedby="market-report-description">
+        Baixar relatório JSON <span aria-hidden="true">↓</span>
+      </button>
+    </section>
+    <section id="fonte" class="market-method market-trade-only" aria-labelledby="market-method-title">
       <div><p class="eyebrow">PROCEDÊNCIA E COBERTURA</p><h2 id="market-method-title">Como ler o painel</h2></div>
       <div>
         <p>Estatísticas aduaneiras agregadas do Brasil por mês, país e produto. Grafita natural em pó ou escamas (NCM 25041000) e carbonatos de lítio (NCM 28369100). A série mostra os três últimos meses disponíveis no momento da consulta.</p>
@@ -208,12 +256,12 @@
         <div class="market-source-links">
           <a href="https://comexstat.mdic.gov.br/pt/home">Consultar o Comex Stat ↗</a>
           <a href="https://api-comexstat.mdic.gov.br/docs">Documentação da API ↗</a>
-          <a href="comex.json" download>Baixar a carga publicada (JSON)</a>
-          <a id="market-baci-link" href="mercados/" hidden>Ver a série anual da grafita no BACI</a>
+          <a href="/comex.json" download>Baixar a carga publicada (JSON)</a>
+          <a id="market-baci-link" href="/mercados/" hidden>Ver a série anual da grafita no BACI</a>
         </div>
       </div>
     </section>
   </main>
-  <footer class="market-footer"><span>STRATASIGNAL · OBSERVATÓRIO PÚBLICO</span><a href="carteira/">Abrir a carteira fictícia ↗</a></footer>
+  <footer class="market-footer"><span>STRATASIGNAL · OBSERVATÓRIO PÚBLICO</span><a href="/carteira/">Abrir a carteira fictícia ↗</a></footer>
 </body>
 </html>
