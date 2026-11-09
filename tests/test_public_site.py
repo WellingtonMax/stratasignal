@@ -202,6 +202,33 @@ class PublicSiteTests(unittest.TestCase):
                 refresh_public_news(source, Path(directory) / "invalid-manifest", "c" * 40)
             self.assertEqual(news.call_count, 2)
 
+    @patch("stratasignal.build_public_site._read_news_feed")
+    def test_news_refresh_rejects_unsafe_xml_before_creating_an_edition(self, read):
+        atom = atom_feed(next(iter(EDITORIAL)))
+        unsafe = b'<!DOCTYPE rdf:RDF SYSTEM "https://example.invalid/feed.dtd">'
+        read.side_effect = [atom, unsafe + mdic_feed(MDIC_FEED_URL, MDIC_ARTICLE, "2026-09-16")]
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "published"
+            source.mkdir()
+            trade = b"{}"
+            (source / "comex.json").write_bytes(trade)
+            (source / "news.json").write_text("{}\n", encoding="utf-8")
+            manifest = source / "source-manifest.json"
+            previous = json.dumps({
+                "product": "StrataSignal", "dataset_kind": "public_aggregate", "private_file_import": False,
+                "trade_snapshot": {"path": "comex.json", "sha256": hashlib.sha256(trade).hexdigest()},
+            })
+            manifest.write_text(previous, encoding="utf-8")
+            output = Path(directory) / "rejected"
+            with patch("stratasignal.build_public_site.datetime", wraps=datetime) as clock:
+                clock.now.return_value = FETCHED_AT
+                with self.assertRaisesRegex(InputError, "Declaração XML proibida"):
+                    refresh_public_news(source, output, "c" * 40)
+            self.assertFalse(output.exists())
+            self.assertEqual(manifest.read_text(encoding="utf-8"), previous)
+            self.assertEqual((source / "news.json").read_text(encoding="utf-8"), "{}\n")
+            self.assertEqual([call.args[0] for call in read.call_args_list], [FEED_URL, MDIC_FEED_URL])
+
     @patch("stratasignal.build_public_site.collect_news")
     @patch("stratasignal.build_public_site._fetch")
     def test_build_rejects_malformed_retained_trade_edition(self, fetch, news):
@@ -304,6 +331,7 @@ class NewsFeedTests(unittest.TestCase):
     def test_reconciles_reviewed_urls_and_ignores_feed_markup(self):
         primary, second = EDITORIAL
         raw = atom_feed(second, primary, primary, primary.replace("www.canada.ca", "www.canada.ca.example.invalid"))
+        raw = raw.replace(b"TEXTO EXTERNO", b"<![CDATA[TEXTO EXTERNO <!DOCTYPE feed>]]>")
         news = parse_feed(raw, FETCHED_AT)
         self.assertEqual(news["feed_entries"], 4)
         self.assertEqual(news["feed_updated_at"], "2026-11-06T20:41:37+00:00")
@@ -313,9 +341,23 @@ class NewsFeedTests(unittest.TestCase):
         self.assertNotIn("TEXTO EXTERNO", json.dumps(news))
         self.assertNotIn("localhost", json.dumps(news))
 
-    def test_rejects_doctype_unbounded_and_invalid_feeds(self):
+    def test_rejects_document_type_declarations_in_atom_and_rdf(self):
+        feeds = (
+            (parse_feed, "feed", atom_feed()),
+            (parse_mdic_feed, "rdf:RDF", mdic_feed(MDIC_FEED_URL, MDIC_ARTICLE, "2026-09-16")),
+        )
+        for parse, root, raw in feeds:
+            for declaration in (
+                f'<!DOCTYPE {root} [<!ENTITY x "invalid">]>',
+                f'<!DOCTYPE {root} SYSTEM "https://example.invalid/feed.dtd">',
+            ):
+                with self.subTest(root=root, declaration=declaration):
+                    with self.assertRaisesRegex(InputError, "Declaração XML proibida"):
+                        parse(declaration.encode() + raw, FETCHED_AT)
+
+    def test_rejects_unbounded_and_invalid_feeds(self):
         samples = [
-            b'<!DOCTYPE feed [<!ENTITY x "invalid">]>' + atom_feed(),
+            b"\xff",
             b"x" * (MAX_FEED_BYTES + 1),
             atom_feed(*(["https://example.invalid/"] * 51)),
             atom_feed(updated="2026-11-06T15:41:37"),

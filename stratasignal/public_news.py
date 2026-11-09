@@ -3,6 +3,7 @@
 import hashlib
 from datetime import datetime, timezone
 from xml.etree import ElementTree
+from xml.parsers import expat
 
 from .schema import InputError
 
@@ -113,16 +114,34 @@ EDITORIAL = {
 }
 
 
+def _reject_xml_declaration(*_):
+    raise InputError("Declaração XML proibida no feed de notícias")
+
+
+def _expanded_name(name):
+    # Expat emits uri}local. ElementTree looks up {uri}local.
+    return "{" + name if "}" in name else name
+
+
 def _read_xml(raw):
     if len(raw) > MAX_FEED_BYTES:
         raise InputError("Feed de notícias excede 512 KiB")
+    tree = ElementTree.TreeBuilder()
+    parser = expat.ParserCreate(namespace_separator="}")
+    parser.StartDoctypeDeclHandler = _reject_xml_declaration
+    parser.ExternalEntityRefHandler = _reject_xml_declaration
+
+    def start(name, attrs):
+        tree.start(_expanded_name(name), {_expanded_name(key): value for key, value in attrs.items()})
+
+    parser.StartElementHandler = start
+    parser.EndElementHandler = lambda name: tree.end(_expanded_name(name))
+    parser.CharacterDataHandler = tree.data
     try:
-        xml = raw.decode("utf-8")
-        if "<!DOCTYPE" in xml or "<!ENTITY" in xml:
-            raise InputError("Declaração XML proibida no feed de notícias")
-        return ElementTree.fromstring(xml)
-    except (UnicodeDecodeError, ElementTree.ParseError, ValueError) as error:
+        parser.Parse(raw.decode("utf-8"), True)
+    except (UnicodeDecodeError, expat.ExpatError) as error:
         raise InputError("Feed de notícias inválido") from error
+    return tree.close()
 
 
 def parse_feed(raw, fetched_at):
