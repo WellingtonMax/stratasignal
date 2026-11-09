@@ -255,6 +255,34 @@ def _write_markets(output, ui):
                                 "sha256": hashlib.sha256(issuer_snapshot.read_bytes()).hexdigest()}}
 
 
+def _write_observatory_ui(output, ui):
+    """Write the three public routes from the shared observatory layout."""
+    template = (ui / "market.html").read_text(encoding="utf-8")
+    with (output / "index.html").open("x", encoding="utf-8") as stream:
+        stream.write(template)
+    for view, title, description in (
+        ("mapa", "Parceiros comerciais do Brasil",
+         "Explore no mapa os parceiros do Brasil no comércio de grafita natural e carbonatos de lítio."),
+        ("noticias", "Notícias da cadeia mineral",
+         "Leia a curadoria de comunicados oficiais sobre grafita, lítio e políticas minerais."),
+    ):
+        page = template.replace('data-view="panorama"', f'data-view="{view}"')
+        page = page.replace(' aria-current="page"', "").replace(
+            f'data-market-nav="{view}"', f'data-market-nav="{view}" aria-current="page"',
+        )
+        page = re.sub(r"<title>[^<]+</title>", f"<title>StrataSignal · {title}</title>", page, count=1)
+        page = re.sub(r'<meta name="description" content="[^"]+">', f'<meta name="description" content="{description}">', page, count=1)
+        if view == "noticias":
+            page = page.replace('aria-labelledby="market-context-title"', 'aria-labelledby="market-news-title"')
+        directory = output / view
+        directory.mkdir()
+        with (directory / "index.html").open("x", encoding="utf-8") as stream:
+            stream.write(page)
+    for name in ("market.js", "market.css", "app.css", "favicon.svg"):
+        with (output / name).open("xb") as stream:
+            stream.write((ui / name).read_bytes())
+
+
 def build_public_site(directory, source_commit=None, *, enable_ml=True, retained_trade_snapshots=()):
     if source_commit is not None and not re.fullmatch(r"[0-9a-f]{40}", source_commit):
         raise InputError("Commit de origem inválido")
@@ -269,10 +297,7 @@ def build_public_site(directory, source_commit=None, *, enable_ml=True, retained
     output.mkdir(mode=0o755, parents=False, exist_ok=False)
     try:
         build_demo(output / "carteira", source_commit, enable_ml=enable_ml, public_home=True)
-        for name in ("market.html", "market.js", "market.css", "app.css", "favicon.svg"):
-            target = output / ("index.html" if name == "market.html" else name)
-            with target.open("xb") as stream:
-                stream.write((ui / name).read_bytes())
+        _write_observatory_ui(output, ui)
         with (output / "comex.json").open("xb") as stream:
             stream.write(snapshot_bytes)
         editions = _write_trade_editions(output, snapshot_bytes, retained_trade_snapshots)

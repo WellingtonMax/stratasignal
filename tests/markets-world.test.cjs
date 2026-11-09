@@ -114,9 +114,9 @@ test("only the Brazilian graphite slice links to the official snapshot with the 
   await settled(get);
   assert.equal(get("empty").hidden, false);
   assert.equal(get("comex").hidden, false);
-  assert.equal(get("comex-link").href, "https://example.invalid/?ncm=25041000&fluxo=export#explorar");
+  assert.equal(get("comex-link").href, "https://example.invalid/?ncm=25041000&fluxo=export");
   input("flow", "import");
-  assert.equal(get("comex-link").href, "https://example.invalid/?ncm=25041000&fluxo=import#explorar");
+  assert.equal(get("comex-link").href, "https://example.invalid/?ncm=25041000&fluxo=import");
   input("country", "CL");
   assert.equal(get("comex").hidden, true);
   input("country", "BR");

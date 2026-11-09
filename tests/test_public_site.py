@@ -11,7 +11,7 @@ from stratasignal.build_public_site import build_public_site, collect_comex, col
 from stratasignal.public_markets_world import VERSION, YEARS, _aggregate
 from stratasignal.public_news import (
     EDITORIAL, FEED_URL, MAX_FEED_BYTES, MDIC_ARTICLE, MDIC_FEED_URL,
-    MDIC_NOVEMBER_ARTICLE, MDIC_NOVEMBER_FEED_URL, SOURCE, parse_feed, parse_mdic_feed,
+    MDIC_NOVEMBER_ARTICLE, MDIC_NOVEMBER_FEED_URL, MDIC_NOVEMBER_SEMINAR, SOURCE, parse_feed, parse_mdic_feed,
 )
 from stratasignal.schema import InputError
 
@@ -40,12 +40,15 @@ def atom_feed(*urls, updated="2026-11-06T15:41:37-05:00"):
             f'<updated>{updated}</updated><link rel="self" href="http://localhost/feed"/>{entries}</feed>').encode()
 
 
-def mdic_feed(feed_url, article, published_on):
-    entry = (f'<item rdf:about="{article}"><link>{article}</link>'
-             f'<dc:date>{published_on}T21:15:00Z</dc:date><description>UNTRUSTED</description></item>')
+def mdic_feed(feed_url, article, published_on, *additional):
+    entries = "".join(
+        f'<item rdf:about="{url}"><link>{url}</link>'
+        f'<dc:date>{date}T21:15:00Z</dc:date><description>UNTRUSTED</description></item>'
+        for url, date in ((article, published_on), *additional)
+    )
     return ('<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"'
             ' xmlns="http://purl.org/rss/1.0/" xmlns:dc="http://purl.org/dc/elements/1.1/">'
-            f'<channel rdf:about="{feed_url}"/>{entry * 2}</rdf:RDF>').encode()
+            f'<channel rdf:about="{feed_url}"/>{entries * 2}</rdf:RDF>').encode()
 
 
 FETCHED_AT = datetime(2026, 11, 7, 18, 0, tzinfo=timezone.utc)
@@ -80,7 +83,7 @@ class PublicSiteTests(unittest.TestCase):
             self.assertEqual((output / edition["path"]).read_bytes(), public_bytes)
             basemap = output / manifest["partner_map"]["basemap_path"]
             self.assertEqual(manifest["partner_map"]["basemap_sha256"], hashlib.sha256(basemap.read_bytes()).hexdigest())
-            self.assertIn('href="carteira/world-land.svg"', (output / "index.html").read_text(encoding="utf-8"))
+            self.assertIn('href="/carteira/world-land.svg"', (output / "mapa/index.html").read_text(encoding="utf-8"))
             self.assertEqual(manifest["dataset_kind"], "public_aggregate")
             self.assertEqual(demo["dataset_kind"], "synthetic")
             self.assertEqual(manifest["source_commit"], demo["source_commit"])
@@ -95,7 +98,16 @@ class PublicSiteTests(unittest.TestCase):
             self.assertEqual(set(market_data["countries"]), {"BR", "AU"})
             self.assertEqual(market_data["dataset_kind"], "public_markets_snapshot")
             self.assertFalse((output / "carteira/mercados").exists())
-            self.assertIn('href="mercados/"', (output / "index.html").read_text(encoding="utf-8"))
+            self.assertIn('href="/mercados/"', (output / "index.html").read_text(encoding="utf-8"))
+            for route in ("panorama", "mapa", "noticias"):
+                page = output / ("index.html" if route == "panorama" else f"{route}/index.html")
+                markup = page.read_text(encoding="utf-8")
+                self.assertIn(f'data-view="{route}"', markup)
+                self.assertIn(f'data-market-nav="{route}"', markup)
+                self.assertEqual(markup.count('aria-current="page"'), 1)
+                self.assertIn(f'data-market-nav="{route}" ' + (
+                    'href="/" aria-current="page"' if route == "panorama" else 'aria-current="page"'
+                ), markup)
             self.assertTrue((output / "mercados/index.html").is_file())
             self.assertTrue((output / "mercados/nacional.html").is_file())
             self.assertTrue((output / "mercados/markets.js").is_file())
@@ -225,9 +237,10 @@ class NewsFeedTests(unittest.TestCase):
             parse_mdic_feed(raw.replace(b"2026-09-16", b"2026-09-17"), FETCHED_AT)
 
     @patch("stratasignal.build_public_site._read_news_feed")
-    def test_november_archive_adds_one_story_for_two_minerals(self, read):
+    def test_november_archive_deduplicates_two_stories_tagged_with_both_minerals(self, read):
         september = mdic_feed(MDIC_FEED_URL, MDIC_ARTICLE, "2026-09-16")
-        november = mdic_feed(MDIC_NOVEMBER_FEED_URL, MDIC_NOVEMBER_ARTICLE, "2026-11-05")
+        november = mdic_feed(MDIC_NOVEMBER_FEED_URL, MDIC_NOVEMBER_ARTICLE, "2026-11-05",
+                            (MDIC_NOVEMBER_SEMINAR, "2026-11-03"))
         read.side_effect = [atom_feed(next(iter(EDITORIAL))), september, november]
         with patch("stratasignal.build_public_site.datetime", wraps=datetime) as clock:
             clock.now.return_value = FETCHED_AT
@@ -235,14 +248,14 @@ class NewsFeedTests(unittest.TestCase):
         self.assertEqual([call.args[0] for call in read.call_args_list],
                          [FEED_URL, MDIC_FEED_URL, MDIC_NOVEMBER_FEED_URL])
         self.assertEqual([item["published_on"] for item in news["items"]],
-                         ["2026-11-05", "2026-10-28", "2026-09-16"])
+                         ["2026-11-05", "2026-11-03", "2026-10-28", "2026-09-16"])
         self.assertEqual(news["mdic"]["feed_sha256"], hashlib.sha256(september).hexdigest())
         self.assertEqual(news["mdic_archives"][0]["feed_sha256"], hashlib.sha256(november).hexdigest())
-        article = news["items"][0]
-        self.assertEqual(article["feed_url"], MDIC_NOVEMBER_FEED_URL)
-        self.assertEqual(article["ncm"], "25041000")
-        self.assertEqual(article["related_ncms"], ["28369100"])
-        self.assertNotIn("UNTRUSTED", article["summary"])
+        for article in news["items"][:2]:
+            self.assertEqual(article["feed_url"], MDIC_NOVEMBER_FEED_URL)
+            self.assertEqual(article["ncm"], "25041000")
+            self.assertEqual(article["related_ncms"], ["28369100"])
+            self.assertNotIn("UNTRUSTED", article["summary"])
         with self.assertRaises(InputError):
             parse_mdic_feed(november, FETCHED_AT, feed_url=MDIC_FEED_URL)
 

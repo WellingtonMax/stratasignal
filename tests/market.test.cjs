@@ -67,8 +67,10 @@ function editionManifest(current = sample, previous = {...sample, fetched_at: "2
   }};
 }
 
-function open(fetcher, newsFetcher, query = "", manifestFetcher) {
-  const dom = new JSDOM(html, {runScripts: "outside-only", url: `https://example.invalid/${query}`});
+function open(fetcher, newsFetcher, query = "", manifestFetcher, view = "panorama") {
+  const route = view === "panorama" ? "/" : `/${view}/`;
+  const page = html.replace('data-view="panorama"', `data-view="${view}"`);
+  const dom = new JSDOM(page, {runScripts: "outside-only", url: `https://example.invalid${route}${query}`});
   const {window} = dom;
   const get = id => window.document.getElementById(id);
   const calls = [];
@@ -77,9 +79,9 @@ function open(fetcher, newsFetcher, query = "", manifestFetcher) {
   window.fetch = async (url, options) => {
     calls.push({url, options});
     const attempts = calls.filter(call => call.url === url).length;
-    if (url === "news.json") return newsFetcher ? newsFetcher(attempts) : response(newsSample);
-    if (url === "source-manifest.json") return manifestFetcher ? manifestFetcher(attempts) : response(editionManifest());
-    assert.equal(url, "comex.json");
+    if (url === "/news.json") return newsFetcher ? newsFetcher(attempts) : response(newsSample);
+    if (url === "/source-manifest.json") return manifestFetcher ? manifestFetcher(attempts) : response(editionManifest());
+    assert.equal(url, "/comex.json");
     return fetcher ? fetcher(attempts) : response(sample);
   };
   window.eval(script);
@@ -100,9 +102,9 @@ test("the panorama groups verified amounts and preserves missing months and iner
   const {dom, window, get, calls, change} = open();
   await settle(get);
   assert.deepEqual(calls.map(call => [call.url, call.options.credentials, call.options.redirect]), [
-    ["comex.json", "omit", "error"],
-    ["news.json", "omit", "error"],
-    ["source-manifest.json", "omit", "error"],
+    ["/comex.json", "omit", "error"],
+    ["/news.json", "omit", "error"],
+    ["/source-manifest.json", "omit", "error"],
   ]);
   assert.equal(get("market-controls").disabled, false);
   assert.equal(get("market-edition").hidden, false);
@@ -367,7 +369,7 @@ test("a rejected news link leaves commerce available and a valid retry restores 
   assert.equal(get("market-news-items").hidden, false);
   assert.equal(get("market-news-retry").hidden, true);
   assert.equal(get("market-news-period").disabled, false);
-  assert.deepEqual(calls.map(call => call.url), ["comex.json", "news.json", "source-manifest.json", "news.json"]);
+  assert.deepEqual(calls.map(call => call.url), ["/comex.json", "/news.json", "/source-manifest.json", "/news.json"]);
   dom.window.close();
 });
 
@@ -428,4 +430,72 @@ test("a separate news month preserves the trade slice and exports each period an
   assert.equal(get("market-news-period").value, "");
   assert.equal(get("market-news-items").hidden, true);
   dom.window.close();
+});
+
+test("the dedicated map preserves the commerce slice, zooms a marker and links to both news views", async t => {
+  const {dom, window, get, calls, change} = open(null, null,
+    "?ncm=25041000&fluxo=import&mes=2025-03&pais=China", undefined, "mapa");
+  t.after(() => dom.window.close());
+  const {download} = captureDownloads(window, get);
+  await settle(get);
+  await settle(get, "market-news-status");
+  assert.equal(get("market-country").value, "China");
+  assert.match(get("market-geo-amount").textContent, /US\$ 500 FOB · 300 kg/);
+  assert.equal(get("market-geo-focus").disabled, false);
+  get("market-geo-focus").click();
+  assert.equal(get("market-geo-focus").getAttribute("aria-pressed"), "true");
+  assert.match(get("market-geo-scene").style.transform, /scale\(1.8\)/);
+  const charts = new URL(get("market-chart-link").href);
+  assert.equal(charts.pathname, "/");
+  assert.equal(charts.hash, "");
+  assert.equal(charts.searchParams.get("mes"), "2025-03");
+  assert.equal(charts.searchParams.get("pais"), "China");
+  const news = new URL(get("market-context-news").href);
+  assert.equal(news.pathname, "/noticias/");
+  assert.deepEqual([...news.searchParams.entries()].slice(-3), [
+    ["mineral", "25041000"], ["pais_citado", "China"], ["publicado", "2025-03"],
+  ]);
+  const allNews = window.document.querySelector('[data-market-nav="noticias"]').href;
+  assert.equal(new URL(allNews).searchParams.get("pais_citado"), null);
+  assert.equal((await download()).source.mutable_snapshot_url, "https://example.invalid/comex.json");
+  get("market-geo-pins").querySelector(".selected").dispatchEvent(new window.MouseEvent("click", {bubbles: true}));
+  assert.equal(get("market-country").value, "");
+  assert.equal(get("market-geo-focus").disabled, true);
+  assert.equal(get("market-geo-scene").style.transform, "");
+  change("market-period", "");
+  assert.equal(new URL(window.location.href).searchParams.has("mes"), false);
+  assert.deepEqual(calls.map(call => call.url), ["/comex.json", "/news.json"]);
+});
+
+test("the dedicated news page lists the latest articles independently and can clear an empty scoped link", async t => {
+  const latest = {...newsItem, url: newsItem.url.replace("example.html", "latest.html"), title: "Nova publicação",
+    published_on: "2025-04-07", ncm: "25041000", countries: ["Brasil"]};
+  const fetchNews = () => response({...newsSample, items: [newsItem, latest]});
+  const newsPage = open(null, fetchNews, "?ncm=25041000&fluxo=export&mes=2025-02", undefined, "noticias");
+  t.after(() => newsPage.dom.window.close());
+  const {get, calls, change} = newsPage;
+  await settle(get, "market-news-status");
+  assert.deepEqual(calls.map(call => call.url), ["/news.json"]);
+  assert.match(get("market-news-status").textContent, /2 publicações.*Mais recentes primeiro/);
+  assert.deepEqual([...get("market-news-items").querySelectorAll("h2")].map(item => item.textContent),
+    [latest.title, newsItem.title]);
+  change("market-news-country", "Canadá");
+  assert.equal(get("market-news-items").children.length, 1);
+  change("market-news-mineral", "25041000");
+  assert.match(get("market-news-status").textContent, /Nenhuma notícia/);
+  get("market-news-clear").click();
+  assert.equal(get("market-news-items").children.length, 2);
+  assert.equal(newsPage.window.document.activeElement, get("market-news-mineral"));
+  const map = new URL(newsPage.window.document.querySelector('[data-market-nav="mapa"]').href);
+  assert.equal(map.pathname, "/mapa/");
+  assert.equal(map.searchParams.get("fluxo"), "export");
+
+  const scoped = open(null, fetchNews, "?mineral=25041000&pais_citado=China&publicado=2025-02&publicado=2025-03",
+    undefined, "noticias");
+  t.after(() => scoped.dom.window.close());
+  await settle(scoped.get, "market-news-status");
+  assert.match(scoped.get("market-news-status").textContent, /Nenhuma notícia.*fevereiro de 2025 a março de 2025.*China/);
+  scoped.get("market-news-clear").click();
+  assert.equal(scoped.get("market-news-items").children.length, 2);
+  assert.equal(scoped.window.location.search, "");
 });

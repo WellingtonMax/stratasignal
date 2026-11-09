@@ -371,7 +371,7 @@
     get("comex").hidden = !hasComexSlice;
     if (hasComexSlice) {
       const query = new URLSearchParams({ncm: "25041000", fluxo});
-      get("comex-link").href = `../?${query}#explorar`;
+      get("comex-link").href = `../?${query}`;
     }
     get("trade").hidden = get("rank").hidden = get("empty").hidden = retry.hidden = true;
     reportSlice = undefined;
