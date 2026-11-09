@@ -484,6 +484,14 @@ test("the dedicated news page lists the latest articles independently and can cl
   assert.equal(get("market-news-latest").textContent, "7 de abril de 2025");
   assert.deepEqual([...get("market-news-items").querySelectorAll("h2")].map(item => item.textContent),
     [latest.title, newsItem.title]);
+  const latestMap = new URL(get("market-news-items").querySelector(".market-news-map-link").href);
+  assert.equal(latestMap.pathname, "/mapa/");
+  assert.deepEqual([...latestMap.searchParams.entries()], [
+    ["ncm", "25041000"], ["fluxo", "export"], ["mes", "2025-02"],
+  ]);
+  const lithiumMap = new URL(get("market-news-items").querySelectorAll(".market-news-map-link")[1].href);
+  assert.equal(lithiumMap.searchParams.get("ncm"), "28369100");
+  assert.equal(lithiumMap.searchParams.get("fluxo"), "export");
   change("market-news-country", "Canadá");
   assert.equal(get("market-news-items").children.length, 1);
   change("market-news-mineral", "25041000");
