@@ -93,6 +93,8 @@ Após escolher país ou território, produto HS e fluxo, a cobertura informa os 
 
 O cadastro aceita nome, país, tipo ou identificador, com busca por teclado e sem distinção de acentos. Começa no país do recorte. A opção mundial amplia apenas a busca de bolsas. O endereço, os valores e o relatório preservam país, produto e fluxo do recorte comercial. Uma busca sem resultados, um país sem registros no cadastro e uma série comercial indisponível têm mensagens distintas. O catálogo atual inclui produtos aduaneiros selecionados.
 
+**Comparar exportações e importações** reúne os dois fluxos do país ou território e produto HS selecionados. A tabela informa a edição BACI, as unidades e quantos anos têm os dois valores. O saldo usa exportações menos importações no mesmo ano. Um zero registrado entra no cálculo e uma lacuna deixa o saldo indisponível. A comparação fica acessível por teclado, independe do seletor de fluxo e entra no JSON em `flow_comparison`. Para o total mundial, o campo é nulo, pois os dois totais reconciliados somam as mesmas transações.
+
 ### Empresas documentadas em Mercados (F2, UX-06)
 
 O recorte Brasil ou Mundo com minério de ferro (HS 2601) oferece as fichas de Vale e CSN Mineração. Cada ficha separa atividade declarada, país da atividade, bolsa e código de negociação, com links e datas das evidências. O país da listagem consta separadamente no relatório. A correspondência com HS 2601 é temática e a cobertura é parcial.

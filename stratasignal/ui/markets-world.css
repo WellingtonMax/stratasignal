@@ -188,6 +188,40 @@
   margin-block: 14px;
 }
 
+.world-flow-comparison {
+  margin-block: 14px;
+  padding-inline: 12px;
+  border: 1px solid var(--line);
+  border-inline-start: 3px solid var(--blue);
+  border-radius: 8px;
+  background: var(--white);
+}
+
+.world-flow-comparison[open] {
+  padding-bottom: 12px;
+}
+
+.world-flow-comparison td {
+  white-space: nowrap;
+}
+
+.world-flow-latest {
+  margin: 0 0 6px;
+  color: var(--navy);
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.world-flow-scroll {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .world-flow-scroll {
+    display: block;
+  }
+}
+
 .world-benchmarks {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

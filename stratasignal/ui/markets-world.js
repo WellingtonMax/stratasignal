@@ -227,6 +227,41 @@
     return value === undefined ? "Sem registro" : `US$ ${compact.format(value)}`;
   }
 
+  function renderFlowComparison(cells) {
+    const comparison = get("flow-comparison");
+    comparison.hidden = selection.pais === "WORLD";
+    if (comparison.hidden) return null;
+
+    const annual = catalog.years.map((year, index) => {
+      const exports = cells?.[2 * index]?.[0] ?? null;
+      const imports = cells?.[2 * index + 1]?.[0] ?? null;
+      return {
+        year,
+        exports_fob_usd: exports,
+        imports_fob_usd: imports,
+        balance_fob_usd: exports !== null && imports !== null ? exports - imports : null,
+      };
+    });
+    const comparableYears = annual.filter(row => row.balance_fob_usd !== null).length;
+    const latest = annual.at(-1);
+    const latestBalance = latest.balance_fob_usd === null ? "Indisponível" : `US$ ${number.format(latest.balance_fob_usd)}`;
+    get("flow-latest").textContent = `Saldo em ${latest.year} · ${latestBalance}`;
+    get("flow-coverage").textContent = `${comparableYears} de ${annual.length} anos com os dois fluxos registrados.`;
+    get("flow-caption").textContent = `${region(selection.pais)} · HS ${selection.produto} · BACI ${catalog.release} · US$ correntes, equivalente FOB`;
+    const format = value => value === null ? "Sem registro" : number.format(value);
+    get("flow-rows").replaceChildren(...annual.map(row => {
+      const tr = document.createElement("tr");
+      const label = element("th", row.year);
+      label.scope = "row";
+      tr.append(label,
+        element("td", format(row.exports_fob_usd)),
+        element("td", format(row.imports_fob_usd)),
+        element("td", row.balance_fob_usd === null ? "Indisponível" : number.format(row.balance_fob_usd)));
+      return tr;
+    }));
+    return {comparable_years: comparableYears, annual};
+  }
+
   function renderSeries(series) {
     const slot = selection.fluxo === "export" ? 0 : 1;
     const years = catalog.years;
@@ -319,6 +354,7 @@
       item.append(button);
       return item;
     }));
+    const flowComparison = renderFlowComparison(series[selection.pais]);
     reportSlice = {
       filters: {
         country_code: selection.pais,
@@ -338,6 +374,7 @@
           weight_coverage: {flows_with_weight: cell[2], total_flows: cell[3], status: cell[2] === cell[3] ? "complete" : "partial"},
         } : {year, status: "no_record", fob_usd: null, net_weight_kg: null, weight_coverage: null};
       }),
+      flow_comparison: flowComparison,
       ranking: {
         year,
         scope: `Países e territórios identificados com ${flows[selection.fluxo].toLowerCase()} registradas`,
@@ -440,6 +477,7 @@
         "Um código HS descreve mercadorias aduaneiras e não comprova espécie, teor, origem física ou etapa industrial.",
         "Recortes de família e detalhe HS são alternativas e não devem ser somados, pois podem duplicar comércio.",
         "Ausência de registro é uma lacuna da carga e não equivale a valor zero.",
+        "O saldo do produto compara somente os valores anuais dos dois fluxos disponíveis na mesma edição BACI.",
         "Peso parcial soma somente fluxos com quantidade disponível.",
         "As fichas de empresas são contexto documental com período próprio. Fluxos BACI são agregados nacionais.",
         "Cotações, preços de referência, produção, capitalização e cadastros de instalações ficam fora desta exportação.",

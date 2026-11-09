@@ -197,6 +197,12 @@ Existing report integrity manifests remain valid because their generated report 
 - A evolução de participação repete o cálculo para cada ano disponível e oferece gráfico com tabela equivalente. O JSON preserva valor do país, total mundial, parcela e estado observado ou indisponível em cada período.
 - `npm ci --ignore-scripts && npm test` passou 52 testes de interação, incluindo estados observado, zero, fluxo ausente, peso parcial e país sem bolsa. A suíte Python passou 112 testes. Com `python -S`, 104 passaram e 8 dependentes de ML foram ignorados. `git diff --check` não encontrou erros.
 
+## Comparação de exportações e importações em 9 de novembro de 2026
+
+- A prévia de Mercados leu o recorte HS 2603 do BACI 202601. Para o Chile em 2024, mostrou US$ 30.995.596.759 de exportações, US$ 81.111.975 de importações e saldo de US$ 30.914.484.784. A tabela permaneceu igual ao trocar o seletor de fluxo. A China mostrou saldo negativo, a Antártida mostrou lacunas e a comparação ficou oculta no total mundial.
+- Enter abriu a comparação e Tab levou o foco à tabela. A 320 px CSS, o saldo mais recente e a edição ficaram acima da tabela. A largura rolável da página foi igual à área útil, com rolagem horizontal restrita à tabela. A prévia também mostrou a série mensal do parceiro no Mapa e o menu público na Carteira sintética, com importação privada desativada.
+- O teste DOM compara a tabela e o JSON, incluindo zero registrado e saldo indisponível por falta de fluxo. Passaram 61 testes de interface, 115 testes Python e 107 no caminho sem dependências opcionais, com 8 verificações de ML ignoradas. `git diff --check` passou. A geração de Mercados reproduziu os arquivos de dados da versão 30 byte a byte.
+
 ## Busca de bolsas e cobertura do recorte em 8 de novembro de 2026
 
 - Na prévia de `/mercados/`, o cartão de comércio mostrou 3 de 3 anos para o Brasil, de 2022 a 2024 no BACI 202601. O cadastro mostrou 5 registros no recorte e cobertura de 152 dos 250 países e territórios do catálogo. A consulta de cotações permaneceu separada.
