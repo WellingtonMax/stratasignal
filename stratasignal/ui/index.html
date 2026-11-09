@@ -17,6 +17,13 @@
 </head>
 <body data-mode="local">
   <a href="#main" class="skip">Pular para o conteúdo</a>
+  <nav id="public-navigation" hidden class="workbench-public-nav" aria-label="Áreas do StrataSignal">
+    <a href="/">Panorama</a>
+    <a href="/mapa/">Mapa</a>
+    <a href="/mercados/">Mercados</a>
+    <a href="/noticias/">Notícias</a>
+    <a href="/carteira/" aria-current="page" aria-label="Carteira fictícia">Carteira</a>
+  </nav>
   <aside class="sidebar">
     <a class="brand" href="#" aria-label="StrataSignal, início"><span class="brand-symbol" aria-hidden="true"><i></i><i></i><i></i></span><span>strata<b>signal</b><small>INTELIGÊNCIA MINERAL</small></span></a>
     <div class="sidebar-caption">ESPAÇO DE TRABALHO</div>
@@ -32,8 +39,7 @@
   </aside>
   <div class="workspace-shell">
     <header class="topbar"><div class="breadcrumbs">MINERAIS CRÍTICOS <span>/</span> PAINEL DE ANÁLISE</div><div class="workspace-meta"><span id="data-badge" class="badge neutral">Nenhum conjunto</span><span id="current-date">Aguardando dados</span></div></header>
-    <main id="main">
-      <a id="public-home" hidden class="demo-home" href="../">← Voltar ao panorama público</a>
+    <main id="main" tabindex="-1">
       <div class="demo-banner" id="demo-banner" hidden><span class="demo-tag">DEMONSTRAÇÃO</span><span>Fornecedores, preços e histórico são fictícios. Explore o fluxo com uma carteira de exemplo.</span><a href="https://github.com/WellingtonMax/stratasignal#painel-local" target="_blank" rel="noopener noreferrer">Usar meus dados na versão local ↗</a></div>
       <div id="feedback" class="feedback" role="status" aria-live="polite" hidden></div>
       <div id="error" class="feedback error" role="alert" hidden></div>
