@@ -235,6 +235,63 @@ def collect_news():
     return news
 
 
+def _news_manifest(news, news_bytes):
+    snapshot = {
+        "path": "news.json",
+        "sha256": hashlib.sha256(news_bytes).hexdigest(),
+        "source": news["source"],
+        "feed_url": public_news.FEED_URL,
+        "feed_updated_at": news["feed_updated_at"],
+        "fetched_at": news["fetched_at"],
+    }
+    for key in ("mdic", "mdic_archives"):
+        if key in news:
+            snapshot[key] = news[key]
+    return snapshot
+
+
+def refresh_public_news(source, directory, source_commit=None):
+    """Create a new public release from a verified Site while refreshing only curated news."""
+    if source_commit is not None and not re.fullmatch(r"[0-9a-f]{40}", source_commit):
+        raise InputError("Commit de origem inválido")
+    source, output = Path(source), Path(directory)
+    if output.exists():
+        raise FileExistsError(output)
+    if not source.is_dir() or any(path.is_symlink() for path in source.rglob("*")):
+        raise InputError("Publicação anterior inválida")
+    manifest_path = source / "source-manifest.json"
+    if not manifest_path.is_file() or manifest_path.stat().st_size > MAX_BYTES:
+        raise InputError("Manifesto público anterior inválido")
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"), object_pairs_hook=unique_object)
+    except (UnicodeDecodeError, ValueError, RecursionError) as error:
+        raise InputError("Manifesto público anterior inválido") from error
+    trade = manifest.get("trade_snapshot") if isinstance(manifest, dict) else None
+    if not isinstance(manifest, dict) or manifest.get("product") != "StrataSignal" or \
+            manifest.get("private_file_import") is not False or \
+            manifest.get("dataset_kind") != "public_aggregate" or not isinstance(trade, dict):
+        raise InputError("Contrato inesperado na publicação anterior")
+    trade_path, trade_hash = trade.get("path"), trade.get("sha256")
+    if trade_path != "comex.json" or not re.fullmatch(r"[0-9a-f]{64}", trade_hash or "") or \
+            not (source / trade_path).is_file() or \
+            hashlib.sha256((source / trade_path).read_bytes()).hexdigest() != trade_hash:
+        raise InputError("Carga comercial anterior não confere com o manifesto")
+    news = collect_news()
+    news_bytes = (json.dumps(news, ensure_ascii=False, allow_nan=False, indent=2) + "\n").encode("utf-8")
+    try:
+        shutil.copytree(source, output)
+        (output / "news.json").write_bytes(news_bytes)
+        manifest["source_commit"] = source_commit
+        manifest["news_snapshot"] = _news_manifest(news, news_bytes)
+        (output / "source-manifest.json").write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n",
+        )
+    except Exception:
+        shutil.rmtree(output, ignore_errors=True)
+        raise
+    return output
+
+
 def _write_markets(output, ui):
     market = output / "mercados"
     market.mkdir()
@@ -310,9 +367,7 @@ def build_public_site(directory, source_commit=None, *, enable_ml=True, retained
             "trade_snapshot": {"path": "comex.json", "sha256": hashlib.sha256(snapshot_bytes).hexdigest(),
                                "source": snapshot["source"], "fetched_at": snapshot["fetched_at"],
                                "edition_path": editions[0]["path"], "editions": editions},
-            "news_snapshot": {"path": "news.json", "sha256": hashlib.sha256(news_bytes).hexdigest(),
-                              "source": news["source"], "feed_url": public_news.FEED_URL,
-                              "feed_updated_at": news["feed_updated_at"], "fetched_at": news["fetched_at"]},
+            "news_snapshot": _news_manifest(news, news_bytes),
             "markets_snapshot": _write_markets(output, ui),
             "synthetic_workbench": "carteira/source-manifest.json",
             "partner_map": {
@@ -321,9 +376,6 @@ def build_public_site(directory, source_commit=None, *, enable_ml=True, retained
                 "anchor_source": "Natural Earth · Admin 0 – Countries 5.1.1",
             },
         }
-        for key in ("mdic", "mdic_archives"):
-            if key in news:
-                manifest["news_snapshot"][key] = news[key]
         with (output / "source-manifest.json").open("x", encoding="utf-8", newline="\n") as stream:
             stream.write(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
     except Exception:
@@ -338,10 +390,17 @@ def main():
     parser.add_argument("--source-commit")
     parser.add_argument("--without-ml", action="store_true")
     parser.add_argument("--retain-trade-snapshot", action="append", default=[])
+    parser.add_argument("--refresh-news-from",
+                        help="Reutilizar uma publicação validada e atualizar apenas a curadoria de notícias")
     args = parser.parse_args()
     try:
-        build_public_site(args.out, args.source_commit, enable_ml=not args.without_ml,
-                          retained_trade_snapshots=args.retain_trade_snapshot)
+        if args.refresh_news_from:
+            if args.retain_trade_snapshot or args.without_ml:
+                parser.error("--refresh-news-from não aceita opções de build completo")
+            refresh_public_news(args.refresh_news_from, args.out, args.source_commit)
+        else:
+            build_public_site(args.out, args.source_commit, enable_ml=not args.without_ml,
+                              retained_trade_snapshots=args.retain_trade_snapshot)
     except (InputError, OSError) as error:
         parser.error(str(error))
 

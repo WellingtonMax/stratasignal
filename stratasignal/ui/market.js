@@ -652,6 +652,12 @@
       get("market-news-stale").hidden = Date.now() - oldest <= 30 * 86400000;
       const latest = Math.max(Date.parse(news.fetched_at), ...news.brazilSources.map(source => Date.parse(source.fetched_at)));
       get("market-news-edition").textContent = "Feeds consultados em " + timestamp.format(latest) + " UTC.";
+      const citedCountries = new Set(news.items.flatMap(item => item.countries));
+      get("market-news-count").textContent = digits.format(news.items.length);
+      get("market-news-countries").textContent = digits.format(citedCountries.size);
+      get("market-news-latest").textContent = news.items.length ?
+        calendar.format(new Date(news.items[0].published_on)) : "Nenhuma publicada";
+      get("market-news-summary").hidden = false;
       configureNewsPeriod();
       selectValue(newsPeriod, addressMonths.length === 1 ? addressMonths[0] : "");
       if (newsView) {
@@ -670,6 +676,7 @@
     } catch {
       newsState = "unavailable";
       get("market-news-edition").textContent = "Edição publicada indisponível.";
+      get("market-news-summary").hidden = true;
       newsRetry.hidden = false;
     }
     renderNews();
