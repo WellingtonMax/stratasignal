@@ -229,3 +229,9 @@ Existing report integrity manifests remain valid because their generated report 
 - Ao selecionar um parceiro, o painel lateral passa a informar sua participação no valor FOB do recorte e sua posição entre todos os parceiros, além de valor e peso. A barra tem valor textual equivalente para tecnologia assistiva e não depende somente da cor.
 - **Ver todos os parceiros** desfaz o filtro sem exigir um segundo clique no marcador ou na tabela e devolve o foco ao seletor de país. A transição da barra e a aproximação do mapa são desativadas quando o navegador solicita movimento reduzido.
 - Na prévia gerenciada, a China representou 61,2% do valor FOB e apareceu em 1º de 9 parceiros. A ação de retorno removeu `pais=China` do endereço, ocultou o contexto e devolveu o foco ao seletor. A página não apresentou rolagem horizontal no viewport desktop observado. Passaram 60 testes DOM, 115 testes Python e 107 testes no caminho sem dependências opcionais, com 8 verificações de ML ignoradas. `git diff --check` passou.
+
+## Navegação pública na Carteira em 9 de novembro de 2026
+
+- Na prévia em Chromium, Panorama, Mapa, Mercados e Notícias abriram no topo de suas páginas a partir da Carteira. Tab alcançou as abas com foco visível e Enter abriu o Mapa direto do atlas. Voltar pelo navegador recuperou o recorte de importação de grafita com a China selecionada.
+- A 320 px, as cinco abas ocuparam uma linha com alvos de 44 px de altura e sem rolagem horizontal. Em `/carteira/#atlas`, o menu ficou no topo e o título do atlas ficou visível abaixo dele. Enter abriu Notícias no topo da página.
+- O teste de empacotamento confere a presença do menu na publicação do observatório e sua ausência visual na demonstração independente. Passaram 60 testes DOM e 115 testes Python. Após uma falha em rodada concorrente, a repetição isolada sem dependências opcionais passou 107 testes, com 8 verificações de ML ignoradas. `git diff --check` passou.

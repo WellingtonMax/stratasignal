@@ -130,7 +130,13 @@ class PublicSiteTests(unittest.TestCase):
             self.assertEqual(manifest["news_snapshot"]["sha256"], hashlib.sha256(news_bytes).hexdigest())
             self.assertEqual(manifest["news_snapshot"]["feed_updated_at"], "2026-11-06T20:41:37+00:00")
             self.assertEqual(manifest["news_snapshot"]["mdic_archives"], [november])
-            self.assertIn('id="public-home" class=', (output / "carteira/index.html").read_text())
+            demo_page = (output / "carteira/index.html").read_text(encoding="utf-8")
+            nav_start = '<nav id="public-navigation" class="workbench-public-nav"'
+            self.assertIn(nav_start, demo_page)
+            navigation = demo_page.split(nav_start, 1)[1].split("</nav>", 1)[0]
+            for route in ("/", "/mapa/", "/mercados/", "/noticias/"):
+                self.assertIn(f'href="{route}"', navigation)
+            self.assertIn('href="/carteira/" aria-current="page"', navigation)
             self.assertEqual([call.args[1]["flow"] for call in fetch.call_args_list[1:]], ["import", "export"])
             self.assertEqual(fetch.call_args_list[1].args[1]["period"], {"from": "2024-11", "to": "2025-01"})
             with self.assertRaises(FileExistsError):
