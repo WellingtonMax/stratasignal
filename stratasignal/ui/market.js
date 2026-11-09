@@ -481,7 +481,22 @@
       companies.className = "market-news-meta";
       card.append(companies);
     }
-    card.append(impact, link);
+    card.append(impact);
+    const actions = element("div");
+    actions.className = "market-news-actions";
+    actions.append(link);
+    if (newsView) {
+      const mapParams = tradeQuery();
+      mapParams.set("ncm", item.ncm);
+      const partner = mapParams.get("pais");
+      if (partner && !item.countries.includes(partner)) mapParams.delete("pais");
+      const mapLink = element("a", "Explorar comércio no mapa →");
+      mapLink.className = "market-news-map-link";
+      mapLink.href = route("/mapa/", mapParams);
+      mapLink.setAttribute("aria-label", "Explorar no mapa o comércio relacionado a " + item.title);
+      actions.append(mapLink);
+    }
+    card.append(actions);
     return card;
   }
 

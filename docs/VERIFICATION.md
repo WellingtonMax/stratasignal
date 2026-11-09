@@ -217,3 +217,9 @@ Existing report integrity manifests remain valid because their generated report 
 - A preparação pode renovar somente a carga editorial a partir de uma publicação anterior validada. O processo confere o hash do Comex, rejeita manifesto inesperado e links simbólicos, cria um novo diretório e preserva os demais arquivos. Uma falha de feed ou de integridade não produz uma nova edição.
 - A renovação continua limitada aos endereços previamente revisados no código e observados nos feeds oficiais. Texto externo não entra nos cartões. Descoberta e aprovação de novos itens continuam sendo etapas editoriais.
 - Na prévia, a edição exibiu 5 publicações, 3 países e 5 de novembro de 2026 como data mais recente. Em 320 px, o resumo virou uma coluna, a área útil e a largura rolável mediram 305 px e o menu mediu 44 px. Passaram 115 testes Python, 107 testes sem dependências opcionais com 8 de ML ignorados e 60 testes de interação. `git diff --check` passou.
+
+## Travessia entre notícias e mapa em 9 de novembro de 2026
+
+- Cada cartão da página de Notícias oferece uma ação interna para abrir o comércio do mineral no Mapa, além do link original da fonte. A ação preserva fluxo e período comercial presentes no endereço. Um parceiro anterior só segue no link quando também consta entre os países citados na matéria.
+- O teste de interação confere os endereços de grafita e lítio, inclusive a troca do NCM sem alterar o fluxo. As suítes passaram com 115 testes Python, 107 no caminho sem dependências opcionais e 8 verificações de ML ignoradas, além dos 60 testes DOM. `git diff --check` passou.
+- Na prévia gerenciada, a página de Notícias exibiu cinco cartões com as duas ações. A publicação canadense de lítio abriu `/mapa/` no topo com NCM 28369100 e exportação; o Mapa carregou o recorte de carbonatos de lítio, a alternativa tabular, as notícias relacionadas e o relatório. A inspeção usou apenas a carga pública já publicada, sem dados privados.
