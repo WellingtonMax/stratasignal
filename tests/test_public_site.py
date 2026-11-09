@@ -99,6 +99,10 @@ class PublicSiteTests(unittest.TestCase):
             self.assertTrue((output / "mercados/index.html").is_file())
             self.assertTrue((output / "mercados/nacional.html").is_file())
             self.assertTrue((output / "mercados/markets.js").is_file())
+            issuers = markets["issuer_evidence"]
+            self.assertEqual(issuers["path"], "mercados/markets-issuers.js")
+            self.assertEqual(issuers["sha256"], hashlib.sha256((output / issuers["path"]).read_bytes()).hexdigest())
+            self.assertIn('src="markets-issuers.js"', (output / "mercados/index.html").read_text(encoding="utf-8"))
             world = (output / markets["global"]["path"]).read_bytes()
             self.assertEqual(markets["global"]["sha256"], hashlib.sha256(world).hexdigest())
             catalog = json.loads(world)

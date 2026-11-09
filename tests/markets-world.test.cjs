@@ -8,7 +8,7 @@ const {JSDOM} = require("jsdom");
 
 const ui = path.join(__dirname, "../stratasignal/ui");
 const html = fs.readFileSync(path.join(ui, "markets-world.html"), "utf8");
-const script = ["markets-quote.js", "markets-world.js"].map(name => fs.readFileSync(path.join(ui, name), "utf8")).join("\n");
+const scripts = ["markets-quote.js", "markets-issuers.js", "markets-world.js"];
 const series = {
   "2601": {code: "2601", series: {
     WORLD: [[4000, 12000, 2, 2], [4000, 12000, 2, 2], [7000, 18000, 2, 3], [7000, 18000, 2, 3], [10000, 24000, 2, 3], [10000, 24000, 2, 3]],
@@ -33,7 +33,7 @@ const sample = {
   trade_sha256: Object.fromEntries(Object.entries(series).map(([code, data]) => [code, digest(data)])),
 };
 
-function open(fetcher, query = "", catalog = sample) {
+function open(fetcher, query = "", catalog = sample, {includeIssuers = true} = {}) {
   const dom = new JSDOM(html, {runScripts: "outside-only", url: `https://example.invalid/mercados/${query}`});
   const {window} = dom;
   const get = id => window.document.getElementById(`world-${id}`);
@@ -55,7 +55,8 @@ function open(fetcher, query = "", catalog = sample) {
     const bytes = new TextEncoder().encode(JSON.stringify(value));
     return {ok: true, arrayBuffer: async () => bytes.buffer};
   };
-  window.eval(script);
+  window.eval(scripts.filter(name => includeIssuers || name !== "markets-issuers.js")
+    .map(name => fs.readFileSync(path.join(ui, name), "utf8")).join("\n"));
   const input = (id, value, type = "change") => {
     get(id).value = value;
     get(id).dispatchEvent(new window.Event(type));
@@ -196,6 +197,72 @@ test("a changed trade shard is rejected and recovered without blocking venue and
   assert.equal(frame.getAttribute("sandbox"), "allow-scripts allow-same-origin");
   get("hide-quote").click();
   assert.equal(get("quote").querySelector("iframe"), null);
+});
+
+test("issuer evidence follows the covered product and country and prefills quotes only", async t => {
+  const {dom, downloads, get, input, window} = open((_, value) => value, "#world-issuer-title");
+  t.after(() => dom.window.close());
+  await settled(get);
+  const names = () => [...get("issuer-records").querySelectorAll("h4")].map(item => item.textContent);
+  assert.deepEqual(names(), ["Vale S.A.", "CSN Mineração S.A."]);
+  assert.equal(window.document.activeElement, get("issuer-title"));
+  assert.match(get("issuer-count").textContent, /2 empresas documentadas/);
+  assert.match(get("issuer-scope").textContent, /Brasil.*HS 2601.*08\/11\/2026/);
+  const links = [...get("issuer-records").querySelectorAll("a")];
+  assert.deepEqual(links.map(link => new URL(link.href).hostname), [
+    "www.vale.com", "ri.csnmineracao.com.br", "www.rad.cvm.gov.br",
+  ]);
+  assert.match(links[2].textContent, /12\/08\/2026/);
+
+  const [valeButton, csnButton] = get("issuer-records").querySelectorAll("button");
+  valeButton.click();
+  assert.equal(get("ticker").value, "BMFBOVESPA:VALE3");
+  assert.equal(window.document.activeElement, get("ticker"));
+  assert.equal(get("quote").querySelector("iframe"), null);
+  get("show-quote").click();
+  assert.match(get("quote").querySelector("iframe").title, /VALE3/);
+  csnButton.click();
+  assert.equal(get("ticker").value, "BMFBOVESPA:CMIN3");
+  assert.equal(get("quote").querySelector("iframe"), null);
+
+  input("flow", "import");
+  await settled(get);
+  assert.equal(names().length, 2);
+  get("download").click();
+  const report = JSON.parse(downloads[0].blob.parts.join(""));
+  assert.equal(report.filters.flow, "import");
+  assert.equal(report.observations[2].status, "no_record");
+  assert.equal(report.issuer_evidence.status, "documented");
+  assert.equal(report.issuer_evidence.quality, "reviewed_issuer_disclosure");
+  assert.deepEqual(report.issuer_evidence.records.map(item => item.listing.ticker), ["VALE3", "CMIN3"]);
+  assert.equal(report.issuer_evidence.records[1].sources[1].published_on, "2026-08-12");
+
+  input("country", "WORLD");
+  assert.equal(names().length, 2);
+  input("country", "CL");
+  assert.equal(get("issuer-records").hidden, true);
+  assert.match(get("issuer-count").textContent, /Chile.*sem fichas/);
+  input("country", "BR");
+  input("product", "2603");
+  await settled(get);
+  assert.deepEqual(names(), []);
+  get("download").click();
+  const outside = JSON.parse(downloads[1].blob.parts.join("")).issuer_evidence;
+  assert.equal(outside.status, "outside_coverage");
+  assert.equal(outside.coverage.hs_code, "2601");
+  assert.deepEqual(outside.records, []);
+});
+
+test("missing issuer evidence keeps the trade series and report available", async t => {
+  const {dom, downloads, get} = open((_, value) => value, "", sample, {includeIssuers: false});
+  t.after(() => dom.window.close());
+  await settled(get);
+  assert.match(get("issuer-count").textContent, /indisponível/);
+  assert.equal(get("issuer-records").hidden, true);
+  assert.match(get("status").textContent, /Brasil · 3 de 3 anos/);
+  get("download").click();
+  assert.deepEqual(JSON.parse(downloads[0].blob.parts.join("")).issuer_evidence,
+    {status: "unavailable", records: []});
 });
 
 test("world report freezes filters, observations, coverage, registry, source hash, and explicit limits", async t => {

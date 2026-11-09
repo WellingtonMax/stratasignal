@@ -241,15 +241,18 @@ def _write_markets(output, ui):
     for source, target in (("markets-world.html", "index.html"), ("markets.html", "nacional.html"),
                            ("markets.js", "markets.js"), ("markets.css", "markets.css"),
                            ("markets-world.js", "markets-world.js"), ("markets-world.css", "markets-world.css"),
-                           ("markets-quote.js", "markets-quote.js")):
+                           ("markets-quote.js", "markets-quote.js"), ("markets-issuers.js", "markets-issuers.js")):
         with (market / target).open("xb") as stream:
             stream.write((ui / source).read_bytes())
     snapshot = public_markets.SNAPSHOT
     raw = (json.dumps(snapshot, ensure_ascii=False, allow_nan=False, indent=2) + "\n").encode("utf-8")
     with (market / "dados.json").open("xb") as stream:
         stream.write(raw)
+    issuer_snapshot = market / "markets-issuers.js"
     return {"path": "mercados/dados.json", "sha256": hashlib.sha256(raw).hexdigest(),
-            "reviewed_on": snapshot["reviewed_on"], "global": public_markets_world.write_snapshot(market)}
+            "reviewed_on": snapshot["reviewed_on"], "global": public_markets_world.write_snapshot(market),
+            "issuer_evidence": {"path": "mercados/markets-issuers.js",
+                                "sha256": hashlib.sha256(issuer_snapshot.read_bytes()).hexdigest()}}
 
 
 def build_public_site(directory, source_commit=None, *, enable_ml=True, retained_trade_snapshots=()):

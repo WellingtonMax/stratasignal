@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="markets.css">
   <link rel="stylesheet" href="markets-world.css">
   <script src="markets-quote.js" defer></script>
+  <script src="markets-issuers.js" defer></script>
   <script src="markets-world.js" defer></script>
 </head>
 <body class="market-page markets-page">
@@ -84,10 +85,13 @@
           <a class="markets-source" href="#world-venue-search">Buscar bolsas</a>
         </article>
         <article id="world-coverage-quote-card" class="world-coverage-card" hidden>
-          <h3>Cotações</h3>
+          <h3>Empresas e cotações</h3>
           <p class="world-coverage-value">Consulta por código</p>
           <p class="markets-context">TradingView · disponibilidade, moeda e atraso variam conforme o ativo.</p>
-          <a class="markets-source" href="#world-ticker">Consultar um ativo</a>
+          <div class="world-coverage-actions">
+            <a class="markets-source" href="#world-issuer-title">Ver empresas</a>
+            <a class="markets-source" href="#world-ticker">Consultar um ativo</a>
+          </div>
         </article>
       </div>
     </section>
@@ -155,7 +159,7 @@
         <div class="world-report-action">
           <div>
             <h3>Relatório verificável do recorte</h3>
-            <p class="markets-context">Baixe os mesmos anos, unidades e lacunas exibidos, com filtros, cobertura e SHA-256 da série comercial.</p>
+            <p class="markets-context">Baixe os anos, unidades e lacunas da série, com filtros, SHA-256 e fichas documentadas de empresas quando disponíveis.</p>
           </div>
           <button id="world-download" class="button" type="button" disabled>Baixar relatório JSON</button>
         </div>
@@ -189,6 +193,14 @@
         <p id="world-venues-date" class="markets-context"></p>
         <p class="markets-context">O cadastro aberto reúne bolsas e plataformas de ações, commodities e futuros com país identificado. Confira no registro a situação do mercado e seus instrumentos.</p>
         <a class="markets-source" href="https://www.iso20022.org/market-identifier-codes">Consultar diretório oficial de códigos MIC</a>
+        <section class="world-issuer-evidence" aria-labelledby="world-issuer-title">
+          <p class="eyebrow">ATIVIDADE MINERAL E LISTAGEM</p>
+          <h3 id="world-issuer-title" tabindex="-1">Empresas do recorte</h3>
+          <p id="world-issuer-count" class="world-coverage-value" role="status"></p>
+          <p id="world-issuer-scope" class="markets-context"></p>
+          <ul id="world-issuer-records" class="world-issuer-records" role="list" hidden></ul>
+          <p id="world-issuer-note" class="markets-context" hidden>As fichas seguem o país da atividade e o produto. A série BACI mede fluxos nacionais agregados. O fluxo e o período comerciais se aplicam apenas à série.</p>
+        </section>
         <hr>
         <h3>Cotação por código</h3>
         <p class="markets-context" id="world-quote-help">Use o código da TradingView, como BMFBOVESPA:VALE3 ou ASX:BHP. A cotação depende da bolsa e pode ter atraso. Ao exibir, seu navegador consulta o provedor. O filtro comercial é independente.</p>
