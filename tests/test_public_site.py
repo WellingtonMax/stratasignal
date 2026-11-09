@@ -7,7 +7,9 @@ from pathlib import Path
 from unittest.mock import patch
 from zipfile import ZipFile
 
-from stratasignal.build_public_site import build_public_site, collect_comex, collect_news
+from stratasignal.build_public_site import (
+    build_public_site, collect_comex, collect_news, refresh_public_news,
+)
 from stratasignal.public_markets_world import VERSION, YEARS, _aggregate
 from stratasignal.public_news import (
     EDITORIAL, FEED_URL, MAX_FEED_BYTES, MDIC_ARTICLE, MDIC_FEED_URL,
@@ -159,6 +161,40 @@ class PublicSiteTests(unittest.TestCase):
             self.assertEqual(json.loads((output / editions[1]["path"]).read_text()), previous)
             self.assertEqual(editions[1]["sha256"], hashlib.sha256(retained.read_bytes()).hexdigest())
             self.assertNotEqual(editions[0]["sha256"], editions[1]["sha256"])
+
+    @patch("stratasignal.build_public_site.collect_news")
+    @patch("stratasignal.build_public_site._fetch")
+    def test_news_refresh_preserves_verified_release_and_replaces_only_news_provenance(self, fetch, news):
+        fetch.side_effect = [reply(metadata()), reply({"list": [trade_record()]}), reply({"list": []})]
+        first = parse_feed(atom_feed(next(iter(EDITORIAL))), FETCHED_AT)
+        second = json.loads(json.dumps(first))
+        second["fetched_at"] = "2026-11-08T18:00:00+00:00"
+        news.side_effect = [first, second]
+        with tempfile.TemporaryDirectory() as directory:
+            source = build_public_site(Path(directory) / "source", "b" * 40, enable_ml=False)
+            marker = source / "preserved.txt"
+            marker.write_text("mesmos bytes\n", encoding="utf-8")
+            trade_before = (source / "comex.json").read_bytes()
+            output = refresh_public_news(source, Path(directory) / "refreshed", "c" * 40)
+            manifest = json.loads((output / "source-manifest.json").read_text())
+            news_bytes = (output / "news.json").read_bytes()
+            self.assertEqual((output / "comex.json").read_bytes(), trade_before)
+            self.assertEqual((output / "preserved.txt").read_bytes(), marker.read_bytes())
+            self.assertEqual(json.loads(news_bytes), second)
+            self.assertEqual(manifest["source_commit"], "c" * 40)
+            self.assertEqual(manifest["news_snapshot"]["sha256"], hashlib.sha256(news_bytes).hexdigest())
+            self.assertEqual(manifest["news_snapshot"]["fetched_at"], second["fetched_at"])
+            self.assertEqual(fetch.call_count, 3)
+            with self.assertRaises(FileExistsError):
+                refresh_public_news(source, output, "c" * 40)
+            (source / "comex.json").write_bytes(b"adulterada")
+            with self.assertRaisesRegex(InputError, "não confere"):
+                refresh_public_news(source, Path(directory) / "rejected", "c" * 40)
+            self.assertFalse((Path(directory) / "rejected").exists())
+            (source / "source-manifest.json").write_text("[]\n", encoding="utf-8")
+            with self.assertRaisesRegex(InputError, "Contrato inesperado"):
+                refresh_public_news(source, Path(directory) / "invalid-manifest", "c" * 40)
+            self.assertEqual(news.call_count, 2)
 
     @patch("stratasignal.build_public_site.collect_news")
     @patch("stratasignal.build_public_site._fetch")

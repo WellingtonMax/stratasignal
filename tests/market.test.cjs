@@ -311,6 +311,7 @@ test("the trade report captures active filters, source bytes, units and monthly 
   assert.equal(zero.totals.kg, 0);
   assert.deepEqual(zero.records, [sample.records[1]]);
   assert.equal(calls.length, 3);
+  await settle(get, "market-news-status");
   dom.window.close();
 });
 
@@ -477,6 +478,10 @@ test("the dedicated news page lists the latest articles independently and can cl
   await settle(get, "market-news-status");
   assert.deepEqual(calls.map(call => call.url), ["/news.json"]);
   assert.match(get("market-news-status").textContent, /2 publicações.*Mais recentes primeiro/);
+  assert.equal(get("market-news-summary").hidden, false);
+  assert.equal(get("market-news-count").textContent, "2");
+  assert.equal(get("market-news-countries").textContent, "2");
+  assert.equal(get("market-news-latest").textContent, "7 de abril de 2025");
   assert.deepEqual([...get("market-news-items").querySelectorAll("h2")].map(item => item.textContent),
     [latest.title, newsItem.title]);
   change("market-news-country", "Canadá");

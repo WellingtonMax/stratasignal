@@ -210,3 +210,10 @@ Existing report integrity manifests remain valid because their generated report 
 - No Chromium, Enter em Ver empresas focou o título. Enter em Usar VALE3 na consulta ou Usar CMIN3 na consulta preencheu o código e focou o campo, com zero iframes de cotação. Importações no Brasil preservaram as fichas. Austrália mostrou recorte ainda sem fichas. O link direto exibiu a seção em viewports de 320, 768 e 1280 px CSS, sem rolagem horizontal. Os botões mediram 44 px.
 - O teste DOM conferiu os documentos no JSON, a independência entre fluxo e evidências, o recorte fora da cobertura e a disponibilidade da série comercial quando o arquivo de fichas falta. O build registrou o SHA-256 da curadoria no manifesto público. O catálogo, a carga nacional e os 185 arquivos BACI coincidiram byte a byte com os da versão 24.
 - Passaram 114 testes Python e 58 testes de interação após `npm ci --ignore-scripts`. A execução com `python -S` passou 106 testes e ignorou 8 opcionais de ML. `git diff --check` passou.
+
+## Edição renovável de notícias em 9 de novembro de 2026
+
+- A página de Notícias ganhou um resumo da edição com quantidade de publicações verificadas, países citados e data do item mais recente. A lista, os filtros e os links originais permanecem abaixo desse contexto.
+- A preparação pode renovar somente a carga editorial a partir de uma publicação anterior validada. O processo confere o hash do Comex, rejeita manifesto inesperado e links simbólicos, cria um novo diretório e preserva os demais arquivos. Uma falha de feed ou de integridade não produz uma nova edição.
+- A renovação continua limitada aos endereços previamente revisados no código e observados nos feeds oficiais. Texto externo não entra nos cartões. Descoberta e aprovação de novos itens continuam sendo etapas editoriais.
+- Na prévia, a edição exibiu 5 publicações, 3 países e 5 de novembro de 2026 como data mais recente. Em 320 px, o resumo virou uma coluna, a área útil e a largura rolável mediram 305 px e o menu mediu 44 px. Passaram 115 testes Python, 107 testes sem dependências opcionais com 8 de ML ignorados e 60 testes de interação. `git diff --check` passou.

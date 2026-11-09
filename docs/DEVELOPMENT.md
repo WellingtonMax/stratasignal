@@ -76,3 +76,12 @@ A primeira cobertura foi conferida em 7 de novembro de 2026. Inclui dois comunic
 O relatório acrescenta `news_context` com fonte, hashes, critérios de seleção, cobertura e itens. `news_context.filters.months` registra os meses de publicação selecionados e `period_mode` distingue `trade_period` de `independent`. Os meses, totais e registros na raiz do relatório continuam associados ao comércio. Compare `news_context.source.snapshot_sha256` com `news_snapshot.sha256` no manifesto. A interface e o JSON distinguem a ausência de correspondências da indisponibilidade da carga. Uma consulta feita há mais de 30 dias recebe aviso de atualização na interface. A preparação da publicação atualiza os arquivos. A navegação no panorama consulta apenas o próprio Site.
 
 O segundo conector lê os arquivos RSS 1.0 do MDIC de setembro e novembro de 2026. Confere o endereço de cada canal, o endereço original do comunicado e a data da publicação. O feed informa datas por item e omite a atualização do canal. A interface registra essa lacuna e mostra a consulta e a cobertura por arquivo. O relatório mantém setembro em `news_context.mdic_source` e registra os arquivos adicionais em `news_context.mdic_archives`. Os itens do MDIC incluem `source_id` e `feed_url`. Um item pode ter códigos temáticos adicionais em `related_ncms` sem duplicar o comunicado. Os títulos e resumos são próprios e as matérias originais permanecem nos respectivos emissores. [RSS de setembro](https://www.gov.br/mdic/pt-br/assuntos/noticias/2026/setembro/RSS) · [RSS de novembro](https://www.gov.br/mdic/pt-br/assuntos/noticias/2026/novembro/RSS)
+
+Uma edição de notícias pode ser renovada sem consultar novamente o Comex Stat. O comando abaixo cria outro diretório, confere o manifesto e o hash da carga comercial anterior, rejeita links simbólicos, consulta os feeds fixos e substitui somente `news.json` e sua proveniência no manifesto. Os demais arquivos são preservados byte a byte. Itens novos continuam exigindo seleção editorial explícita em `public_news.py` e presença no feed oficial.
+
+```bash
+python -m stratasignal.build_public_site \
+  --refresh-news-from site-publicado \
+  --source-commit COMMIT_CANONICO \
+  --out site-com-noticias-renovadas
+```
