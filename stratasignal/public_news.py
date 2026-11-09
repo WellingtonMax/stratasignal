@@ -2,8 +2,10 @@
 
 import hashlib
 from datetime import datetime, timezone
-from xml.etree import ElementTree
-from xml.parsers import expat
+
+# TreeBuilder consumes events only. The Expat reader below rejects DTDs and external entities.
+from xml.etree import ElementTree  # nosemgrep: python.lang.security.use-defused-xml.use-defused-xml
+from xml.parsers import expat  # nosemgrep: python.lang.security.use-defused-xml.use-defused-xml
 
 from .schema import InputError
 
