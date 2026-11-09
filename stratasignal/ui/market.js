@@ -74,6 +74,7 @@
   const monthSpan = months => months.length === 1 ? monthName(months[0]) :
     monthName(months[0]) + " a " + monthName(months.at(-1));
   const money = value => "US$ " + digits.format(value);
+  const countLabel = (count, singular, plural) => digits.format(count) + " " + (count === 1 ? singular : plural);
   const validDate = value => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) &&
     Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
   const addressMonths = [...new Set(query.getAll(newsView ? "publicado" : "noticias_mes").slice(0, 12))]
@@ -536,6 +537,7 @@
   }
 
   function renderNews() {
+    if (!newsView && !tradeControls.disabled) renderReportPreview();
     const available = Boolean(news && (newsView || !tradeControls.disabled));
     get("market-news-controls").disabled = newsPeriod.disabled = !available;
     if (!available) {
@@ -582,10 +584,10 @@
       months,
       totals,
       monthly,
-      records,
+      records: records.map(({month, ncm, country, flow, fob_usd, kg}) => ({month, ncm, country, flow, fob_usd, kg})),
       partner_geography: reportGeography(partners.filter(partner => !country.value || partner.label === country.value)),
     };
-    const quantity = records.length === 1 ? "1 registro agregado" : digits.format(records.length) + " registros agregados";
+    const quantity = countLabel(records.length, "registro agregado", "registros agregados");
     status.textContent = (records.length ? quantity : "Nenhum registro neste recorte") + " · " + scope;
     results.hidden = records.length === 0;
     renderGeography(partners, scopeBase, grouped, months);
@@ -599,13 +601,12 @@
     renderRanking(partners);
   }
 
-  function downloadReport() {
+  function buildReport() {
     const stories = relatedNews();
-    const report = {
+    return {
       report_type: "stratasignal_comex_slice",
       schema_version: 1,
       dataset_kind: snapshot.dataset_kind,
-      generated_at: new Date().toISOString(),
       source: {
         name: "Comex Stat · SECEX/MDIC",
         url: "https://comexstat.mdic.gov.br/pt/home",
@@ -618,9 +619,6 @@
       },
       units: {fob_usd: "USD FOB correntes", kg: "quilogramas de peso líquido"},
       ...reportSlice,
-      records: reportSlice.records.map(({month, ncm, country, flow, fob_usd, kg}) => ({
-        month, ncm, country, flow, fob_usd, kg,
-      })),
       news_context: {
         status: news ? (stories.length ? "available" : "no_matches") : newsState,
         dataset_kind: "public_curated_news",
@@ -638,7 +636,7 @@
         mdic_source: news?.brazilSources.find(source => source.feed_url === mdicFeed) ?? null,
         mdic_archives: news?.brazilSources.filter(source => source.feed_url !== mdicFeed) ?? [],
         filters: {
-          ncm: product.value, months: newsMonths(), country: country.value || null,
+          ncm: reportSlice.filters.ncm, months: newsMonths(), country: reportSlice.filters.country,
           period_mode: newsPeriod.value ? "independent" : "trade_period",
           country_role: "mentioned", month_basis: "published_on", flow_applies: false,
         },
@@ -652,6 +650,41 @@
         "As notícias dão contexto temático por mineral e não demonstram vínculos com transações ou códigos aduaneiros.",
       ],
     };
+  }
+
+  function renderReportPreview() {
+    const {filters, months, totals, monthly, source, partner_geography: geography, news_context: context} = buildReport();
+    const role = filters.country_role === "origin" ? "origem comercial" : "destino comercial";
+    const partner = filters.country ? `${filters.country} (${role})` : "Todos os parceiros";
+    get("market-report-scope").textContent = `${filters.product} (NCM ${filters.ncm}) · ` +
+      `${flow.selectedOptions[0].textContent} · ${partner} · ${monthSpan(months)}`;
+    get("market-report-trade").textContent = totals.record_count ?
+      `${money(totals.fob_usd)} FOB · ${digits.format(totals.kg)} kg` : "Sem registros de comércio";
+    const covered = monthly.filter(row => row.record_count > 0).length;
+    get("market-report-trade-coverage").textContent =
+      `${countLabel(totals.record_count, "registro", "registros")} · ${covered} de ${monthly.length} meses com registros`;
+    get("market-report-trade-source").textContent =
+      `${source.name} · Atualizado em ${calendar.format(new Date(source.updated_on))}`;
+    get("market-report-map").textContent = countLabel(geography.points.length, "parceiro com ponto", "parceiros com ponto");
+    get("market-report-map-coverage").textContent =
+      countLabel(geography.partners_without_anchor.length, "parceiro sem ponto", "parceiros sem ponto");
+    get("market-report-map-source").textContent = `${geography.source} ${geography.source_version} · ${geography.scale}`;
+    get("market-report-news").textContent = {
+      available: countLabel(context.items.length, "publicação", "publicações"),
+      no_matches: "Nenhuma publicação no recorte",
+      loading: "Carregando notícias…",
+      unavailable: "Edição de notícias indisponível",
+    }[context.status];
+    get("market-report-news-period").textContent = `Período de publicação · ${monthSpan(context.filters.months)}`;
+    const sources = [context.source, context.mdic_source, ...context.mdic_archives].filter(entry => entry?.fetched_at);
+    const names = [...new Set(sources.map(entry => entry.name))].join(" e ");
+    const latest = Math.max(...sources.map(entry => Date.parse(entry.fetched_at)));
+    get("market-report-news-source").textContent = sources.length ?
+      `${names} · Última consulta em ${calendar.format(latest)}` : "";
+  }
+
+  function downloadReport() {
+    const report = {...buildReport(), generated_at: new Date().toISOString()};
     const blob = new Blob([JSON.stringify(report, null, 2) + "\n"], {type: "application/json"});
     const url = URL.createObjectURL(blob);
     const link = element("a");

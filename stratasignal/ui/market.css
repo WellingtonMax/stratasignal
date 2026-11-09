@@ -63,9 +63,18 @@
 .market-status,.market-axis,.market-ranking p{font-size:13px;color:var(--muted);line-height:1.55}
 .market-status{margin:12px 0 18px}
 .market-notice{padding:10px 12px;border:1px solid #e5d792;border-radius:6px;background:var(--warning-bg);color:#6d5511}
-.market-report{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px 20px;margin:18px 0 0;padding:16px;border:1px solid var(--line);border-radius:10px;background:var(--soft)}
+.market-report{display:grid;gap:12px;margin:18px 0 0;padding:clamp(14px,2.4vw,24px);border:1px solid var(--line);border-radius:10px;background:var(--white)}
 .market-report h2{font-size:18px;font-weight:650;margin:0 0 3px}
-.market-report p{color:var(--muted);font-size:13px;line-height:1.55;margin:0}
+.market-report p{color:var(--muted);font-size:13px;line-height:1.55;margin:0;overflow-wrap:anywhere}
+.market-report-preview{padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--soft)}
+.market-report-preview summary{min-height:44px;padding-block:12px;cursor:pointer;color:var(--navy);font-weight:650}
+.market-report-coverage{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:8px;margin:0 0 12px}
+.market-report-coverage>div{min-width:0;padding:12px;border:1px solid var(--line);border-radius:7px;background:var(--white)}
+.market-report-coverage dt{color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
+.market-report-coverage dd{display:grid;gap:3px;margin:5px 0 0;color:var(--navy);overflow-wrap:anywhere}
+.market-report .market-report-limits{margin:0 0 10px}
+.market-report-actions{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 16px}
+.market-report-actions .button{min-height:44px}
 .market-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 14px}
 .market-stats>div{padding:16px clamp(12px,2vw,22px);min-width:0;border:1px solid var(--line);border-top:3px solid var(--blue);border-radius:10px;background:var(--white)}
 .market-stats dt,.market-stats small{color:var(--muted);font-size:13px}

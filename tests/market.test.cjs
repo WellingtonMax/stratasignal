@@ -207,6 +207,10 @@ test("the graphite deep link drives the official chart, map and report and survi
   assert.equal(report.filters.flow, "export");
   assert.equal(report.filters.country_role, "destination");
   assert.deepEqual(report.totals, {record_count: 1, fob_usd: 5000, kg: 1800, partner_count: 1});
+  assert.equal(get("market-report-trade").textContent, "US$ 5.000 FOB · 1.800 kg");
+  assert.equal(get("market-report-trade-coverage").textContent, "1 registro · 1 de 3 meses com registros");
+  assert.match(get("market-report-trade-source").textContent, /Comex Stat.*8 de abril de 2025/);
+  assert.equal(get("market-report-map").textContent, "1 parceiro com ponto");
   assert.equal(get("market-baci-link").href, "https://example.invalid/mercados/?pais=BR&produto=250410&fluxo=export");
   change("market-flow", "import");
   assert.equal(window.location.search, "?ncm=25041000&fluxo=import");
@@ -320,6 +324,7 @@ test("the trade report captures active filters, source bytes, units and monthly 
   assert.equal(get("market-report").hidden, false);
   const empty = await download();
   assert.equal(empty.filters.period, "2025-02");
+  assert.equal(get("market-report-trade").textContent, "Sem registros de comércio");
   assert.deepEqual(empty.totals, {record_count: 0, fob_usd: null, kg: null, partner_count: 0});
   assert.deepEqual(empty.monthly, [{month: "2025-02", record_count: 0, fob_usd: null, kg: null}]);
   assert.deepEqual(empty.records, []);
@@ -328,9 +333,43 @@ test("the trade report captures active filters, source bytes, units and monthly 
   const zero = await download();
   assert.equal(zero.totals.kg, 0);
   assert.deepEqual(zero.records, [sample.records[1]]);
+  assert.equal(get("market-report-trade").textContent, "US$ 300 FOB · 0 kg");
+  assert.equal(get("market-report-map-coverage").textContent, "1 parceiro sem ponto");
+  assert.match(get("market-report-scope").textContent, /<img src=x onerror=alert\(1\)>/);
+  assert.equal(get("market-report-scope").querySelector("img"), null);
   assert.equal(calls.length, 3);
   await settle(get, "market-news-status");
   dom.window.close();
+});
+
+test("the map report preview and download distinguish the news and trade periods", async t => {
+  const params = new URLSearchParams({ncm: "28369100", fluxo: "export", mes: "2025-02", pais: "Canadá", noticias_mes: "2025-03"});
+  const {dom, window, get, change} = open(null, null, "?" + params, null, "mapa");
+  t.after(() => dom.window.close());
+  const {download} = captureDownloads(window, get);
+  await settle(get);
+  await settle(get, "market-news-status");
+  const preview = get("market-report").querySelector("details");
+  assert.equal(preview.open, false);
+  preview.querySelector("summary").click();
+  assert.equal(preview.open, true);
+  const report = await download();
+  assert.equal(report.filters.country, "Canadá");
+  assert.deepEqual(report.months, ["2025-02"]);
+  assert.match(get("market-report-scope").textContent, /Carbonatos de lítio .* Exportações · Canadá \(destino comercial\) · fevereiro de 2025/);
+  assert.equal(get("market-report-trade").textContent, "Sem registros de comércio");
+  assert.deepEqual(report.partner_geography.points, []);
+  assert.equal(get("market-report-map").textContent, "0 parceiros com ponto");
+  assert.deepEqual(report.news_context.filters.months, ["2025-03"]);
+  assert.deepEqual(report.news_context.items, [newsItem]);
+  assert.equal(get("market-report-news").textContent, "1 publicação");
+  assert.match(get("market-report-news-period").textContent, /março de 2025/);
+  assert.match(get("market-report-news-source").textContent, /Natural Resources Canada.*9 de abril de 2025/);
+  change("market-news-period", "");
+  assert.equal(preview.open, true);
+  assert.equal(get("market-report-news").textContent, "Nenhuma publicação no recorte");
+  assert.match(get("market-report-news-period").textContent, /fevereiro de 2025/);
+  assert.equal((await download()).news_context.status, "no_matches");
 });
 
 test("curated news and the report share mineral, month and country without applying trade direction", async () => {
@@ -381,8 +420,10 @@ test("a rejected news link leaves commerce available and a valid retry restores 
   assert.equal(get("market-news-retry").hidden, false);
   assert.equal(get("market-news-period").disabled, true);
   assert.match(get("market-news-status").textContent, /indisponível/);
+  assert.equal(get("market-report-news").textContent, "Edição de notícias indisponível");
   assert.equal((await download()).news_context.status, "unavailable");
   get("market-news-retry").click();
+  assert.equal(get("market-report-news").textContent, "Carregando notícias…");
   await settle(get, "market-news-status");
   change("market-product", "28369100");
   assert.equal(get("market-news-items").hidden, false);

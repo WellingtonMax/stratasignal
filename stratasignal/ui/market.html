@@ -255,11 +255,45 @@
     <section id="market-report" class="market-report market-trade-only" aria-labelledby="market-report-title" hidden>
       <div>
         <h2 id="market-report-title">Relatório do recorte</h2>
-        <p id="market-report-description">Registros de comércio, referências geográficas e notícias relacionadas, com datas e fontes.</p>
+        <p id="market-report-scope"></p>
       </div>
-      <button type="button" id="market-download" class="button primary" aria-describedby="market-report-description">
-        Baixar relatório JSON <span aria-hidden="true">↓</span>
-      </button>
+      <details class="market-report-preview">
+        <summary>Ver prévia do relatório</summary>
+        <dl class="market-report-coverage">
+          <div>
+            <dt>Comércio exterior</dt>
+            <dd>
+              <strong id="market-report-trade"></strong>
+              <p id="market-report-trade-coverage"></p>
+              <p id="market-report-trade-source"></p>
+            </dd>
+          </div>
+          <div>
+            <dt>Referências no mapa</dt>
+            <dd>
+              <strong id="market-report-map"></strong>
+              <p id="market-report-map-coverage"></p>
+              <p id="market-report-map-source"></p>
+            </dd>
+          </div>
+          <div>
+            <dt>Notícias relacionadas</dt>
+            <dd>
+              <strong id="market-report-news"></strong>
+              <p id="market-report-news-period"></p>
+              <p id="market-report-news-source"></p>
+            </dd>
+          </div>
+        </dl>
+        <p class="market-report-limits">O comércio reúne agregados aduaneiros sujeitos a revisão. O mapa usa pontos aproximados de países. Possíveis impactos nas notícias são hipóteses.</p>
+        <p class="market-report-limits"><strong>Fora do recorte</strong> · Produção, instalações, rotas, imagens de satélite e dados empresariais.</p>
+      </details>
+      <div class="market-report-actions">
+        <p>Arquivo com registros, filtros, fontes e datas da edição pública.</p>
+        <button type="button" id="market-download" class="button primary" aria-describedby="market-report-scope">
+          Baixar relatório JSON <span aria-hidden="true">↓</span>
+        </button>
+      </div>
     </section>
     <section id="fonte" class="market-method market-trade-only" aria-labelledby="market-method-title">
       <div><p class="eyebrow">PROCEDÊNCIA E COBERTURA</p><h2 id="market-method-title">Como ler o painel</h2></div>
