@@ -311,6 +311,7 @@ test("the trade report captures active filters, source bytes, units and monthly 
   assert.equal(zero.totals.kg, 0);
   assert.deepEqual(zero.records, [sample.records[1]]);
   assert.equal(calls.length, 3);
+  await settle(get, "market-news-status");
   dom.window.close();
 });
 
