@@ -162,6 +162,67 @@
     if (curated) get("curated").href = `nacional.html?pais=${selection.pais}#markets-equity-title`;
   }
 
+  function issuerSlice() {
+    if (typeof marketsIssuerEvidence === "undefined") return {status: "unavailable", records: []};
+    const {coverage, reviewed_on, quality, records} = marketsIssuerEvidence;
+    const matchesCountry = selection.pais === "WORLD" || selection.pais === coverage.activity_country_code;
+    const inScope = matchesCountry && selection.produto === coverage.hs_code;
+    return {status: inScope ? "documented" : "outside_coverage", coverage, reviewed_on, quality,
+      records: inScope ? records : []};
+  }
+
+  function renderIssuers() {
+    const slice = issuerSlice();
+    const list = get("issuer-records");
+    list.replaceChildren();
+    list.hidden = !slice.records.length;
+    get("issuer-note").hidden = !slice.coverage;
+    if (!slice.coverage) {
+      get("issuer-count").textContent = "Curadoria de empresas indisponível.";
+      get("issuer-scope").textContent = "Tente recarregar a página. As demais consultas continuam disponíveis.";
+      return;
+    }
+
+    const {activity_country_code, mineral, hs_code} = slice.coverage;
+    get("issuer-scope").textContent = `Curadoria parcial · ${region(activity_country_code)} · ${mineral} (HS ${hs_code}) · Documentos das empresas · Revisão em ${dates.format(new Date(slice.reviewed_on))}`;
+    const count = slice.records.length;
+    get("issuer-count").textContent = count
+      ? `${number.format(count)} ${count === 1 ? "empresa documentada" : "empresas documentadas"}`
+      : `${region(selection.pais)} · HS ${selection.produto} · Ainda sem fichas neste recorte`;
+
+    for (const issuer of slice.records) {
+      const {listing} = issuer;
+      const item = element("li", "");
+      const activity = element("p", issuer.activity);
+      activity.className = "markets-context";
+      const ticker = element("p", `${listing.exchange} · ${listing.ticker}`);
+      ticker.className = "world-coverage-value";
+      item.append(element("h4", issuer.name), activity, ticker);
+      for (const source of issuer.sources) {
+        const date = source.published_on ? dates.format(new Date(source.published_on))
+          : source.reference_period ?? "data editorial não informada";
+        const link = element("a", `${source.title} · ${date}`);
+        link.className = "markets-source";
+        link.href = source.url;
+        const citation = element("p", "");
+        citation.className = "markets-context";
+        citation.append(link);
+        item.append(citation);
+      }
+      const button = element("button", `Usar ${listing.ticker} na consulta`);
+      button.className = "button secondary";
+      button.type = "button";
+      button.addEventListener("click", () => {
+        clearQuote();
+        get("ticker").value = listing.quote_symbol;
+        get("quote-status").textContent = `${listing.ticker} preenchido. Use Exibir cotação para consultar o provedor.`;
+        get("ticker").focus();
+      });
+      item.append(button);
+      list.append(item);
+    }
+  }
+
   function money(value) {
     return value === undefined ? "Sem registro" : `US$ ${compact.format(value)}`;
   }
@@ -369,6 +430,7 @@
         records: countryVenues.map(([country, id, name, kinds]) => ({country_code: country, id, name, kinds})),
         note: "O cadastro auxilia a descoberta. Não comprova atividade atual, cobertura de ativos ou disponibilidade de cotação.",
       },
+      issuer_evidence: issuerSlice(),
       interpretation: {
         observations: "Os valores e pesos anuais acima são agregados publicados no recorte selecionado.",
         inferences: [],
@@ -379,7 +441,8 @@
         "Recortes de família e detalhe HS são alternativas e não devem ser somados, pois podem duplicar comércio.",
         "Ausência de registro é uma lacuna da carga e não equivale a valor zero.",
         "Peso parcial soma somente fluxos com quantidade disponível.",
-        "Cotações, preços de referência, produção, capitalização, empresas e instalações exigem fontes distintas e não integram este arquivo.",
+        "As fichas de empresas são contexto documental com período próprio. Fluxos BACI são agregados nacionais.",
+        "Cotações, preços de referência, produção, capitalização e cadastros de instalações ficam fora desta exportação.",
       ],
     };
     const blob = new Blob([JSON.stringify(report, null, 2) + "\n"], {type: "application/json"});
@@ -432,7 +495,11 @@
       renderOptions();
       renderVenues();
       renderVenueCoverage();
+      renderIssuers();
       await renderTrade();
+      if (location.hash === "#world-issuer-title" && document.activeElement === document.body) {
+        get("issuer-title").focus();
+      }
     } catch {
       catalog = undefined;
       get("controls").disabled = true;
@@ -451,7 +518,13 @@
       renderVenues();
       renderVenueCoverage();
     }
+    if (field === "pais" || field === "produto") renderIssuers();
     renderTrade();
+  }
+
+  function clearQuote() {
+    get("quote").replaceChildren();
+    get("quote").hidden = get("hide-quote").hidden = get("ticker-source").hidden = true;
   }
 
   function showQuote() {
@@ -499,8 +572,7 @@
     if (event.key === "Enter" && !event.isComposing) showQuote();
   });
   get("hide-quote").addEventListener("click", () => {
-    get("quote").replaceChildren();
-    get("quote").hidden = get("hide-quote").hidden = get("ticker-source").hidden = true;
+    clearQuote();
     get("quote-status").textContent = "Cotação fechada.";
     get("show-quote").focus();
   });

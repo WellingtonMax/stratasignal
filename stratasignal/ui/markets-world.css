@@ -103,6 +103,56 @@
   min-height: 44px;
 }
 
+.world-coverage-actions {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 16px;
+  margin-top: auto;
+}
+
+.world-issuer-evidence {
+  margin-block: 8px 14px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.world-issuer-evidence .eyebrow,
+.world-issuer-evidence h3 {
+  margin: 0 0 6px;
+}
+
+#world-issuer-title {
+  scroll-margin-block-start: 12px;
+}
+
+.world-issuer-records {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  margin: 12px 0;
+  list-style: none;
+}
+
+.world-issuer-records li {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--canvas);
+}
+
+.world-issuer-records h4 {
+  margin: 0 0 4px;
+}
+
+.world-issuer-records .markets-context {
+  margin-bottom: 4px;
+}
+
+.world-issuer-records .button {
+  min-height: 44px;
+  white-space: normal;
+}
+
 .world-venue-search {
   margin-bottom: 8px;
 }
@@ -127,7 +177,8 @@
   accent-color: var(--blue);
 }
 
-#world-trade-title:focus-visible {
+#world-trade-title:focus-visible,
+#world-issuer-title:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 4px;
 }
