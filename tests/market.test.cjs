@@ -245,6 +245,10 @@ test("the public map and accessible partner table share the trade and news filte
   assert.equal(get("market-country").value, "China");
   assert.equal(get("market-geo-pins").querySelector(".selected title").textContent, "China");
   assert.equal(get("market-fob").textContent, "US$ 1.700");
+  assert.equal(get("market-geo-context").hidden, false);
+  assert.match(get("market-geo-rank").textContent, /85% do valor FOB do recorte · 1º de 2 parceiros/);
+  assert.equal(get("market-geo-share").getAttribute("aria-valuenow"), "85");
+  assert.equal(get("market-geo-clear").hidden, false);
   const china = await download();
   assert.deepEqual(china.partner_geography.points, [{country: "China", longitude: 106.3, latitude: 32.5}]);
   assert.deepEqual(china.partner_geography.partners_without_anchor, []);
@@ -263,6 +267,12 @@ test("the public map and accessible partner table share the trade and news filte
   assert.deepEqual(chile.partner_geography.points.map(point => point.country), ["Chile"]);
   button("Chile").click();
   assert.equal(get("market-country").value, "");
+  assert.equal(get("market-geo-context").hidden, true);
+  assert.equal(get("market-geo-clear").hidden, true);
+  button("Chile").click();
+  get("market-geo-clear").click();
+  assert.equal(get("market-country").value, "");
+  assert.equal(window.document.activeElement, get("market-country"));
   dom.window.close();
 });
 
