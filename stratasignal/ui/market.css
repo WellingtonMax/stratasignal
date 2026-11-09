@@ -121,6 +121,13 @@
 .market-geo-context p{margin:0 0 8px;color:#075f53;font-size:13px;font-weight:650;line-height:1.45}
 .market-geo-share{height:6px;overflow:hidden;border-radius:999px;background:#cce5df}
 .market-geo-share span{display:block;width:var(--market-share);height:100%;border-radius:inherit;background:var(--green);transition:width .28s cubic-bezier(.2,.65,.3,1)}
+.market-geo-context .market-geo-history-title{margin:13px 0 7px;padding-top:10px;border-top:1px solid #cce5df;color:var(--navy);font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+.market-geo-history{display:grid;gap:6px;list-style:none;margin:0;padding:0}
+.market-geo-history li{display:grid;grid-template-columns:58px minmax(36px,1fr) auto;align-items:center;gap:7px;color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+.market-geo-history time{white-space:nowrap}
+.market-geo-history strong{color:var(--ink);font-size:11px;font-weight:650;white-space:nowrap}
+.market-geo-history-track{height:6px;overflow:hidden;border-radius:999px;background:#dbe7f5}
+.market-geo-history-track span{display:block;width:var(--market-month-share);height:100%;min-width:0;border-radius:inherit;background:var(--blue);transition:width .28s cubic-bezier(.2,.65,.3,1)}
 .market-geo-table table{min-width:270px}
 .market-geo-table th,.market-geo-table td{padding-inline:8px}
 .market-geo-table small{display:block;margin:4px 0;color:var(--muted);font-weight:500}
@@ -173,4 +180,4 @@
   .market-header nav a{padding-inline:3px;font-size:clamp(11px,2.3vw,14px)}
 }
 @media(max-width:440px){.market-filters,.market-stats{grid-template-columns:minmax(0,1fr);gap:8px}.market-section-title{align-items:start}.market-filters{padding:10px}.market-page-intro{padding:16px}}
-@media(prefers-reduced-motion:reduce){#market-geo-scene,.market-geo-share span{transition:none}.market-geo-halo,.market-geo-marker.selected .market-geo-pin{animation:none}}
+@media(prefers-reduced-motion:reduce){#market-geo-scene,.market-geo-share span,.market-geo-history-track span{transition:none}.market-geo-halo,.market-geo-marker.selected .market-geo-pin{animation:none}}

@@ -385,7 +385,7 @@
     scene.style.transform = `translate(${dx}px, ${dy}px) scale(${zoom})`;
   }
 
-  function renderGeography(partners, scope) {
+  function renderGeography(partners, scope, grouped, months) {
     geographyContent.hidden = !partners.length;
     const mapped = partners.filter(partner => partner.anchor);
     geographyStatus.textContent = (partners.length ?
@@ -413,6 +413,26 @@
       progress.setAttribute("aria-valuenow", String(Math.round(share * 1000) / 10));
       progress.setAttribute("aria-valuetext", percent.format(share) + " do valor FOB do recorte");
       get("market-geo-share-fill").style.setProperty("--market-share", (share * 100) + "%");
+      const history = months.map(month => {
+        const records = grouped.filter(row => row.country === selected.label && row.month === month);
+        return {month, ...summarize(records)};
+      });
+      const peak = Math.max(...history.map(item => item.fob_usd), 1);
+      get("market-geo-history").replaceChildren(...history.map(item => {
+        const row = element("li");
+        const label = element("time", monthName(item.month, monthShort));
+        label.dateTime = item.month;
+        const track = element("span");
+        track.className = "market-geo-history-track";
+        track.setAttribute("aria-hidden", "true");
+        const bar = element("span");
+        bar.style.setProperty("--market-month-share", (item.fob_usd / peak * 100) + "%");
+        track.append(bar);
+        const value = element("strong", item.record_count ? money(item.fob_usd) : "Sem registros");
+        row.setAttribute("aria-label", monthName(item.month) + ": " + value.textContent);
+        row.append(label, track, value);
+        return row;
+      }));
     }
     renderMapFocus(selected);
     get("market-geo-table-caption").textContent = scope;
@@ -568,7 +588,7 @@
     const quantity = records.length === 1 ? "1 registro agregado" : digits.format(records.length) + " registros agregados";
     status.textContent = (records.length ? quantity : "Nenhum registro neste recorte") + " · " + scope;
     results.hidden = records.length === 0;
-    renderGeography(partners, scopeBase);
+    renderGeography(partners, scopeBase, grouped, months);
     renderNews();
     updateRouteLinks();
     if (!records.length) return;

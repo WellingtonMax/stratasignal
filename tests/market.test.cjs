@@ -248,6 +248,14 @@ test("the public map and accessible partner table share the trade and news filte
   assert.equal(get("market-geo-context").hidden, false);
   assert.match(get("market-geo-rank").textContent, /85% do valor FOB do recorte · 1º de 2 parceiros/);
   assert.equal(get("market-geo-share").getAttribute("aria-valuenow"), "85");
+  const history = get("market-geo-history");
+  assert.equal(history.children.length, 3);
+  assert.deepEqual([...history.children].map(item => item.getAttribute("aria-label")), [
+    "janeiro de 2025: US$ 1.200",
+    "fevereiro de 2025: Sem registros",
+    "março de 2025: US$ 500",
+  ]);
+  assert.match(history.children[0].querySelector(".market-geo-history-track span").style.getPropertyValue("--market-month-share"), /^100%$/);
   assert.equal(get("market-geo-clear").hidden, false);
   const china = await download();
   assert.deepEqual(china.partner_geography.points, [{country: "China", longitude: 106.3, latitude: 32.5}]);
