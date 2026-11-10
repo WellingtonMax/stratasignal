@@ -260,6 +260,14 @@ test("the public map and accessible partner table share the trade and news filte
     "março de 2025: US$ 500",
   ]);
   assert.match(history.children[0].querySelector(".market-geo-history-track span").style.getPropertyValue("--market-month-share"), /^100%$/);
+  change("market-geo-metric", "kg");
+  assert.deepEqual([...history.children].map(item => item.querySelector("strong").textContent), [
+    "700 kg", "Sem registros", "300 kg",
+  ]);
+  change("market-geo-metric", "unit_value");
+  assert.deepEqual([...history.children].map(item => item.querySelector("strong").textContent), [
+    "US$ 1,71429 FOB/kg", "Sem registros", "US$ 1,66667 FOB/kg",
+  ]);
   assert.equal(get("market-geo-clear").hidden, false);
   const china = await download();
   assert.deepEqual(china.partner_geography.points, [{country: "China", longitude: 106.3, latitude: 32.5}]);
@@ -267,6 +275,7 @@ test("the public map and accessible partner table share the trade and news filte
   button(foreignLabel).click();
   assert.deepEqual((await download()).partner_geography.partners_without_anchor, [foreignLabel]);
   assert.equal(get("market-geo-pins").querySelector(".selected"), null);
+  assert.match(history.children[0].querySelector("strong").textContent, /peso líquido insuficiente/);
   change("market-period", "2025-02");
   assert.equal(get("market-geo-content").hidden, true);
   assert.match(get("market-geo-status").textContent, /Nenhum parceiro com registros/);
@@ -319,11 +328,15 @@ test("the trade report captures active filters, source bytes, units and monthly 
   assert.equal(get("market-geo-unit-value").textContent, "US$ 1,7 FOB/kg");
   assert.equal(get("market-report-unit-value").textContent, "US$ 1,7 FOB/kg");
   assert.deepEqual(report.records, [sample.records[0], sample.records[2]]);
-  assert.deepEqual(report.monthly, [
+  assert.deepEqual(report.monthly.map(({unit_value, ...row}) => row), [
     {month: "2025-01", record_count: 1, fob_usd: 1200, kg: 700},
     {month: "2025-02", record_count: 0, fob_usd: null, kg: null},
     {month: "2025-03", record_count: 1, fob_usd: 500, kg: 300},
   ]);
+  assert.deepEqual(report.monthly.map(({unit_value}) => [unit_value.status, unit_value.value]), [
+    ["available", 1200 / 700], ["no_records", null], ["available", 500 / 300],
+  ]);
+  assert.match(get("market-monthly").textContent, /US\$ 1,71429 FOB\/kg/);
   assert.match(get("market-fob").textContent, /1\.700/);
   assert.match(get("market-monthly").textContent, /fevereiro de 2025Sem registros/);
   change("market-period", "2025-02");
@@ -332,7 +345,7 @@ test("the trade report captures active filters, source bytes, units and monthly 
   assert.equal(empty.filters.period, "2025-02");
   assert.equal(get("market-report-trade").textContent, "Sem registros de comércio");
   assert.deepEqual(empty.totals, {record_count: 0, fob_usd: null, kg: null, partner_count: 0});
-  assert.deepEqual(empty.monthly, [{month: "2025-02", record_count: 0, fob_usd: null, kg: null}]);
+  assert.deepEqual(empty.monthly.map(({unit_value, ...row}) => row), [{month: "2025-02", record_count: 0, fob_usd: null, kg: null}]);
   assert.deepEqual(empty.records, []);
   assert.equal(empty.unit_value.status, "no_records");
   assert.equal(empty.unit_value.value, null);
@@ -348,6 +361,7 @@ test("the trade report captures active filters, source bytes, units and monthly 
   const zero = await download();
   assert.equal(zero.totals.kg, 0);
   assert.equal(zero.unit_value.status, "insufficient_weight");
+  assert.equal(zero.monthly[0].unit_value.status, "insufficient_weight");
   assert.match(get("market-report-unit-value").textContent, /peso líquido insuficiente/);
   assert.deepEqual(zero.records, [sample.records[1]]);
   assert.equal(get("market-report-trade").textContent, "US$ 300 FOB · 0 kg");

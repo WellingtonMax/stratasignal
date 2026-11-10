@@ -266,3 +266,9 @@ Existing report integrity manifests remain valid because their generated report 
 Em 9 de novembro de 2026, `npm ci --ignore-scripts && npm test` passou 63 testes. A regressão do recorte verifica o cálculo ponderado pelo peso, a igualdade entre o painel do parceiro, a prévia e o JSON e a indisponibilidade com peso zero, cobertura de peso insuficiente ou ausência de registros. As duas suítes de `AGENTS.md` executaram 117 casos cada. O modo `python -S` saltou os oito casos opcionais de ML.
 
 Na prévia do Site, o recorte de importações brasileiras de grafita da China exibiu US$ 145.658 FOB e 124.120 kg, com US$ 1,17353 FOB/kg no mapa e na prévia aberta com Enter. A conferência no navegador foi feita em desktop. Os hashes da edição comercial e da edição de notícias foram verificados antes da atualização dos arquivos de interface.
+
+### Três indicadores no histórico mensal do parceiro
+
+Em 9 de novembro de 2026, `npm ci --ignore-scripts && npm test` passou 63 testes. A regressão alterna valor FOB, peso líquido e valor por quilo, confere a tabela e o JSON mensal e verifica as lacunas sem registros ou com peso insuficiente. As duas suítes Python de `AGENTS.md` executaram 117 casos cada, com oito saltos de ML no modo `python -S`.
+
+Na prévia do Site a 320 px, o teclado alternou o indicador, abriu o Panorama com o mesmo recorte e expandiu a tabela. Nas importações de grafita da China, agosto apareceu sem registros e setembro e outubro mostraram respectivamente US$ 1,35842 e US$ 0,976218 FOB/kg no mapa e na tabela. A prévia utilizou os arquivos públicos de comércio e notícias da edição existente, com hashes conferidos.

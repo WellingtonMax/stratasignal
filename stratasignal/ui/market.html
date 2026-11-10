@@ -116,7 +116,7 @@
               <div class="table-wrap" role="region" aria-label="Tabela de comércio por mês" tabindex="0">
                 <table>
                   <caption id="market-table-caption"></caption>
-                  <thead><tr><th scope="col">Mês</th><th scope="col">Valor FOB (US$)</th><th scope="col">Peso líquido (kg)</th></tr></thead>
+                  <thead><tr><th scope="col">Mês</th><th scope="col">Valor FOB (US$)</th><th scope="col">Peso líquido (kg)</th><th scope="col">Valor por quilo (US$ FOB/kg)</th></tr></thead>
                   <tbody id="market-monthly"></tbody>
                 </table>
               </div>
@@ -164,8 +164,14 @@
               <p class="market-geo-history-title">Valor declarado por quilo</p>
               <strong id="market-geo-unit-value"></strong>
               <p class="market-news-note">Valor FOB total dividido pelo peso líquido do recorte. Indicador aduaneiro agregado, distinto de cotação ou margem.</p>
-              <p class="market-geo-history-title">Valor mensal do parceiro</p>
-              <ol id="market-geo-history" class="market-geo-history" aria-label="Valor FOB mensal do parceiro selecionado"></ol>
+              <p class="market-geo-history-title">Histórico mensal do parceiro</p>
+              <label for="market-geo-metric">Indicador mensal</label>
+              <select id="market-geo-metric">
+                <option value="fob_usd">Valor FOB (US$)</option>
+                <option value="kg">Peso líquido (kg)</option>
+                <option value="unit_value">Valor por quilo (US$ FOB/kg)</option>
+              </select>
+              <ol id="market-geo-history" class="market-geo-history" aria-label="Histórico mensal do parceiro"></ol>
             </div>
             <button id="market-geo-focus" type="button" class="button secondary" aria-pressed="false" disabled>Aproximar parceiro</button>
             <button id="market-geo-clear" type="button" class="button secondary" hidden>Ver todos os parceiros</button>

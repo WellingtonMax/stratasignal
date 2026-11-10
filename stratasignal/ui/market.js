@@ -44,6 +44,7 @@
   const geographySource = get("market-geo-source");
   const focusPartner = get("market-geo-focus");
   const clearPartner = get("market-geo-clear");
+  const historyMetric = get("market-geo-metric");
   const svgNamespace = "http://www.w3.org/2000/svg";
   // Reviewed Comex Stat names matched to Natural Earth 5.1.1 Admin 0 label points,
   // rounded to tenths of a degree. Unknown names stay in the table and report.
@@ -319,7 +320,8 @@
       const header = element("th", monthName(row.month));
       header.scope = "row";
       line.append(header, element("td", row.record_count ? digits.format(row.fob_usd) : "Sem registros"),
-        element("td", row.record_count ? digits.format(row.kg) : "—"));
+        element("td", row.record_count ? digits.format(row.kg) : "—"),
+        element("td", row.record_count ? unitValueLabel(row.unit_value) : "—"));
       table.push(line);
     }
     get("market-bars").replaceChildren(...bars);
@@ -405,7 +407,32 @@
     scene.style.transform = `translate(${dx}px, ${dy}px) scale(${zoom})`;
   }
 
-  function renderGeography(partners, scope, grouped, months) {
+  function renderPartnerHistory(history) {
+    const metric = historyMetric.value;
+    const indicator = {
+      fob_usd: {amount: row => row.fob_usd, label: row => money(row.fob_usd)},
+      kg: {amount: row => row.kg, label: row => digits.format(row.kg) + " kg"},
+      unit_value: {amount: row => row.unit_value.value, label: row => unitValueLabel(row.unit_value)},
+    }[metric];
+    const peak = Math.max(...history.map(row => indicator.amount(row) ?? 0), 0);
+    get("market-geo-history").replaceChildren(...history.map(item => {
+      const row = element("li");
+      const label = element("time", monthName(item.month, monthShort));
+      label.dateTime = item.month;
+      const track = element("span");
+      track.className = "market-geo-history-track";
+      track.setAttribute("aria-hidden", "true");
+      const bar = element("span");
+      bar.style.setProperty("--market-month-share", (peak ? (indicator.amount(item) ?? 0) / peak * 100 : 0) + "%");
+      track.append(bar);
+      const value = element("strong", item.record_count ? indicator.label(item) : "Sem registros");
+      row.setAttribute("aria-label", monthName(item.month) + ": " + value.textContent);
+      row.append(label, track, value);
+      return row;
+    }));
+  }
+
+  function renderGeography(partners, scope) {
     geographyContent.hidden = !partners.length;
     const mapped = partners.filter(partner => partner.anchor);
     geographyStatus.textContent = (partners.length ?
@@ -434,26 +461,7 @@
       progress.setAttribute("aria-valuenow", String(Math.round(share * 1000) / 10));
       progress.setAttribute("aria-valuetext", percent.format(share) + " do valor FOB do recorte");
       get("market-geo-share-fill").style.setProperty("--market-share", (share * 100) + "%");
-      const history = months.map(month => {
-        const records = grouped.filter(row => row.country === selected.label && row.month === month);
-        return {month, ...summarize(records)};
-      });
-      const peak = Math.max(...history.map(item => item.fob_usd), 1);
-      get("market-geo-history").replaceChildren(...history.map(item => {
-        const row = element("li");
-        const label = element("time", monthName(item.month, monthShort));
-        label.dateTime = item.month;
-        const track = element("span");
-        track.className = "market-geo-history-track";
-        track.setAttribute("aria-hidden", "true");
-        const bar = element("span");
-        bar.style.setProperty("--market-month-share", (item.fob_usd / peak * 100) + "%");
-        track.append(bar);
-        const value = element("strong", item.record_count ? money(item.fob_usd) : "Sem registros");
-        row.setAttribute("aria-label", monthName(item.month) + ": " + value.textContent);
-        row.append(label, track, value);
-        return row;
-      }));
+      renderPartnerHistory(reportSlice.monthly);
     }
     renderMapFocus(selected);
     get("market-geo-table-caption").textContent = scope;
@@ -596,7 +604,11 @@
     const scope = scopeBase + " · " + (country.value || "todos os países");
     const partners = summarizePartners(grouped);
     const totals = {...summarize(records), partner_count: new Set(records.map(row => row.country)).size};
-    const monthly = months.map(month => ({month, ...summarize(records.filter(row => row.month === month))}));
+    const monthly = months.map(month => {
+      const monthRecords = records.filter(row => row.month === month);
+      const monthTotals = summarize(monthRecords);
+      return {month, ...monthTotals, unit_value: unitValue(monthRecords, monthTotals)};
+    });
     reportSlice = {
       filters: {
         ncm: product.value, product: product.selectedOptions[0].textContent, flow: flow.value,
@@ -613,7 +625,7 @@
     const quantity = countLabel(records.length, "registro agregado", "registros agregados");
     status.textContent = (records.length ? quantity : "Nenhum registro neste recorte") + " · " + scope;
     results.hidden = records.length === 0;
-    renderGeography(partners, scopeBase, grouped, months);
+    renderGeography(partners, scopeBase);
     renderNews();
     updateRouteLinks();
     if (!records.length) return;
@@ -919,6 +931,7 @@
       applyTradeFilters();
       product.focus();
     });
+    historyMetric.addEventListener("change", () => renderPartnerHistory(reportSlice.monthly));
     focusPartner.addEventListener("click", () => {
       zoomedCountry = zoomedCountry ? null : country.value;
       renderMapFocus({label: country.value, anchor: partnerAnchors.get(country.value)});
