@@ -260,3 +260,9 @@ Existing report integrity manifests remain valid because their generated report 
 - No Chromium em 320 px, a tecla End selecionou o MDIC e a lista mostrou três publicações. Enter abriu o Mapa e a prévia exibiu dois comunicados do MDIC em novembro, com o comércio em setembro. Notícias e Mapa mediram 305 px de largura útil e rolável.
 - O teste DOM confere o estado vazio, a limpeza do filtro, a passagem da fonte pelo endereço e a lista filtrada no JSON. A troca de fonte conserva os registros e totais comerciais. Passaram 63 testes DOM, 117 Python e 109 no modo sem dependências opcionais, com 8 verificações de ML ignoradas. `git diff --check` passou.
 - Na sondagem com o cliente de publicação, o RSS mineral do USGS respondeu HTTP 202 com corpo vazio e tipo HTML. O feed do departamento australiano retornou HTTP 503. A avaliação dessas fontes depende de uma resposta XML válida no fluxo de coleta. [Catálogo do USGS](https://www.usgs.gov/mineral-resources-program/news) · [RSS australiano](https://www.industry.gov.au/news.xml)
+
+### Valor declarado por quilo no mapa e no relatório
+
+Em 9 de novembro de 2026, `npm ci --ignore-scripts && npm test` passou 63 testes. A regressão do recorte verifica o cálculo ponderado pelo peso, a igualdade entre o painel do parceiro, a prévia e o JSON e a indisponibilidade com peso zero, cobertura de peso insuficiente ou ausência de registros. As duas suítes de `AGENTS.md` executaram 117 casos cada. O modo `python -S` saltou os oito casos opcionais de ML.
+
+Na prévia do Site, o recorte de importações brasileiras de grafita da China exibiu US$ 145.658 FOB e 124.120 kg, com US$ 1,17353 FOB/kg no mapa e na prévia aberta com Enter. A conferência no navegador foi feita em desktop. Os hashes da edição comercial e da edição de notícias foram verificados antes da atualização dos arquivos de interface.

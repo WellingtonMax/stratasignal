@@ -66,6 +66,7 @@
   const mdicFeed = get("market-news-mdic-feed").href;
   const mdicNovemberFeed = get("market-news-mdic-november-feed").href;
   const digits = new Intl.NumberFormat("pt-BR");
+  const unitValueDigits = new Intl.NumberFormat("pt-BR", {maximumSignificantDigits: 6});
   const percent = new Intl.NumberFormat("pt-BR", {style: "percent", maximumFractionDigits: 1});
   const calendar = new Intl.DateTimeFormat("pt-BR", {dateStyle: "long", timeZone: "UTC"});
   const timestamp = new Intl.DateTimeFormat("pt-BR", {dateStyle: "medium", timeStyle: "short", timeZone: "UTC"});
@@ -277,6 +278,23 @@
     };
   }
 
+  function unitValue(records, totals) {
+    const status = !records.length ? "no_records" :
+      !totals.kg || records.some(row => row.fob_usd > 0 && row.kg === 0) ? "insufficient_weight" : "available";
+    return {
+      status,
+      value: status === "available" ? totals.fob_usd / totals.kg : null,
+      unit: "USD FOB por kg de peso líquido",
+      method: "Soma do valor FOB ÷ soma do peso líquido dos registros do recorte.",
+    };
+  }
+
+  function unitValueLabel(indicator) {
+    if (indicator.status === "available") return "US$ " + unitValueDigits.format(indicator.value) + " FOB/kg";
+    if (indicator.status === "no_records") return "Indisponível · sem registros no recorte";
+    return "Indisponível · peso líquido insuficiente para o cálculo";
+  }
+
   function renderSeries(series, caption) {
     const peak = Math.max(...series.map(row => row.fob_usd ?? 0));
     get("market-scale").textContent = "Escala de " + money(0) + " a " + money(peak) + " FOB";
@@ -409,6 +427,7 @@
     context.hidden = !selected;
     clearPartner.hidden = !selected;
     if (selected) {
+      get("market-geo-unit-value").textContent = unitValueLabel(reportSlice.unit_value);
       get("market-geo-rank").textContent = percent.format(share) + " do valor FOB do recorte · " +
         rank + "º de " + digits.format(partners.length) + " parceiros";
       const progress = get("market-geo-share");
@@ -586,6 +605,7 @@
       },
       months,
       totals,
+      unit_value: unitValue(records, totals),
       monthly,
       records: records.map(({month, ncm, country, flow, fob_usd, kg}) => ({month, ncm, country, flow, fob_usd, kg})),
       partner_geography: reportGeography(partners.filter(partner => !country.value || partner.label === country.value)),
@@ -657,7 +677,7 @@
   }
 
   function renderReportPreview() {
-    const {filters, months, totals, monthly, source, partner_geography: geography, news_context: context} = buildReport();
+    const {filters, months, totals, unit_value, monthly, source, partner_geography: geography, news_context: context} = buildReport();
     const role = filters.country_role === "origin" ? "origem comercial" : "destino comercial";
     const partner = filters.country ? `${filters.country} (${role})` : "Todos os parceiros";
     get("market-report-scope").textContent = `${filters.product} (NCM ${filters.ncm}) · ` +
@@ -665,6 +685,7 @@
     get("market-report-trade").textContent = totals.record_count ?
       `${money(totals.fob_usd)} FOB · ${digits.format(totals.kg)} kg` : "Sem registros de comércio";
     const covered = monthly.filter(row => row.record_count > 0).length;
+    get("market-report-unit-value").textContent = unitValueLabel(unit_value);
     get("market-report-trade-coverage").textContent =
       `${countLabel(totals.record_count, "registro", "registros")} · ${covered} de ${monthly.length} meses com registros`;
     get("market-report-trade-source").textContent =

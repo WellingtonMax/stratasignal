@@ -312,6 +312,12 @@ test("the trade report captures active filters, source bytes, units and monthly 
   assert.equal(report.filters.period, null);
   assert.equal(report.filters.country, "China");
   assert.deepEqual(report.totals, {record_count: 2, fob_usd: 1700, kg: 1000, partner_count: 1});
+  assert.deepEqual(report.unit_value, {
+    status: "available", value: 1.7, unit: "USD FOB por kg de peso líquido",
+    method: "Soma do valor FOB ÷ soma do peso líquido dos registros do recorte.",
+  });
+  assert.equal(get("market-geo-unit-value").textContent, "US$ 1,7 FOB/kg");
+  assert.equal(get("market-report-unit-value").textContent, "US$ 1,7 FOB/kg");
   assert.deepEqual(report.records, [sample.records[0], sample.records[2]]);
   assert.deepEqual(report.monthly, [
     {month: "2025-01", record_count: 1, fob_usd: 1200, kg: 700},
@@ -328,10 +334,21 @@ test("the trade report captures active filters, source bytes, units and monthly 
   assert.deepEqual(empty.totals, {record_count: 0, fob_usd: null, kg: null, partner_count: 0});
   assert.deepEqual(empty.monthly, [{month: "2025-02", record_count: 0, fob_usd: null, kg: null}]);
   assert.deepEqual(empty.records, []);
+  assert.equal(empty.unit_value.status, "no_records");
+  assert.equal(empty.unit_value.value, null);
+  assert.match(get("market-report-unit-value").textContent, /sem registros/);
+  change("market-country", "");
+  change("market-period", "");
+  const mixed = await download();
+  assert.equal(mixed.totals.kg, 1000);
+  assert.equal(mixed.unit_value.status, "insufficient_weight");
+  assert.equal(mixed.unit_value.value, null);
   change("market-period", "2025-01");
   change("market-country", foreignLabel);
   const zero = await download();
   assert.equal(zero.totals.kg, 0);
+  assert.equal(zero.unit_value.status, "insufficient_weight");
+  assert.match(get("market-report-unit-value").textContent, /peso líquido insuficiente/);
   assert.deepEqual(zero.records, [sample.records[1]]);
   assert.equal(get("market-report-trade").textContent, "US$ 300 FOB · 0 kg");
   assert.equal(get("market-report-map-coverage").textContent, "1 parceiro sem ponto");
