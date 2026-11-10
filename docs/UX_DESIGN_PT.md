@@ -154,3 +154,7 @@ Antes de integrar satélite ou notícias novos, consultar as fontes oficiais e t
 ### Cadeia do ferro no recorte brasileiro
 
 Em Mercados, o recorte Brasil ou Mundo com HS 2601 abre a ficha **De Carajás a Ponta da Madeira** na seção de empresas. O aceite exige três etapas em ordem, fonte e período próprios, abertura pelo teclado e leitura em tela estreita. Trocar país ou produto para fora da cobertura recolhe a ficha e retira o caso do JSON. O fluxo comercial mantém o contexto documental e altera apenas a série aduaneira.
+
+### Materiais para semicondutores (UX-06 e UX-11)
+
+O próximo recorte de Mercados começa com a [ficha do gálio](GALIO_SEMICONDUTORES_PT.md). A pergunta é onde o Brasil atua na cadeia e qual elo pede investigação. A curadoria registra operações, pesquisa, projetos anunciados e lacunas separadamente. O próximo incremento valida as regras de oferta e classificação com uma edição versionada. A tela e o JSON devem ler a mesma edição, com os critérios de aceite da ficha.
