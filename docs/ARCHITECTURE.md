@@ -2,6 +2,8 @@
 
 The workbench supports one trusted local operator. Its data and compute bounds are distinct from a future shared cloud service. The static Site separates public aggregate data from the synthetic-only workbench. See [ADR 0001 on publication and the private boundary](adr/0001-publicacao-e-fronteira-privada.md).
 
+The proposed shared data model for the public observatory and future services is documented in [ADR 0002 on mineral data architecture](adr/0002-arquitetura-dos-dados-minerais.md).
+
 ```mermaid
 flowchart TD
     B["Local browser"] --> G["Host, Origin and token checks"]
