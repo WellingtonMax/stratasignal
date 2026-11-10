@@ -12,6 +12,7 @@ from stratasignal.build_public_site import (
 )
 from stratasignal.public_markets_world import VERSION, YEARS, _aggregate
 from stratasignal.public_news import (
+    CANADA_ARCHIVE_ARTICLE, CANADA_ARCHIVE_FEED_URL,
     EDITORIAL, FEED_URL, MAX_FEED_BYTES, MDIC_ARTICLE, MDIC_FEED_URL,
     MDIC_NOVEMBER_ARTICLE, MDIC_NOVEMBER_FEED_URL, MDIC_NOVEMBER_SEMINAR, SOURCE, parse_feed, parse_mdic_feed,
 )
@@ -385,14 +386,18 @@ class NewsFeedTests(unittest.TestCase):
         september = mdic_feed(MDIC_FEED_URL, MDIC_ARTICLE, "2026-09-16")
         november = mdic_feed(MDIC_NOVEMBER_FEED_URL, MDIC_NOVEMBER_ARTICLE, "2026-11-05",
                             (MDIC_NOVEMBER_SEMINAR, "2026-11-03"))
-        read.side_effect = [atom_feed(next(iter(EDITORIAL))), september, november]
+        archive = atom_feed(CANADA_ARCHIVE_ARTICLE, CANADA_ARCHIVE_ARTICLE, updated="2026-04-27T09:25:36-04:00")
+        read.side_effect = [atom_feed(next(iter(EDITORIAL))), september, november, archive]
         with patch("stratasignal.build_public_site.datetime", wraps=datetime) as clock:
             clock.now.return_value = FETCHED_AT
             news = collect_news()
         self.assertEqual([call.args[0] for call in read.call_args_list],
-                         [FEED_URL, MDIC_FEED_URL, MDIC_NOVEMBER_FEED_URL])
+                         [FEED_URL, MDIC_FEED_URL, MDIC_NOVEMBER_FEED_URL, CANADA_ARCHIVE_FEED_URL])
         self.assertEqual([item["published_on"] for item in news["items"]],
-                         ["2026-11-05", "2026-11-03", "2026-10-28", "2026-09-16"])
+                         ["2026-11-05", "2026-11-03", "2026-10-28", "2026-09-16", "2025-03-03"])
+        self.assertEqual(news["canada_archive"]["feed_sha256"], hashlib.sha256(archive).hexdigest())
+        self.assertEqual(news["items"][-1]["feed_url"], CANADA_ARCHIVE_FEED_URL)
+        self.assertEqual(news["items"][-1]["related_ncms"], ["28369100"])
         self.assertEqual(news["mdic"]["feed_sha256"], hashlib.sha256(september).hexdigest())
         self.assertEqual(news["mdic_archives"][0]["feed_sha256"], hashlib.sha256(november).hexdigest())
         for article in news["items"][:2]:

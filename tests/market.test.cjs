@@ -619,6 +619,37 @@ test("Brazilian policy appears for graphite without changing the Canadian feed p
   dom.window.close();
 });
 
+test("the Canadian archive is filterable and keeps its own provenance in the report", async () => {
+  const archive = {source: newsSample.source,
+    feed_url: "https://api.io.canada.ca/io-server/gc/news/en/v2?dept=naturalresourcescanada&sort=publishedDate&orderBy=desc&publishedDate%3C=2025-03-31&pick=50&format=atom&atomtitle=Natural%20Resources%20Canada",
+    feed_updated_at: "2026-04-27T13:25:36Z", fetched_at: "2026-11-10T16:00:00Z",
+    feed_sha256: "c".repeat(64), feed_entries: 50};
+  const story = {...newsItem, url: "https://www.canada.ca/en/natural-resources-canada/news/2025/03/example.html",
+    feed_url: archive.feed_url, published_on: "2025-03-03", event_on: "2025-03-03",
+    ncm: "25041000", related_ncms: ["28369100"]};
+  const news = {...newsSample, canada_archive: archive, items: [story]};
+  const {dom, window, get, change} = open(null, () => response(news));
+  const {download} = captureDownloads(window, get);
+  await settle(get);
+  await settle(get, "market-news-status");
+  change("market-news-period", "2025-03");
+  change("market-news-publisher", "nrcan");
+  change("market-product", "28369100");
+  assert.match(get("market-news-status").textContent, /1 publicação.*março de 2025/);
+  assert.match(get("market-news-canada-archive-coverage").textContent, /1 entre 50 entradas/);
+  const report = await download();
+  assert.equal(report.news_context.coverage.curated_entries, 0);
+  assert.equal(report.news_context.canada_archive.feed_sha256, archive.feed_sha256);
+  assert.deepEqual(report.news_context.items, [story]);
+  dom.window.close();
+
+  const unsafe = open(null, () => response({...news, canada_archive: {...archive, feed_url: "https://example.invalid/"}}));
+  await settle(unsafe.get, "market-news-status");
+  await settle(unsafe.get);
+  assert.equal(unsafe.get("market-news-retry").hidden, false);
+  unsafe.dom.window.close();
+});
+
 test("a separate news month preserves the trade slice and exports each period and feed", async () => {
   const archive = "https://www.gov.br/mdic/pt-br/assuntos/noticias/2026/novembro";
   const feed = {source: "MDIC · Brasil", feed_url: archive + "/RSS", feed_updated_at: null,

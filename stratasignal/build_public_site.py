@@ -332,6 +332,17 @@ def collect_news():
         else:
             news["mdic_archives"].append(metadata)
         news["items"].extend(items)
+    archive_url = public_news.CANADA_ARCHIVE_FEED_URL
+    archive = public_news.parse_feed(
+        _read_news_feed(archive_url), datetime.now(timezone.utc), editorial=public_news.CANADA_ARCHIVE_EDITORIAL,
+    )
+    archive_items = archive.pop("items")
+    if not archive_items:
+        raise InputError("O arquivo canadense deixou de confirmar o comunicado selecionado")
+    news["canada_archive"] = {
+        key: archive[key] for key in ("source", "feed_updated_at", "fetched_at", "feed_sha256", "feed_entries")
+    } | {"feed_url": archive_url}
+    news["items"].extend(item | {"feed_url": archive_url} for item in archive_items)
     news["items"].sort(key=lambda item: item["published_on"], reverse=True)
     return news
 
@@ -345,7 +356,7 @@ def _news_manifest(news, news_bytes):
         "feed_updated_at": news["feed_updated_at"],
         "fetched_at": news["fetched_at"],
     }
-    for key in ("mdic", "mdic_archives"):
+    for key in ("mdic", "mdic_archives", "canada_archive"):
         if key in news:
             snapshot[key] = news[key]
     return snapshot

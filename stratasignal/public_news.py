@@ -16,6 +16,32 @@ FEED_URL = (
     "&format=atom&atomtitle=Natural%20Resources%20Canada"
 )
 ARTICLE_ROOT = "https://www.canada.ca/en/natural-resources-canada/news/"
+CANADA_ARCHIVE_FEED_URL = (
+    "https://api.io.canada.ca/io-server/gc/news/en/v2?dept=naturalresourcescanada"
+    "&sort=publishedDate&orderBy=desc&publishedDate%3C=2025-03-31&pick=50"
+    "&format=atom&atomtitle=Natural%20Resources%20Canada"
+)
+CANADA_ARCHIVE_ARTICLE = ARTICLE_ROOT + "2025/03/investing-to-make-canada-a-global-critical-minerals-superpower0.html"
+CANADA_ARCHIVE_EDITORIAL = {
+    CANADA_ARCHIVE_ARTICLE: {
+        "title": "Canadá propôs estender incentivo à exploração de minerais críticos",
+        "summary": (
+            "Na convenção PDAC de 2025, o governo canadense anunciou a intenção de estender "
+            "o crédito fiscal para despesas elegíveis de exploração. Grafita e lítio figuravam entre os minerais abrangidos."
+        ),
+        "possible_impact": (
+            "A medida proposta poderia facilitar o financiamento da pesquisa mineral. "
+            "O comunicado registra a proposta e deixa em aberto o efeito sobre a oferta."
+        ),
+        "published_on": "2025-03-03",
+        "event_on": "2025-03-03",
+        "ncm": "25041000",
+        "related_ncms": ["28369100"],
+        "countries": ["Canadá"],
+        "companies": [],
+        "topic": "Política mineral",
+    },
+}
 MDIC_SOURCE = "MDIC · Brasil"
 MDIC_ARCHIVE = "https://www.gov.br/mdic/pt-br/assuntos/noticias/2026/setembro"
 MDIC_FEED_URL = MDIC_ARCHIVE + "/RSS"
@@ -146,7 +172,7 @@ def _read_xml(raw):
     return tree.close()
 
 
-def parse_feed(raw, fetched_at):
+def parse_feed(raw, fetched_at, *, editorial=EDITORIAL):
     """Read bounded Atom metadata. All displayed text and links are editorially reviewed."""
     feed = _read_xml(raw)
     if feed.tag != ATOM + "feed" or feed.findtext(ATOM + "title") != SOURCE:
@@ -169,7 +195,7 @@ def parse_feed(raw, fetched_at):
     }
     items = [
         {"url": url, **item}
-        for url, item in EDITORIAL.items()
+        for url, item in editorial.items()
         if url in observed and item["published_on"] <= updated.date().isoformat()
     ]
     items.sort(key=lambda item: item["published_on"], reverse=True)

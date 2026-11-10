@@ -108,6 +108,7 @@
   };
   const mdicFeed = get("market-news-mdic-feed").href;
   const mdicNovemberFeed = get("market-news-mdic-november-feed").href;
+  const canadaArchiveLink = get("market-news-canada-archive");
   const digits = new Intl.NumberFormat("pt-BR");
   const unitValueDigits = new Intl.NumberFormat("pt-BR", {maximumSignificantDigits: 6});
   const percent = new Intl.NumberFormat("pt-BR", {style: "percent", maximumFractionDigits: 1});
@@ -220,6 +221,13 @@
       throw new Error("Invalid MDIC news source");
     }
     const mdicSources = [data.mdic, ...archives].filter(Boolean);
+    const archive = data.canada_archive;
+    if (archive !== undefined && (archive?.source !== newsSource ||
+        archive.feed_url !== canadaArchiveLink.href || !instant(archive.feed_updated_at) ||
+        !instant(archive.fetched_at) || Date.parse(archive.feed_updated_at) > Date.parse(archive.fetched_at) ||
+        !hash(archive.feed_sha256) || !feedCount(archive.feed_entries))) {
+      throw new Error("Invalid Canadian archive");
+    }
     const canadaArticle = /^https:\/\/www\.canada\.ca\/en\/natural-resources-canada\/news\/\d{4}\/\d{2}\/[a-z0-9-]+\.html$/;
     const mdicArticle = (url, feed) => {
       if (!mdicSources.some(source => source.feed_url === feed)) return false;
@@ -236,7 +244,9 @@
       const related = item?.related_ncms;
       if (!item || !text(item.url, 300) || item.url !== item.url.trim() || seen.has(item.url) ||
           (mdicItem ? !mdicArticle(item.url, feed) :
-            !canadaArticle.test(item.url) || item.source_id !== undefined || item.feed_url !== undefined) ||
+            !canadaArticle.test(item.url) || item.source_id !== undefined ||
+              (item.feed_url !== undefined && (!archive || item.feed_url !== archive.feed_url ||
+                item.published_on > "2025-03-31"))) ||
           !text(item.title, 150) || !text(item.summary, 400) || !text(item.possible_impact, 400) ||
           !text(item.topic, 80) || !validDate(item.published_on) ||
           (item.event_on !== null && !validDate(item.event_on)) ||
@@ -256,12 +266,19 @@
       feed_sha256: source.feed_sha256, feed_entries: source.feed_entries,
       curated_entries: items.filter(item => item.source_id === "mdic" && (item.feed_url ?? mdicFeed) === source.feed_url).length,
     }));
-    const canadaCount = items.filter(item => item.source_id === undefined).length;
-    if (brazilSources.some(source => source.curated_entries > source.feed_entries) || canadaCount > data.feed_entries) {
+    const canadaCount = items.filter(item => item.source_id === undefined && item.feed_url === undefined).length;
+    const archiveCount = archive ? items.filter(item => item.feed_url === archive.feed_url).length : 0;
+    if (brazilSources.some(source => source.curated_entries > source.feed_entries) || canadaCount > data.feed_entries ||
+        (archive && (!archiveCount || archiveCount > archive.feed_entries))) {
       throw new Error("Invalid news coverage");
     }
+    const canadaArchive = archive ? {
+      name: newsSource, feed_url: archive.feed_url, feed_updated_at: archive.feed_updated_at,
+      fetched_at: archive.fetched_at, feed_sha256: archive.feed_sha256, feed_entries: archive.feed_entries,
+      curated_entries: archiveCount,
+    } : null;
     items.sort((first, second) => second.published_on.localeCompare(first.published_on));
-    return {...data, items, brazilSources, canadaCount};
+    return {...data, items, brazilSources, canadaCount, canadaArchive};
   }
 
   function validateEditionManifest(data) {
@@ -891,6 +908,7 @@
         publication_months: news ? publicationMonths() : null,
         mdic_source: news?.brazilSources.find(source => source.feed_url === mdicFeed) ?? null,
         mdic_archives: news?.brazilSources.filter(source => source.feed_url !== mdicFeed) ?? [],
+        canada_archive: news?.canadaArchive ?? null,
         filters: {
           ncm: reportSlice.filters.ncm, months: newsMonths(), country: reportSlice.filters.country,
           ...(newsPublisher.value && {source_id: newsPublisher.value}),
@@ -944,7 +962,7 @@
     }[context.status];
     const publisher = context.filters.source_id ? " · " + newsPublisher.selectedOptions[0].textContent : "";
     get("market-report-news-period").textContent = `Período de publicação · ${publicationScope(context.filters.months)}${publisher}`;
-    const sources = [context.source, context.mdic_source, ...context.mdic_archives].filter(entry => entry?.fetched_at);
+    const sources = [context.source, context.canada_archive, context.mdic_source, ...context.mdic_archives].filter(entry => entry?.fetched_at);
     const names = [...new Set(sources.map(entry => entry.name))].join(" e ");
     const latest = Math.max(...sources.map(entry => Date.parse(entry.fetched_at)));
     get("market-report-news-source").textContent = sources.length ?
@@ -989,6 +1007,15 @@
         " publicações do feed. Atualizado pela fonte em " + timestamp.format(new Date(news.feed_updated_at)) +
         " UTC. Consultado em " + timestamp.format(new Date(news.fetched_at)) + " UTC.";
       coverage.hidden = false;
+      const archiveCoverage = get("market-news-canada-archive-coverage");
+      archiveCoverage.hidden = canadaArchiveLink.hidden = !news.canadaArchive;
+      if (news.canadaArchive) {
+        const archive = news.canadaArchive;
+        archiveCoverage.textContent = newsSource + " · Arquivo até março de 2025. Curadoria de " +
+          digits.format(archive.curated_entries) + " entre " + digits.format(archive.feed_entries) +
+          " entradas. Atualização informada pelo feed em " + timestamp.format(new Date(archive.feed_updated_at)) +
+          " UTC. Consultado em " + timestamp.format(new Date(archive.fetched_at)) + " UTC.";
+      }
       for (const source of news.brazilSources) {
         const isSeptember = source.feed_url === mdicFeed;
         const prefix = isSeptember ? "market-news-mdic" : "market-news-mdic-november";

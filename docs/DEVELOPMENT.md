@@ -114,3 +114,5 @@ python -m stratasignal.build_public_site \
   --source-commit COMMIT_CANONICO \
   --out site-com-noticias-renovadas
 ```
+
+A curadoria também consulta um arquivo Atom fixo do Natural Resources Canada com corte em março de 2025. A publicação exige que o endereço original do comunicado selecionado apareça no arquivo. A atualização informada pelo arquivo, o horário da consulta e o SHA-256 ficam separados do feed corrente no manifesto e em `news_context.canada_archive`. O filtro de fonte agrupa ambos em Natural Resources Canada, e o de mês segue a publicação do comunicado.
