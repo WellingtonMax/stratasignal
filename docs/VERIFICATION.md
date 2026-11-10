@@ -294,3 +294,13 @@ Em 10 de novembro de 2026, foram conferidas as páginas 15–17 do Radar Tecnol�
 No Chromium, Enter abriu **Da mina à liga** e Tab levou à fonte do INPI com foco visível. Em 320 px CSS, as etapas ocuparam uma coluna e a página teve 305 px de largura útil e rolável. No desktop, as quatro etapas ficaram lado a lado. Com a China como destino, a prévia mostrou US$ 396.119.394 FOB de agosto a outubro de 2026. A troca pelo teclado para importações de todos os parceiros mostrou US$ 10.530.602 FOB e manteve as 87.880 t de 2022 na seção industrial.
 
 `npm ci --ignore-scripts && npm test` passou 66 testes, com cobertura para a equivalência da ficha, prévia e JSON, a retirada ao trocar de produto e a leitura da ficha em caso de falha do comércio. As duas suítes Python executaram 117 casos cada. O modo `python -S` passou 109 e ignorou oito opcionais de ML. `git diff --check` passou. Os hashes da carga do Comex Stat, das quatro edições retidas, das notícias e do manifesto de Mercados conferiram com o pacote anterior. A Carteira sintética ficou fora das alterações.
+
+### Produção de nióbio por estado
+
+Em 10 de novembro de 2026, os CSVs de produção bruta e beneficiada da ANM retornaram HTTP 503. O PDF do Anuário Mineral Brasileiro 2025 foi baixado e conferido. A página 3 indica a versão 2 de maio de 2026 e autoriza reprodução com crédito. A página 16 apresenta o ano-base 2024 e o apêndice A2 explica as bases e a cobertura. O SHA-256 do PDF é `768d9349f1649a5cab29aba91ac3ec22cf84cf6ed05b7225031f9362964fd9ed`.
+
+O minério bruto publicado é de 9.249.168 t em Goiás e 6.580.700 t em Minas Gerais, com 15.829.868 t no Brasil. A soma estadual de produto beneficiado é 224.674 t. O total Brasil publicado é 213.668 t. A diferença de 11.006 t fica visível na tabela e na prévia e está estruturada no JSON. Nenhum valor foi corrigido por inferência.
+
+No Chromium em 320 px CSS, Enter abriu a tabela, Tab focou a referência da ANM e Enter abriu a prévia. Após o ajuste de quebra de texto, a tabela ocupou 243 px e as larguras útil e rolável da página coincidiram em 305 px. O comércio selecionado da China exibiu US$ 396.119.394 FOB em agosto a outubro de 2026, separado da produção de 2024. Os testes conferiram a retirada da seção ao mudar o produto e sua leitura com falha de comércio em um link direto.
+
+Passaram 66 testes de interface após `npm ci --ignore-scripts`, 117 casos em Python e 109 no modo sem dependências opcionais, com oito casos de ML ignorados. `git diff --check` passou. O pacote reaproveitou os arquivos da publicação anterior de comércio, Mercados, notícias e da Carteira sintética.

@@ -124,6 +124,10 @@ O fluxo e os anos da série BACI se aplicam ao comércio. As fichas têm sua pr�
 
 No Mapa ou no Panorama, selecione ferronióbio e abra **Da mina à liga** pelo teclado. A ficha deve identificar Araxá, os operadores e as quatro etapas, com links para o estudo do INPI e o volume histórico compilado pelo USGS. Alterar mês, fluxo ou parceiro muda o comércio e mantém o caso industrial. A prévia e o JSON exibem o volume no ano e na unidade da fonte. A troca de produto retira a ficha do recorte. Com falha na carga aduaneira, um link direto para o NCM 72029300 mantém o acesso à evidência documental.
 
+### Produção de nióbio por estado
+
+No recorte de ferronióbio, abrir **Produção de nióbio por estado** pelo teclado e ler a tabela em 320 px. As colunas separam minério bruto e produto beneficiado. A tabela mantém o Brasil publicado separado de Goiás e Minas Gerais. Quando a soma estadual diverge do total, a ficha, a prévia e o JSON mantêm os dois números e a diferença. O ano-base e a revisão da fonte ficam separados dos meses comerciais.
+
 ### Edições verificáveis do Comex Stat
 
 O Panorama mostra o identificador abreviado da carga que efetivamente alimentou os gráficos e oferece o JSON congelado em uma rota content-addressed. O relatório aponta para essa mesma edição e mantém separada a rota mutável da publicação corrente. Ao preparar uma nova publicação, o operador pode reter a edição anterior já conferida. O manifesto enumera ambas com hash, atualização da fonte e data de consulta. A ausência de registros permanece nula no relatório, enquanto um registro publicado com valor zero continua sendo zero observado.

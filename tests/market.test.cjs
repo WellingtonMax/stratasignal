@@ -260,6 +260,20 @@ test("ferroniobium has its own trade, news and report scope", async t => {
   assert.match(get("market-chain-production").textContent, /87\.880 t de ferronióbio.*2022/);
   assert.equal(get("market-report-chain-production").textContent, get("market-chain-production").textContent);
   assert.equal(industry.limits, get("market-chain-limits").textContent);
+  const regional = report.production_by_state;
+  assert.equal(get("market-regional-production").hidden, false);
+  assert.equal(get("market-report-regional").hidden, false);
+  assert.equal(regional.year, 2024);
+  assert.equal(regional.source.revised_month, "2026-05");
+  assert.equal(get("market-regional-source").href, regional.source.url);
+  assert.deepEqual(regional.states.map(row => [row.uf, row.rom_t, row.beneficiated_t]),
+    [["GO", 9249168, 42475], ["MG", 6580700, 182199]]);
+  assert.equal(regional.brazil.beneficiated_t, 213668);
+  assert.equal(regional.beneficiated_reconciliation.sum_listed_states_t, 224674);
+  assert.equal(regional.beneficiated_reconciliation.difference_listed_minus_published_t, 11006);
+  assert.match(get("market-regional-rows").textContent, /Minas Gerais6\.580\.700182\.199/);
+  assert.match(get("market-regional-difference").textContent, /224\.674.*213\.668.*11\.006/);
+  assert.equal(get("market-report-regional-difference").textContent, get("market-regional-difference").textContent);
   change("market-period", "2025-03");
   assert.equal(get("market-results").hidden, true);
   assert.equal(get("market-chain").hidden, false);
@@ -269,11 +283,16 @@ test("ferroniobium has its own trade, news and report scope", async t => {
   assert.equal(empty.filters.country_role, "origin");
   assert.equal(empty.totals.fob_usd, null);
   assert.deepEqual(empty.industrial_context, industry);
+  assert.deepEqual(empty.production_by_state, regional);
   change("market-product", "25041000");
   assert.equal(get("market-report-alloy").hidden, true);
   assert.equal(get("market-chain").hidden, true);
   assert.equal(get("market-report-chain").hidden, true);
-  assert.equal((await download()).industrial_context, null);
+  assert.equal(get("market-regional-production").hidden, true);
+  assert.equal(get("market-report-regional").hidden, true);
+  const other = await download();
+  assert.equal(other.industrial_context, null);
+  assert.equal(other.production_by_state, null);
 });
 
 test("a ferroniobium link keeps the documented case available when trade loading fails", async t => {
@@ -287,6 +306,8 @@ test("a ferroniobium link keeps the documented case available when trade loading
   assert.equal(get("market-report").hidden, true);
   assert.equal(get("market-chain").hidden, false);
   assert.equal(get("market-chain-stages").children.length, 4);
+  assert.equal(get("market-regional-production").hidden, false);
+  assert.equal(get("market-regional-rows").children.length, 3);
   assert.deepEqual(calls.map(call => call.url), ["/comex.json", "/news.json"]);
 });
 

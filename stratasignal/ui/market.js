@@ -123,6 +123,37 @@
     .filter(month => validDate(month + "-01")).sort();
   const integer = value => Number.isSafeInteger(value) && value >= 0;
   const sum = (records, metric) => records.reduce((total, record) => total + record[metric], 0);
+  const regionalStates = [
+    {uf: "GO", name: "Goiás", rom_t: 9249168, beneficiated_t: 42475},
+    {uf: "MG", name: "Minas Gerais", rom_t: 6580700, beneficiated_t: 182199},
+  ];
+  const brazilProduction = {name: "Brasil publicado", rom_t: 15829868, beneficiated_t: 213668};
+  const stateBeneficiatedTotal = sum(regionalStates, "beneficiated_t");
+  const regionalProduction = {
+    substance: "Nióbio",
+    related_ncm: araxa.related_ncm,
+    year: 2024,
+    unit: "t",
+    measurement: {rom_t: "Massa de minério bruto (ROM)", beneficiated_t: "Massa de produto beneficiado"},
+    source: {
+      publisher: "ANM",
+      title: "Anuário Mineral Brasileiro 2025",
+      version: 2,
+      revised_month: "2026-05",
+      table_page: 16,
+      url: "https://www.gov.br/anm/pt-br/assuntos/economia-mineral/publicacoes/anuario-mineral/anuario-mineral-brasileiro/amb_metalicos__rev_2.pdf#page=16",
+      sha256: "768d9349f1649a5cab29aba91ac3ec22cf84cf6ed05b7225031f9362964fd9ed",
+    },
+    quality: "Agregados publicados pela ANM com base em declarações de lavra.",
+    coverage: "O anuário exclui usinas de beneficiamento independentes das áreas de lavra ou integradas a etapas industriais posteriores.",
+    brazil: brazilProduction,
+    states: regionalStates,
+    beneficiated_reconciliation: {
+      sum_listed_states_t: stateBeneficiatedTotal,
+      difference_listed_minus_published_t: stateBeneficiatedTotal - brazilProduction.beneficiated_t,
+    },
+    limits: "A causa da diferença permanece indeterminada. As colunas medem massas de etapas distintas. Mês, fluxo e parceiro filtram apenas o comércio de ferronióbio.",
+  };
   const options = (select, defaultLabel, items) => {
     select.replaceChildren(new Option(defaultLabel, ""), ...items.map(([label, value]) => new Option(label, value)));
   };
@@ -703,6 +734,32 @@
       `${sourceLabel}. ${productionSourceLabel}.`;
   }
 
+  function renderRegionalProduction() {
+    const {year, source, brazil, states, quality, coverage, limits, beneficiated_reconciliation: check} = regionalProduction;
+    const scope = `${source.publisher} · ano-base ${year} · ${states.map(state => state.uf).join(" e ")}`;
+    const difference = `As UFs listadas somam ${digits.format(check.sum_listed_states_t)} t de produto beneficiado. ` +
+      `O total brasileiro publicado é ${digits.format(brazil.beneficiated_t)} t. Diferença de ${digits.format(check.difference_listed_minus_published_t)} t na fonte.`;
+    get("market-regional-production").hidden = product.value !== regionalProduction.related_ncm;
+    get("market-regional-scope").textContent = scope;
+    get("market-regional-caption").textContent = `Massas de minério bruto e de produto beneficiado · ${year}`;
+    get("market-regional-rows").replaceChildren(...[...states, brazil].map(({name, rom_t, beneficiated_t}) => {
+      const row = element("tr");
+      const label = element("th", name);
+      label.scope = "row";
+      row.append(label, element("td", digits.format(rom_t)), element("td", digits.format(beneficiated_t)));
+      return row;
+    }));
+    get("market-regional-difference").textContent = difference;
+    get("market-regional-coverage").textContent = quality + " " + coverage;
+    get("market-regional-limits").textContent = limits;
+    const link = get("market-regional-source");
+    link.href = source.url;
+    link.textContent = `${source.publisher} · ${source.title}, v${source.version} de ${monthName(source.revised_month)}, p. ${source.table_page}`;
+    get("market-report-regional-scope").textContent = scope;
+    get("market-report-regional-brazil").textContent = `Brasil publicado · ${digits.format(brazil.rom_t)} t de minério bruto.`;
+    get("market-report-regional-difference").textContent = difference;
+  }
+
   function render() {
     const baciLink = get("market-baci-link");
     baciLink.hidden = product.value !== "25041000";
@@ -725,6 +782,8 @@
     const industrialContext = product.value === araxa.related_ncm ? araxa : null;
     get("market-chain").hidden = industrialContext === null;
     get("market-report-chain").hidden = industrialContext === null;
+    get("market-regional-production").hidden = industrialContext === null;
+    get("market-report-regional").hidden = industrialContext === null;
     reportSlice = {
       filters: {
         ncm: product.value, product: product.selectedOptions[0].textContent, flow: flow.value,
@@ -739,6 +798,7 @@
       records: records.map(({month, ncm, country, flow, fob_usd, kg}) => ({month, ncm, country, flow, fob_usd, kg})),
       partner_geography: reportGeography(partners.filter(partner => !country.value || partner.label === country.value)),
       industrial_context: industrialContext,
+      production_by_state: industrialContext ? regionalProduction : null,
     };
     const quantity = countLabel(records.length, "registro agregado", "registros agregados");
     status.textContent = (records.length ? quantity : "Nenhum registro neste recorte") + " · " + scope;
@@ -1039,6 +1099,7 @@
     });
   } else {
     renderIndustrialCase();
+    renderRegionalProduction();
     for (const select of [product, flow]) select.addEventListener("change", () => {
       pendingCountry = null;
       refreshCountries();
