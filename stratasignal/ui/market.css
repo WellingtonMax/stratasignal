@@ -75,6 +75,19 @@
 .market-report .market-report-limits{margin:0 0 10px}
 .market-report-actions{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 16px}
 .market-report-actions .button{min-height:44px}
+.market-chain{margin:18px 0 0;padding:0 clamp(14px,2.4vw,24px);border:1px solid var(--line);border-radius:10px;background:var(--white)}
+.market-chain summary{min-height:44px;padding-block:12px;cursor:pointer;color:var(--navy);font-size:18px;font-weight:650}
+.market-chain summary span{display:block;margin-top:4px;color:var(--muted);font-size:13px;font-weight:500}
+.market-chain ol{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 10px;padding:0;list-style-position:inside}
+.market-chain li{min-width:0;padding:12px;border:1px solid var(--line);border-radius:7px;background:var(--canvas)}
+.market-chain li::marker{color:var(--blue);font-weight:700}
+.market-chain li small{display:block;margin-top:4px;font-weight:650}
+.market-chain p{margin:6px 0 8px;color:var(--muted);font-size:13px;line-height:1.55}
+.market-chain li p,.market-chain-production p{margin-bottom:0}
+.market-chain-production{padding:10px 12px;border-left:3px solid var(--blue);border-radius:4px;background:var(--soft)}
+.market-chain .market-source-links{padding-bottom:12px}
+@media(max-width:900px){.market-chain ol{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.market-chain ol{grid-template-columns:minmax(0,1fr)}}
 .market-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 14px}
 .market-stats>div{padding:16px clamp(12px,2vw,22px);min-width:0;border:1px solid var(--line);border-top:3px solid var(--blue);border-radius:10px;background:var(--white)}
 .market-stats dt,.market-stats small{color:var(--muted);font-size:13px}

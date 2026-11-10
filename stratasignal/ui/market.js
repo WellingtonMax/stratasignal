@@ -65,6 +65,44 @@
   const newsSource = "Natural Resources Canada";
   const mdicSource = "MDIC · Brasil";
   const alloyScope = "O peso líquido do ferronióbio mede a massa da liga. A massa de nióbio contido depende do teor.";
+  const araxa = {
+    related_ncm: "72029300",
+    location: "Araxá (MG)",
+    country_code: "BR",
+    coverage: "1 operação documentada",
+    quality: "Estudo público · contexto histórico",
+    reviewed_on: "2026-11-10",
+    source: {
+      publisher: "INPI",
+      title: "Radar Tecnológico 39",
+      published_month: "2024-01",
+      pages: "15–17",
+      url: "https://www.gov.br/inpi/pt-br/assuntos/informacao/TecnologiascomNibio_RadarTecnolgico_DIESP_jan2023_revisadocomResumoExecutivo.pdf#page=15",
+    },
+    stages: [
+      {name: "Extração", operator: "COMIPA", description: "Lavra do minério com pirocloro, mineral que contém nióbio."},
+      {name: "Beneficiamento", operator: "CBMM", description: "Separação do pirocloro para obter um concentrado rico em nióbio."},
+      {name: "Refino", operator: "CBMM", description: "Remoção de impurezas do concentrado antes da metalurgia."},
+      {name: "Metalurgia", operator: "CBMM", description: "Conversão do concentrado refinado em liga ferro-nióbio para uso siderúrgico."},
+    ],
+    production: {
+      company: "CBMM",
+      year: 2022,
+      quantity: 87880,
+      unit: "t",
+      product: "ferronióbio",
+      basis: "Massa da liga produzida",
+      quality: "Volume informado pela CBMM e compilado pelo USGS.",
+      source: {
+        publisher: "USGS",
+        title: "Minerals Yearbook, capítulo Niobium",
+        published_month: "2026-03",
+        pages: "52.2",
+        url: "https://pubs.usgs.gov/myb/vol1/2022/myb1-2022-niobium.pdf#page=4",
+      },
+    },
+    limits: "Mês, fluxo e país parceiro filtram o comércio. O caso industrial tem períodos próprios. A origem de cada embarque e os compradores ficam indeterminados.",
+  };
   const mdicFeed = get("market-news-mdic-feed").href;
   const mdicNovemberFeed = get("market-news-mdic-november-feed").href;
   const digits = new Intl.NumberFormat("pt-BR");
@@ -636,6 +674,35 @@
     newsList.hidden = !items.length;
   }
 
+  function renderIndustrialCase() {
+    const {location, coverage, quality, reviewed_on, source, stages, production, limits} = araxa;
+    const productionLabel = `${digits.format(production.quantity)} ${production.unit} de ${production.product} · ${production.company}, ${production.year}`;
+    const sourceLabel = `${source.publisher} · ${monthName(source.published_month)}`;
+    const productionSourceLabel = `${production.source.publisher} · ${monthName(production.source.published_month)}`;
+    get("market-chain").hidden = product.value !== araxa.related_ncm;
+    get("market-chain-scope").textContent =
+      `${location} · ${coverage} · ${source.publisher}, ${source.published_month.slice(0, 4)}`;
+    get("market-chain-stages").replaceChildren(...stages.map(stage => {
+      const item = element("li");
+      item.append(element("strong", stage.name), element("small", stage.operator), element("p", stage.description));
+      return item;
+    }));
+    get("market-chain-production").textContent = productionLabel;
+    get("market-chain-production-quality").textContent = `${production.basis}. ${production.quality}`;
+    get("market-chain-limits").textContent = limits;
+    get("market-chain-reviewed").textContent = `${quality}. Curadoria revisada em ${calendar.format(new Date(reviewed_on))}.`;
+    const studyLink = get("market-chain-source");
+    studyLink.textContent = `${sourceLabel} · ${source.title}, p. ${source.pages}`;
+    studyLink.href = source.url;
+    const productionLink = get("market-chain-production-source");
+    productionLink.textContent = `${productionSourceLabel} · ${production.source.title}, p. ${production.source.pages}`;
+    productionLink.href = production.source.url;
+    get("market-report-chain-coverage").textContent = `${location} · ${coverage}`;
+    get("market-report-chain-production").textContent = productionLabel;
+    get("market-report-chain-source").textContent =
+      `${sourceLabel}. ${productionSourceLabel}.`;
+  }
+
   function render() {
     const baciLink = get("market-baci-link");
     baciLink.hidden = product.value !== "25041000";
@@ -655,6 +722,9 @@
       const monthTotals = summarize(monthRecords);
       return {month, ...monthTotals, unit_value: unitValue(monthRecords, monthTotals)};
     });
+    const industrialContext = product.value === araxa.related_ncm ? araxa : null;
+    get("market-chain").hidden = industrialContext === null;
+    get("market-report-chain").hidden = industrialContext === null;
     reportSlice = {
       filters: {
         ncm: product.value, product: product.selectedOptions[0].textContent, flow: flow.value,
@@ -668,6 +738,7 @@
       monthly,
       records: records.map(({month, ncm, country, flow, fob_usd, kg}) => ({month, ncm, country, flow, fob_usd, kg})),
       partner_geography: reportGeography(partners.filter(partner => !country.value || partner.label === country.value)),
+      industrial_context: industrialContext,
     };
     const quantity = countLabel(records.length, "registro agregado", "registros agregados");
     status.textContent = (records.length ? quantity : "Nenhum registro neste recorte") + " · " + scope;
@@ -727,9 +798,9 @@
       },
       limits: [
         "O relatório cobre o comércio exterior brasileiro por produto, fluxo, mês e país ou área parceira.",
-        ...(reportSlice.filters.ncm === "72029300" ? [alloyScope] : []),
+        ...(reportSlice.industrial_context ? [alloyScope] : []),
         "Totais nulos indicam ausência de registros no recorte. Registros com valor zero são mantidos.",
-        "Produção, dados empresariais, instalações e evidências geoespaciais não integram este recorte.",
+        "Os agregados comerciais têm cobertura nacional. Vínculos entre embarques e instalações, valores por empresa e cenas de satélite ficam fora da cobertura.",
         "As coordenadas são referências aproximadas de países parceiros. O mapa não identifica locais de extração, instalação ou rota de transporte.",
         "As notícias dão contexto temático por mineral e não demonstram vínculos com transações ou códigos aduaneiros.",
       ],
@@ -747,7 +818,7 @@
     const covered = monthly.filter(row => row.record_count > 0).length;
     get("market-report-unit-value").textContent = unitValueLabel(unit_value);
     const alloyNote = get("market-report-alloy");
-    alloyNote.hidden = filters.ncm !== "72029300";
+    alloyNote.hidden = filters.ncm !== araxa.related_ncm;
     alloyNote.textContent = alloyNote.hidden ? "" : alloyScope;
     get("market-report-partner-share").hidden = partner_share === null;
     renderPartnerShares(get("market-report-shares"), partner_share);
@@ -967,6 +1038,7 @@
       newsMineral.focus();
     });
   } else {
+    renderIndustrialCase();
     for (const select of [product, flow]) select.addEventListener("change", () => {
       pendingCountry = null;
       refreshCountries();

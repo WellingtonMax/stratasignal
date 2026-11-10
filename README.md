@@ -27,6 +27,7 @@ An analyst reviews a bounded procurement dataset and delivers a private HTML dec
 | Operational intelligence | Descriptive delivery rates and Wilson intervals, completed-delivery P90, overdue orders, cost-based origin dependencies and a bounded stress matrix |
 | Public-data preparation | Streaming importer for the MDIC's documented local CSV layout, with explicit NCM, flow and period |
 | Public trade panorama | Publication-time Comex Stat snapshot for graphite, lithium carbonates and ferroniobium. The partner map and keyboard-accessible table share the trade filters, with an independent publication month for curated news and a JSON report with both periods and sources. |
+| Ferroniobium industrial context | Documented steps at Araxá and a historical production figure in the map, panorama and JSON, with separate source dates and coverage. |
 | Mineral markets | CEPII BACI trade profiles for 250 countries and areas and 185 HS product cuts, with exports, imports, volume coverage, ranking and yearly tables. The exchange directory and optional TradingView symbol lookup have separate coverage. |
 | Public news context | Curated Canadian lithium news and Brazilian mineral policy context for graphite, filtered by mineral, publication month and country and exported with per-source provenance |
 | Local workbench | Import JSON or map operational CSV columns; review inputs, run analysis, simulate, compare periods and download reports |

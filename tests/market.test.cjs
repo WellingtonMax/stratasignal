@@ -242,12 +242,52 @@ test("ferroniobium has its own trade, news and report scope", async t => {
   assert.equal(report.news_context.status, "no_matches");
   assert.equal(new URL(get("market-context-news").href).searchParams.get("mineral"), "72029300");
   assert.equal(get("market-baci-link").hidden, true);
+  assert.equal(get("market-chain").hidden, false);
+  assert.equal(get("market-report-chain").hidden, false);
+  const industry = report.industrial_context;
+  assert.equal(industry.location, "Araxá (MG)");
+  assert.equal(industry.related_ncm, "72029300");
+  assert.deepEqual(industry.stages.map(({name, operator}) => [name, operator]), [
+    ["Extração", "COMIPA"], ["Beneficiamento", "CBMM"], ["Refino", "CBMM"], ["Metalurgia", "CBMM"],
+  ]);
+  assert.deepEqual(Array.from(get("market-chain-stages").querySelectorAll("strong"), node => node.textContent),
+    industry.stages.map(stage => stage.name));
+  assert.equal(get("market-chain-source").href, industry.source.url);
+  assert.equal(get("market-chain-production-source").href, industry.production.source.url);
+  assert.equal(industry.production.year, 2022);
+  assert.equal(industry.production.quantity, 87880);
+  assert.equal(industry.production.unit, "t");
+  assert.match(get("market-chain-production").textContent, /87\.880 t de ferronióbio.*2022/);
+  assert.equal(get("market-report-chain-production").textContent, get("market-chain-production").textContent);
+  assert.equal(industry.limits, get("market-chain-limits").textContent);
+  change("market-period", "2025-03");
+  assert.equal(get("market-results").hidden, true);
+  assert.equal(get("market-chain").hidden, false);
+  assert.deepEqual((await download()).industrial_context, industry);
   change("market-flow", "import");
   const empty = await download();
   assert.equal(empty.filters.country_role, "origin");
   assert.equal(empty.totals.fob_usd, null);
+  assert.deepEqual(empty.industrial_context, industry);
   change("market-product", "25041000");
   assert.equal(get("market-report-alloy").hidden, true);
+  assert.equal(get("market-chain").hidden, true);
+  assert.equal(get("market-report-chain").hidden, true);
+  assert.equal((await download()).industrial_context, null);
+});
+
+test("a ferroniobium link keeps the documented case available when trade loading fails", async t => {
+  const {dom, get, calls} = open(() => ({ok: false}), null, "?ncm=72029300");
+  t.after(() => dom.window.close());
+  assert.match(get("market-status").textContent, /Carregando/);
+  assert.equal(get("market-chain").hidden, false);
+  await settle(get);
+  await settle(get, "market-news-status");
+  assert.equal(get("market-retry").hidden, false);
+  assert.equal(get("market-report").hidden, true);
+  assert.equal(get("market-chain").hidden, false);
+  assert.equal(get("market-chain-stages").children.length, 4);
+  assert.deepEqual(calls.map(call => call.url), ["/comex.json", "/news.json"]);
 });
 
 test("the panorama falls back to its default controls for unsupported URL filters", async t => {
