@@ -227,11 +227,16 @@
               <option value="">Mesmo período do comércio</option>
             </select>
           </label>
+          <label for="market-news-publisher">Fonte das notícias
+            <select id="market-news-publisher" aria-describedby="market-news-period-help">
+              <option value="">Todas as fontes</option>
+            </select>
+          </label>
           <button type="button" id="market-news-clear" class="button secondary market-news-only">Limpar filtros</button>
         </fieldset>
         <p id="market-news-period-help" class="market-news-note">
-          <span class="market-trade-only">O mês das notícias pode ser diferente do período comercial no relatório.</span>
-          <span class="market-news-only">Filtre por mineral, país citado e mês de publicação.</span>
+          <span class="market-trade-only">Mês de publicação e fonte filtram as notícias. O recorte comercial usa seus próprios filtros.</span>
+          <span class="market-news-only">Combine mineral, país citado, mês de publicação e fonte.</span>
         </p>
       </details>
       <p id="market-news-stale" class="market-notice" hidden>Uma consulta tem mais de 30 dias. Confira a fonte para ver publicações posteriores.</p>

@@ -571,3 +571,40 @@ test("the dedicated news page lists the latest articles independently and can cl
   assert.equal(scoped.get("market-news-items").children.length, 2);
   assert.equal(scoped.window.location.search, "");
 });
+
+test("the publisher filter travels from News to the map and report without changing trade totals", async t => {
+  const archive = "https://www.gov.br/mdic/pt-br/assuntos/noticias/2026/setembro";
+  const mdic = {source: "MDIC · Brasil", feed_url: archive + "/RSS", feed_updated_at: null,
+    fetched_at: newsSample.fetched_at, feed_sha256: "b".repeat(64), feed_entries: 15};
+  const brazil = {...newsItem, source_id: "mdic", url: archive + "/example", countries: ["Brasil"]};
+  const fetchNews = () => response({...newsSample, mdic, items: [newsItem, brazil]});
+  const listing = open(null, fetchNews, "?ncm=28369100&fluxo=import&mes=2025-03&noticias_fonte=mdic",
+    undefined, "noticias");
+  t.after(() => listing.dom.window.close());
+  await settle(listing.get, "market-news-status");
+  assert.match(listing.get("market-news-status").textContent, /1 publicação.*MDIC/);
+  assert.equal(listing.get("market-news-items").querySelector("a").href, brazil.url);
+  listing.change("market-news-country", "Canadá");
+  assert.match(listing.get("market-news-status").textContent, /Nenhuma notícia.*Canadá.*MDIC/);
+  listing.change("market-news-country", "");
+  const mapUrl = new URL(listing.get("market-news-items").querySelector(".market-news-map-link").href);
+  assert.equal(mapUrl.searchParams.get("noticias_fonte"), "mdic");
+  const map = open(null, fetchNews, mapUrl.search, undefined, "mapa");
+  t.after(() => map.dom.window.close());
+  const {download} = captureDownloads(map.window, map.get);
+  await settle(map.get);
+  await settle(map.get, "market-news-status");
+  const filtered = await download();
+  assert.equal(filtered.news_context.filters.source_id, "mdic");
+  assert.deepEqual(filtered.news_context.items, [brazil]);
+  assert.match(map.get("market-report-news-period").textContent, /MDIC/);
+  assert.equal(new URL(map.get("market-context-news").href).searchParams.get("noticias_fonte"), "mdic");
+  map.change("market-news-publisher", "nrcan");
+  const canadian = await download();
+  assert.equal(canadian.news_context.filters.source_id, "nrcan");
+  assert.deepEqual(canadian.news_context.items, [newsItem]);
+  for (const key of ["filters", "totals", "records"]) assert.deepEqual(canadian[key], filtered[key]);
+  listing.get("market-news-clear").click();
+  assert.equal(listing.get("market-news-items").children.length, 2);
+  assert.equal(new URL(listing.window.location.href).searchParams.has("noticias_fonte"), false);
+});

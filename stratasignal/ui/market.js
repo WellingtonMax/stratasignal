@@ -37,6 +37,7 @@
   const newsPeriod = get("market-news-period");
   const newsMineral = get("market-news-mineral");
   const newsCountry = get("market-news-country");
+  const newsPublisher = get("market-news-publisher");
   const geographyContent = get("market-geo-content");
   const geographyStatus = get("market-geo-status");
   const geographyRows = get("market-geo-partners");
@@ -484,7 +485,8 @@
     const place = newsView ? newsCountry.value : country.value;
     return news?.items.filter(item => matchesMineral(item, mineral) &&
       (!months.length || months.includes(item.published_on.slice(0, 7))) &&
-      (!place || item.countries.includes(place))) ?? [];
+      (!place || item.countries.includes(place)) &&
+      (!newsPublisher.value || (item.source_id ?? "nrcan") === newsPublisher.value)) ?? [];
   }
 
   function newsCard(item) {
@@ -554,6 +556,7 @@
       "Nenhuma notícia da curadoria neste recorte";
     const filters = newsView ? [newsMineral.value && mineral, months.length && monthSpan(months), place].filter(Boolean) :
       [mineral, monthSpan(months), place || "todos os países"];
+    if (newsPublisher.value) filters.push(newsPublisher.selectedOptions[0].textContent);
     const scope = [count, ...(filters.length ? filters : ["Mais recentes primeiro"])].join(" · ");
     if (newsNotice.textContent !== scope) newsNotice.textContent = scope;
     newsList.replaceChildren(...items.map(newsCard));
@@ -637,6 +640,7 @@
         mdic_archives: news?.brazilSources.filter(source => source.feed_url !== mdicFeed) ?? [],
         filters: {
           ncm: reportSlice.filters.ncm, months: newsMonths(), country: reportSlice.filters.country,
+          ...(newsPublisher.value && {source_id: newsPublisher.value}),
           period_mode: newsPeriod.value ? "independent" : "trade_period",
           country_role: "mentioned", month_basis: "published_on", flow_applies: false,
         },
@@ -675,7 +679,8 @@
       loading: "Carregando notícias…",
       unavailable: "Edição de notícias indisponível",
     }[context.status];
-    get("market-report-news-period").textContent = `Período de publicação · ${monthSpan(context.filters.months)}`;
+    const publisher = context.filters.source_id ? " · " + newsPublisher.selectedOptions[0].textContent : "";
+    get("market-report-news-period").textContent = `Período de publicação · ${monthSpan(context.filters.months)}${publisher}`;
     const sources = [context.source, context.mdic_source, ...context.mdic_archives].filter(entry => entry?.fetched_at);
     const names = [...new Set(sources.map(entry => entry.name))].join(" e ");
     const latest = Math.max(...sources.map(entry => Date.parse(entry.fetched_at)));
@@ -743,6 +748,10 @@
       get("market-news-summary").hidden = false;
       configureNewsPeriod();
       selectValue(newsPeriod, addressMonths.length === 1 ? addressMonths[0] : "");
+      const publishers = [[newsSource, "nrcan"]];
+      if (news.brazilSources.length) publishers.push([mdicSource, "mdic"]);
+      options(newsPublisher, "Todas as fontes", publishers);
+      selectValue(newsPublisher, query.get("noticias_fonte"));
       if (newsView) {
         const countries = [...new Set(news.items.flatMap(item => item.countries))].sort((a, b) => a.localeCompare(b, "pt-BR"));
         options(newsCountry, "Todos os países", countries.map(label => [label, label]));
@@ -750,6 +759,7 @@
         const place = query.get("pais_citado");
         if (place && place.length <= 100 && !countries.includes(place)) newsCountry.add(new Option(place, place));
         selectValue(newsCountry, place);
+        updateRouteLinks();
       }
       if (!tradeControls.disabled) {
         refreshCountries();
@@ -823,6 +833,7 @@
       const value = newsView ? query.get(key) : select.value;
       if (value && value.length <= 100) params.set(key, value);
     }
+    if (newsPublisher.value) params.set("noticias_fonte", newsPublisher.value);
     return params;
   }
 
@@ -855,16 +866,17 @@
     if (newsCountry.value) params.set("pais_citado", newsCountry.value);
     for (const month of newsMonths()) params.append("publicado", month);
     history.replaceState(history.state, "", route(location.pathname, params));
+    updateRouteLinks();
     renderNews();
   }
 
   if (newsView) {
     updateRouteLinks();
-    for (const select of [newsMineral, newsCountry, newsPeriod]) select.addEventListener("change", applyNewsFilters);
+    for (const select of [newsMineral, newsCountry, newsPeriod, newsPublisher]) select.addEventListener("change", applyNewsFilters);
     get("market-news-clear").addEventListener("click", () => {
       scopedNewsMonths = [];
       configureNewsPeriod();
-      newsMineral.selectedIndex = newsCountry.selectedIndex = 0;
+      newsMineral.selectedIndex = newsCountry.selectedIndex = newsPublisher.selectedIndex = 0;
       applyNewsFilters();
       newsMineral.focus();
     });
@@ -874,13 +886,14 @@
       refreshCountries();
       applyTradeFilters();
     });
-    for (const select of [period, country, newsPeriod]) select.addEventListener("change", () => {
+    for (const select of [period, country, newsPeriod, newsPublisher]) select.addEventListener("change", () => {
       if (select === country) pendingCountry = null;
       applyTradeFilters();
     });
     get("market-clear").addEventListener("click", () => {
       pendingCountry = null;
       product.selectedIndex = flow.selectedIndex = period.selectedIndex = country.selectedIndex = newsPeriod.selectedIndex = 0;
+      newsPublisher.selectedIndex = 0;
       refreshCountries();
       applyTradeFilters();
       product.focus();

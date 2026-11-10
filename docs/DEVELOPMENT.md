@@ -65,6 +65,8 @@ python -m stratasignal.public_markets_world \
 
 ### Curadoria de notícias oficiais
 
+O parâmetro `noticias_fonte` guarda o filtro editorial de fonte no endereço e acompanha o percurso Notícias → Mapa → relatório. A exportação registra a seleção em `news_context.filters.source_id`. O MDIC reúne seus arquivos mensais no mesmo filtro. A seleção afeta apenas os comunicados. Fonte, datas e cobertura da edição inteira continuam disponíveis para conferência.
+
 O build gera as páginas do Panorama, Mapa e Notícias a partir do mesmo layout. Panorama e Mapa compartilham `ncm`, `fluxo`, `mes`, `pais` e `noticias_mes` no endereço. A edição geral em `/noticias/` consulta somente `/news.json`. O atalho de contexto envia `mineral`, `pais_citado` e os meses `publicado`. Essa seleção afeta a leitura, enquanto os parâmetros de comércio permitem voltar ao recorte original.
 
 Em 9 de novembro de 2026, a prévia foi conferida em desktop e a 320 e 768 px. A navegação por teclado abriu Mapa, Panorama e Notícias no topo, preservou a China no recorte comercial e mostrou cinco comunicados na edição geral. O filtro Brasil e novembro retornou dois itens. A aproximação, a tabela de parceiros, o endereço antigo `/#mapa` e o download do JSON também foram exercitados.

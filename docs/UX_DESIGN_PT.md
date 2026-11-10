@@ -112,7 +112,7 @@ O cartão da fonte oferece um histórico expansível quando há ao menos duas ed
 - **Escopo:** filtros ativos e contagens por fonte. Período da série, corte da carteira e aquisição da imagem são relógios diferentes.
 - **Piloto Brasil e grafita:** Mercados leva o HS 250410 e o fluxo ao NCM 25041000 no Panorama. O Comex Stat usa seu próprio período e o filtro de país passa a representar origem ou destino parceiro. A série mensal, o mapa, a tabela e o JSON usam o recorte do Panorama. Os totais do BACI e do Comex Stat são exibidos separadamente.
 - **Fonte:** origem, URL quando disponível, unidade, abrangência, atualização, restrição de uso e limite interpretativo.
-- **Notícias:** distinguir publicação, evento conhecido e última atualização do feed; um possível impacto é hipótese contextualizada.
+- **Notícias:** distinguir publicação, evento conhecido e última atualização do feed. A fonte combina com mineral, país e período editorial e acompanha o recorte até o relatório. A contagem responde à seleção, enquanto a cobertura por feed descreve a edição. Um possível impacto é hipótese contextualizada.
 - **Estados mínimos:** carregando, vazio inicial, nenhum resultado, parcial, desatualizado, indisponível, sem autorização e sucesso. Exibir somente estados que o sistema consiga conhecer.
 - **Privacidade:** dados empresariais brutos ficam no espaço autorizado. Não expor dados restritos em exportações, mapas, URLs, logs ou consultas externas.
 - **Acesso institucional:** explicar escopo e fundamento do compartilhamento; cadastro de empresa não implica entrega invisível de dados ao governo.
