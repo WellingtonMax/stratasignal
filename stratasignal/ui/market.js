@@ -341,7 +341,7 @@
         if (!Object.hasOwn(tradeHistory.years, year)) missing.push(year);
       }
       const coverage = get("market-year-coverage");
-      coverage.textContent = "Edições do comércio entre " + monthSpan([tradeHistory.start_month, tradeHistory.end_month]) + ". " +
+      coverage.textContent = "Histórico do comércio de " + monthSpan([tradeHistory.start_month, tradeHistory.end_month]) + ". " +
         (missing.length ? "Aguardam validação as edições de " + missing.join(", ") + "." :
           "Escolha um ano para ver seus meses publicados.");
       coverage.hidden = false;
