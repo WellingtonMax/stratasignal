@@ -153,6 +153,24 @@
   white-space: normal;
 }
 
+.world-issuer-corridor {
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.world-issuer-corridor summary {
+  padding-block: 12px;
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 650;
+}
+
+#world-corridor-sources {
+  padding-inline-start: 20px;
+  overflow-wrap: anywhere;
+}
+
 .world-venue-search {
   margin-bottom: 8px;
 }

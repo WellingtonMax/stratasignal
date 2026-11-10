@@ -213,6 +213,11 @@ test("issuer evidence follows the covered product and country and prefills quote
     "www.vale.com", "ri.csnmineracao.com.br", "www.rad.cvm.gov.br",
   ]);
   assert.match(links[2].textContent, /12\/08\/2026/);
+  const corridor = get("issuer-corridor");
+  assert.equal(corridor.hidden, false);
+  assert.match(corridor.querySelector("summary").textContent, /Carajás.*Ponta da Madeira/);
+  assert.deepEqual([...get("corridor-stages").querySelectorAll("h4")].map(node => node.textContent),
+    ["1. Extração", "2. Transporte ferroviário", "3. Embarque marítimo"]);
 
   const [valeButton, csnButton] = get("issuer-records").querySelectorAll("button");
   valeButton.click();
@@ -236,10 +241,14 @@ test("issuer evidence follows the covered product and country and prefills quote
   assert.equal(report.issuer_evidence.quality, "reviewed_issuer_disclosure");
   assert.deepEqual(report.issuer_evidence.records.map(item => item.listing.ticker), ["VALE3", "CMIN3"]);
   assert.equal(report.issuer_evidence.records[1].sources[1].published_on, "2026-08-12");
+  assert.equal(report.issuer_evidence.corridor.reference_period, "Exercício 2025");
+  assert.deepEqual(report.issuer_evidence.corridor.sources.map(source => source.url),
+    [...get("corridor-sources").querySelectorAll("a")].map(link => link.href));
 
   input("country", "WORLD");
   assert.equal(names().length, 2);
   input("country", "CL");
+  assert.equal(corridor.hidden, true);
   assert.equal(get("issuer-records").hidden, true);
   assert.match(get("issuer-count").textContent, /Chile.*sem fichas/);
   input("country", "BR");
@@ -251,6 +260,7 @@ test("issuer evidence follows the covered product and country and prefills quote
   assert.equal(outside.status, "outside_coverage");
   assert.equal(outside.coverage.hs_code, "2601");
   assert.deepEqual(outside.records, []);
+  assert.equal(outside.corridor, null);
 });
 
 test("missing issuer evidence keeps the trade series and report available", async t => {

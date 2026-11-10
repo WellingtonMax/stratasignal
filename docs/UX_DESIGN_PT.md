@@ -150,3 +150,7 @@ O cartão da fonte oferece um histórico expansível quando há ao menos duas ed
 A entrega tem critérios de comportamento em `tests/workbench.test.cjs`; as suítes Python e o caminho sem dependências são exigidos por `AGENTS.md`. A revisão visual deve cobrir desktop e larguras móveis, incluindo seletor longo, mapa, alternativa tabular e exportação. A evidência observada desta etapa fica em `docs/VERIFICATION.md`.
 
 Antes de integrar satélite ou notícias novos, consultar as fontes oficiais e testar o contrato e as condições de uso; uma integração indisponível não será simulada como pronta. Testes internos e inspeção visual não substituem tarefas com usuários representativos. Medir compreensão do recorte e tempo para localizar a evidência antes de alegar ganho de produtividade.
+
+### Cadeia do ferro no recorte brasileiro
+
+Em Mercados, o recorte Brasil ou Mundo com HS 2601 abre a ficha **De Carajás a Ponta da Madeira** na seção de empresas. O aceite exige três etapas em ordem, fonte e período próprios, abertura pelo teclado e leitura em tela estreita. Trocar país ou produto para fora da cobertura recolhe a ficha e retira o caso do JSON. O fluxo comercial mantém o contexto documental e altera apenas a série aduaneira.

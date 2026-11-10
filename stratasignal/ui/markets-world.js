@@ -164,15 +164,43 @@
 
   function issuerSlice() {
     if (typeof marketsIssuerEvidence === "undefined") return {status: "unavailable", records: []};
-    const {coverage, reviewed_on, quality, records} = marketsIssuerEvidence;
+    const {coverage, reviewed_on, quality, records, corridor} = marketsIssuerEvidence;
     const matchesCountry = selection.pais === "WORLD" || selection.pais === coverage.activity_country_code;
     const inScope = matchesCountry && selection.produto === coverage.hs_code;
     return {status: inScope ? "documented" : "outside_coverage", coverage, reviewed_on, quality,
-      records: inScope ? records : []};
+      records: inScope ? records : [], corridor: inScope ? corridor : null};
+  }
+
+  function renderCorridor(corridor) {
+    const panel = get("issuer-corridor");
+    panel.hidden = !corridor;
+    if (!corridor) {
+      panel.open = false;
+      return;
+    }
+    get("corridor-title").textContent = corridor.title;
+    get("corridor-scope").textContent = `${corridor.operator} · ${corridor.reference_period} · Revisão em ${dates.format(new Date(corridor.reviewed_on))}. ${corridor.quality}`;
+    get("corridor-limits").textContent = corridor.limits;
+    get("corridor-stages").replaceChildren(...corridor.stages.map(({stage, location, detail}, index) => {
+      const item = element("li", "");
+      const context = element("p", `${location}. ${detail}`);
+      context.className = "markets-context";
+      item.append(element("h4", `${index + 1}. ${stage}`), context);
+      return item;
+    }));
+    get("corridor-sources").replaceChildren(...corridor.sources.map(({title, url}) => {
+      const item = element("li", "");
+      const link = element("a", title);
+      link.className = "markets-source";
+      link.href = url;
+      item.append(link);
+      return item;
+    }));
   }
 
   function renderIssuers() {
     const slice = issuerSlice();
+    renderCorridor(slice.corridor);
     const list = get("issuer-records");
     list.replaceChildren();
     list.hidden = !slice.records.length;
@@ -480,7 +508,7 @@
         "O saldo do produto compara somente os valores anuais dos dois fluxos disponíveis na mesma edição BACI.",
         "Peso parcial soma somente fluxos com quantidade disponível.",
         "As fichas de empresas são contexto documental com período próprio. Fluxos BACI são agregados nacionais.",
-        "Cotações, preços de referência, produção, capitalização e cadastros de instalações ficam fora desta exportação.",
+        "Cotações, preços de referência, volumes de produção, capitalização e cadastros abrangentes de instalações ficam fora desta exportação.",
       ],
     };
     const blob = new Blob([JSON.stringify(report, null, 2) + "\n"], {type: "application/json"});

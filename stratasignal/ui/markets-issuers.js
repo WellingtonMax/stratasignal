@@ -5,6 +5,23 @@ const marketsIssuerEvidence = {
   reviewed_on: "2026-11-08",
   quality: "reviewed_issuer_disclosure",
   coverage: {activity_country_code: "BR", hs_code: "2601", mineral: "Minério de ferro"},
+  corridor: {
+    title: "De Carajás a Ponta da Madeira",
+    operator: "Vale S.A.",
+    reference_period: "Exercício 2025",
+    reviewed_on: "2026-11-10",
+    quality: "Relato da empresa sobre o Sistema Norte e cadastro de concessão da ANTT.",
+    stages: [
+      {stage: "Extração", location: "Carajás (PA)", detail: "Complexos minerários Serra Norte, Serra Sul e Serra Leste."},
+      {stage: "Transporte ferroviário", location: "Estrada de Ferro Carajás (PA e MA)", detail: "A ferrovia liga Carajás ao terminal em São Luís."},
+      {stage: "Embarque marítimo", location: "Terminal de Ponta da Madeira (MA)", detail: "Terminal marítimo do Sistema Norte em São Luís."},
+    ],
+    sources: [
+      {title: "Vale · Relatório anual 2025 · Sistema Norte", url: "https://www.vale.com/documents/d/guest/relatorio-anual-2025_14042026"},
+      {title: "ANTT · Concessão da Estrada de Ferro Carajás", url: "https://www.gov.br/antt/pt-br/assuntos/ferrovias/concessoes-ferroviarias/vale-estrada-de-ferro-carajas"},
+    ],
+    limits: "O caso documenta a logística do Sistema Norte. Embarques, destinos por mina e participação da Vale nos valores BACI exigem evidências próprias.",
+  },
   records: [
     {
       name: "Vale S.A.",
