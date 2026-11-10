@@ -18,7 +18,7 @@ from .market import month
 from .schema import InputError, day, rows, text_value, unique_object
 
 API = "https://api-comexstat.mdic.gov.br"
-PRODUCTS = ("25041000", "28369100")
+PRODUCTS = ("25041000", "28369100", "72029300")
 FLOWS = ("import", "export")
 LOOKBACK = 3
 MAX_BYTES = 1024 * 1024
@@ -319,7 +319,7 @@ def _write_observatory_ui(output, ui):
         stream.write(template)
     for view, title, description in (
         ("mapa", "Parceiros comerciais do Brasil",
-         "Explore no mapa os parceiros do Brasil no comércio de grafita natural e carbonatos de lítio."),
+         "Explore os parceiros do Brasil no comércio de grafita natural, carbonatos de lítio e ferronióbio."),
         ("noticias", "Notícias da cadeia mineral",
          "Leia a curadoria de comunicados oficiais sobre grafita, lítio e políticas minerais."),
     ):

@@ -64,6 +64,7 @@
   ]);
   const newsSource = "Natural Resources Canada";
   const mdicSource = "MDIC · Brasil";
+  const alloyScope = "O peso líquido do ferronióbio mede a massa da liga. A massa de nióbio contido depende do teor.";
   const mdicFeed = get("market-news-mdic-feed").href;
   const mdicNovemberFeed = get("market-news-mdic-november-feed").href;
   const digits = new Intl.NumberFormat("pt-BR");
@@ -726,6 +727,7 @@
       },
       limits: [
         "O relatório cobre o comércio exterior brasileiro por produto, fluxo, mês e país ou área parceira.",
+        ...(reportSlice.filters.ncm === "72029300" ? [alloyScope] : []),
         "Totais nulos indicam ausência de registros no recorte. Registros com valor zero são mantidos.",
         "Produção, dados empresariais, instalações e evidências geoespaciais não integram este recorte.",
         "As coordenadas são referências aproximadas de países parceiros. O mapa não identifica locais de extração, instalação ou rota de transporte.",
@@ -744,6 +746,9 @@
       `${money(totals.fob_usd)} FOB · ${digits.format(totals.kg)} kg` : "Sem registros de comércio";
     const covered = monthly.filter(row => row.record_count > 0).length;
     get("market-report-unit-value").textContent = unitValueLabel(unit_value);
+    const alloyNote = get("market-report-alloy");
+    alloyNote.hidden = filters.ncm !== "72029300";
+    alloyNote.textContent = alloyNote.hidden ? "" : alloyScope;
     get("market-report-partner-share").hidden = partner_share === null;
     renderPartnerShares(get("market-report-shares"), partner_share);
     get("market-report-trade-coverage").textContent =

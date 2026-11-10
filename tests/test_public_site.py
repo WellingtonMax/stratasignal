@@ -60,7 +60,8 @@ class PublicSiteTests(unittest.TestCase):
     @patch("stratasignal.build_public_site.collect_news")
     @patch("stratasignal.build_public_site._fetch")
     def test_build_keeps_public_snapshots_outside_the_synthetic_workbench(self, fetch, news):
-        fetch.side_effect = [reply(metadata()), reply({"list": [trade_record()]}), reply({"list": []})]
+        fetch.side_effect = [reply(metadata()), reply({"list": [trade_record()]}),
+                             reply({"list": [trade_record(coNcm="72029300", country="Japão")]})]
         news.return_value = parse_feed(atom_feed(next(iter(EDITORIAL))), FETCHED_AT)
         november, items = parse_mdic_feed(
             mdic_feed(MDIC_NOVEMBER_FEED_URL, MDIC_NOVEMBER_ARTICLE, "2026-11-05"),
@@ -77,6 +78,9 @@ class PublicSiteTests(unittest.TestCase):
             self.assertEqual(public["months"], ["2024-11", "2024-12", "2025-01"])
             self.assertEqual(public["records"], [{
                 "month": "2024-12", "ncm": "25041000", "country": "China", "flow": "import",
+                "fob_usd": 1200, "kg": 700,
+            }, {
+                "month": "2024-12", "ncm": "72029300", "country": "Japão", "flow": "export",
                 "fob_usd": 1200, "kg": 700,
             }])
             self.assertEqual(manifest["trade_snapshot"]["sha256"], hashlib.sha256(public_bytes).hexdigest())
@@ -139,6 +143,8 @@ class PublicSiteTests(unittest.TestCase):
             self.assertIn('href="/carteira/" aria-current="page"', navigation)
             self.assertEqual([call.args[1]["flow"] for call in fetch.call_args_list[1:]], ["import", "export"])
             self.assertEqual(fetch.call_args_list[1].args[1]["period"], {"from": "2024-11", "to": "2025-01"})
+            for call in fetch.call_args_list[1:]:
+                self.assertEqual(call.args[1]["filters"], [{"filter": "ncm", "values": [25041000, 28369100, 72029300]}])
             with self.assertRaises(FileExistsError):
                 build_public_site(output)
             self.assertEqual(fetch.call_count, 3)

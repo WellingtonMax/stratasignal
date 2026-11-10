@@ -278,3 +278,11 @@ Na prévia do Site a 320 px, o teclado alternou o indicador, abriu o Panorama co
 Em 10 de novembro de 2026, `npm ci --ignore-scripts && npm test` passou 64 testes. A regressão confere denominadores independentes, mudança de mês e fluxo, zero observado, total zero, ausência de registros e peso incompleto. As duas suítes Python de `AGENTS.md` executaram 117 casos cada, com oito saltos de ML no modo `python -S`.
 
 Na prévia de 320 px, o teclado abriu a prévia do relatório, alterou o mês e selecionou a Alemanha pela tabela de parceiros. Para a China nas importações de grafita de setembro de 2026, mapa e prévia exibiram 90,8% do valor FOB (US$ 87.041 de US$ 95.816) e 96,7% do peso líquido (64.075 de 66.254 kg). Em outubro, exibiram 59,8% do valor FOB e a mensagem de peso incompleto. Os hashes das edições de comércio e notícias conferiram com o manifesto da publicação anterior.
+
+### Ferronióbio no comércio exterior brasileiro
+
+Em 10 de novembro de 2026, a consulta ao Comex Stat retornou a atualização de 6 de novembro e cobriu agosto a outubro de 2026. No NCM 72029300, as exportações somaram US$ 852.628.533 FOB e 29.448.546 kg em 38 registros de 16 destinos. As importações somaram US$ 10.530.602 FOB e 343.000 kg em 5 registros de 3 origens declaradas. Os 79 registros de grafita e carbonatos de lítio coincidiram com a edição anterior. O SHA-256 da nova carga é `43ef51bcd952d8d7014f75e07697e0eacef286a59bd046f1bbbb31ef25a1fe8c`.
+
+Na prévia em 320 px, Enter abriu o relatório das exportações para a China, com US$ 396.119.394 FOB e 13.764.000 kg. Pelo teclado, o seletor mudou para importações e a tabela aplicou o Canadá como origem. A prévia exibiu a mesma origem e explicou a base de peso da liga. O link para Notícias manteve o tema nióbio, o país e os três meses. A curadoria publicada não tinha correspondências nesses recortes.
+
+As duas suítes Python de `AGENTS.md` executaram 117 casos cada, com oito saltos opcionais de ML no modo `python -S`. `npm ci --ignore-scripts && npm test` passou 65 testes, incluindo o vínculo entre mapa, filtros editoriais e relatório JSON do ferronióbio e o estado sem registros de comércio. `git diff --check` passou.

@@ -220,6 +220,36 @@ test("the graphite deep link drives the official chart, map and report and survi
   assert.equal(get("market-baci-link").hidden, true);
 });
 
+test("ferroniobium has its own trade, news and report scope", async t => {
+  const data = {...sample, records: [
+    ...sample.records,
+    record("2025-02", "Japão", 2500, 100, "export", "72029300"),
+  ]};
+  const {dom, window, get, change} = open(() => response(data), null, "?ncm=72029300&fluxo=export&pais=Japão", null, "mapa");
+  t.after(() => dom.window.close());
+  const {download} = captureDownloads(window, get);
+  await settle(get);
+  await settle(get, "market-news-status");
+  const report = await download();
+  assert.equal(get("market-geo-selection").textContent, "Japão");
+  assert.equal(report.filters.ncm, "72029300");
+  assert.equal(report.filters.country_role, "destination");
+  assert.equal(report.totals.fob_usd, 2500);
+  assert.equal(report.totals.kg, 100);
+  assert.equal(report.unit_value.value, 25);
+  assert.match(get("market-report-alloy").textContent, /massa da liga/);
+  assert.ok(report.limits.includes(get("market-report-alloy").textContent));
+  assert.equal(report.news_context.status, "no_matches");
+  assert.equal(new URL(get("market-context-news").href).searchParams.get("mineral"), "72029300");
+  assert.equal(get("market-baci-link").hidden, true);
+  change("market-flow", "import");
+  const empty = await download();
+  assert.equal(empty.filters.country_role, "origin");
+  assert.equal(empty.totals.fob_usd, null);
+  change("market-product", "25041000");
+  assert.equal(get("market-report-alloy").hidden, true);
+});
+
 test("the panorama falls back to its default controls for unsupported URL filters", async t => {
   const {dom, get} = open(null, null, "?ncm=2504&fluxo=outro");
   t.after(() => dom.window.close());

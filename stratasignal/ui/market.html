@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
-  <meta name="description" content="Compare os fluxos de grafita natural e carbonatos de lítio no comércio exterior brasileiro, com dados públicos do Comex Stat.">
+  <meta name="description" content="Compare os fluxos de grafita natural, carbonatos de lítio e ferronióbio no comércio exterior brasileiro, com dados públicos do Comex Stat.">
   <title>StrataSignal · Panorama mineral do Brasil</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/app.css">
@@ -34,7 +34,7 @@
       <div class="market-hero-copy">
         <p class="eyebrow"><span class="market-dot" aria-hidden="true"></span> OBSERVATÓRIO PÚBLICO · BRASIL</p>
         <h1 id="market-title">Comércio mineral do Brasil</h1>
-        <p>Compare importações e exportações de grafita natural e carbonatos de lítio por mês e país parceiro.</p>
+        <p>Compare importações e exportações de grafita natural, carbonatos de lítio e ferronióbio por mês e país parceiro.</p>
         <div class="market-hero-actions">
           <a class="button primary" href="#explorar">Comparar fluxos <span aria-hidden="true">↓</span></a>
           <a class="button market-atlas-link" id="market-map-link" href="/mapa/">Explorar no mapa <span aria-hidden="true">→</span></a>
@@ -81,6 +81,7 @@
             <select id="market-product">
               <option value="25041000" data-mineral="grafita">Grafita natural em pó ou escamas</option>
               <option value="28369100" data-mineral="lítio">Carbonatos de lítio</option>
+              <option value="72029300" data-mineral="nióbio">Ferronióbio (ferroliga)</option>
             </select>
           </label>
           <label for="market-flow">Fluxo
@@ -225,6 +226,7 @@
               <option value="">Todos os minerais</option>
               <option value="25041000">Grafita</option>
               <option value="28369100">Lítio</option>
+              <option value="72029300">Nióbio</option>
             </select>
           </label>
           <label class="market-news-only" for="market-news-country">País citado
@@ -280,6 +282,7 @@
               <p id="market-report-trade-coverage"></p>
               <p id="market-report-trade-source"></p>
               <p>Valor declarado por quilo <strong id="market-report-unit-value"></strong></p>
+              <p id="market-report-alloy" hidden></p>
             </dd>
           </div>
           <div id="market-report-partner-share" hidden>
@@ -319,7 +322,7 @@
     <section id="fonte" class="market-method market-trade-only" aria-labelledby="market-method-title">
       <div><p class="eyebrow">PROCEDÊNCIA E COBERTURA</p><h2 id="market-method-title">Como ler o painel</h2></div>
       <div>
-        <p>Estatísticas aduaneiras agregadas do Brasil por mês, país e produto. Grafita natural em pó ou escamas (NCM 25041000) e carbonatos de lítio (NCM 28369100). A série mostra os três últimos meses disponíveis no momento da consulta.</p>
+        <p>Estatísticas aduaneiras agregadas do Brasil por mês, país e produto. Grafita natural em pó ou escamas (NCM 25041000), carbonatos de lítio (NCM 28369100) e ferronióbio (NCM 72029300). O peso do ferronióbio é o da liga comercializada. A série mostra os três últimos meses disponíveis no momento da consulta.</p>
         <p>O valor FOB mede o comércio declarado em dólares correntes. Variações podem refletir peso, composição ou preço dos itens comercializados. Os códigos abrangem categorias aduaneiras. Eles não identificam pureza, mina ou fornecedor. Os valores da fonte podem ser revisados.</p>
         <p>Uma carga do Comex Stat é consultada a cada preparação de publicação. Os registros da carteira fictícia ficam separados deste painel.</p>
         <div class="market-source-links">
