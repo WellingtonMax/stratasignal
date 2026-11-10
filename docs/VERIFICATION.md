@@ -272,3 +272,9 @@ Na prévia do Site, o recorte de importações brasileiras de grafita da China e
 Em 9 de novembro de 2026, `npm ci --ignore-scripts && npm test` passou 63 testes. A regressão alterna valor FOB, peso líquido e valor por quilo, confere a tabela e o JSON mensal e verifica as lacunas sem registros ou com peso insuficiente. As duas suítes Python de `AGENTS.md` executaram 117 casos cada, com oito saltos de ML no modo `python -S`.
 
 Na prévia do Site a 320 px, o teclado alternou o indicador, abriu o Panorama com o mesmo recorte e expandiu a tabela. Nas importações de grafita da China, agosto apareceu sem registros e setembro e outubro mostraram respectivamente US$ 1,35842 e US$ 0,976218 FOB/kg no mapa e na tabela. A prévia utilizou os arquivos públicos de comércio e notícias da edição existente, com hashes conferidos.
+
+### Participação do parceiro por valor e por peso
+
+Em 10 de novembro de 2026, `npm ci --ignore-scripts && npm test` passou 64 testes. A regressão confere denominadores independentes, mudança de mês e fluxo, zero observado, total zero, ausência de registros e peso incompleto. As duas suítes Python de `AGENTS.md` executaram 117 casos cada, com oito saltos de ML no modo `python -S`.
+
+Na prévia de 320 px, o teclado abriu a prévia do relatório, alterou o mês e selecionou a Alemanha pela tabela de parceiros. Para a China nas importações de grafita de setembro de 2026, mapa e prévia exibiram 90,8% do valor FOB (US$ 87.041 de US$ 95.816) e 96,7% do peso líquido (64.075 de 66.254 kg). Em outubro, exibiram 59,8% do valor FOB e a mensagem de peso incompleto. Os hashes das edições de comércio e notícias conferiram com o manifesto da publicação anterior.

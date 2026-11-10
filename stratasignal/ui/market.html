@@ -158,9 +158,8 @@
             <p id="market-geo-amount"></p>
             <div id="market-geo-context" class="market-geo-context" hidden>
               <p id="market-geo-rank"></p>
-              <div id="market-geo-share" class="market-geo-share" role="progressbar" aria-label="Participação do parceiro no valor FOB do recorte" aria-valuemin="0" aria-valuemax="100">
-                <span id="market-geo-share-fill"></span>
-              </div>
+              <p class="market-news-note">Participação no total de todos os parceiros para o mesmo produto, fluxo e período.</p>
+              <dl id="market-geo-shares" class="market-shares"></dl>
               <p class="market-geo-history-title">Valor declarado por quilo</p>
               <strong id="market-geo-unit-value"></strong>
               <p class="market-news-note">Valor FOB total dividido pelo peso líquido do recorte. Indicador aduaneiro agregado, distinto de cotação ou margem.</p>
@@ -281,6 +280,13 @@
               <p id="market-report-trade-coverage"></p>
               <p id="market-report-trade-source"></p>
               <p>Valor declarado por quilo <strong id="market-report-unit-value"></strong></p>
+            </dd>
+          </div>
+          <div id="market-report-partner-share" hidden>
+            <dt>Participação do parceiro</dt>
+            <dd>
+              <p>Total de todos os parceiros para o mesmo produto, fluxo e período.</p>
+              <dl id="market-report-shares" class="market-shares"></dl>
             </dd>
           </div>
           <div>

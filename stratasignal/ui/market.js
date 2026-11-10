@@ -296,6 +296,55 @@
     return "Indisponível · peso líquido insuficiente para o cálculo";
   }
 
+  function partnerShare(totals, grouped) {
+    const allPartners = summarize(grouped);
+    const incompleteWeight = grouped.some(row => row.fob_usd > 0 && row.kg === 0);
+    const share = (metric, incomplete = false) => {
+      const numerator = totals[metric];
+      const denominator = allPartners[metric];
+      const status = numerator === null ? "no_records" : incomplete ? "incomplete_weight" :
+        denominator === 0 ? "zero_total" : "available";
+      return {status, numerator, denominator, fraction: status === "available" ? numerator / denominator : null};
+    };
+    return {
+      basis: "all_partners_same_ncm_flow_months",
+      fob_usd: share("fob_usd"),
+      kg: share("kg", incompleteWeight),
+    };
+  }
+
+  function renderPartnerShares(list, comparison) {
+    list.replaceChildren();
+    if (!comparison) return;
+    const messages = {
+      no_records: "Sem registros para o parceiro",
+      zero_total: "Total declarado igual a zero",
+      incomplete_weight: "Peso incompleto · há registros com valor FOB e peso zero",
+    };
+    for (const [metric, label, format] of [
+      ["fob_usd", "Valor FOB", money],
+      ["kg", "Peso líquido", value => digits.format(value) + " kg"],
+    ]) {
+      const {status, numerator, denominator, fraction} = comparison[metric];
+      const row = element("div");
+      const details = element("dd");
+      if (fraction === null) {
+        details.textContent = messages[status];
+      } else {
+        const track = element("div");
+        track.className = "market-geo-share";
+        track.setAttribute("aria-hidden", "true");
+        const fill = element("span");
+        fill.style.setProperty("--market-share", (fraction * 100) + "%");
+        track.append(fill);
+        details.append(element("strong", percent.format(fraction)),
+          element("small", format(numerator) + " de " + format(denominator)), track);
+      }
+      row.append(element("dt", label), details);
+      list.append(row);
+    }
+  }
+
   function renderSeries(series, caption) {
     const peak = Math.max(...series.map(row => row.fob_usd ?? 0));
     get("market-scale").textContent = "Escala de " + money(0) + " a " + money(peak) + " FOB";
@@ -448,19 +497,15 @@
         (selected.anchor ? "" : " · Sem ponto no mapa") :
       country.value ? "Sem registros neste período." : "Selecione um país para ver o valor e o peso.";
     const context = get("market-geo-context");
-    const totalFob = sum(partners, "fob_usd");
-    const share = selected && totalFob ? selected.fob_usd / totalFob : 0;
-    const rank = selected ? partners.indexOf(selected) + 1 : 0;
     context.hidden = !selected;
     clearPartner.hidden = !selected;
     if (selected) {
       get("market-geo-unit-value").textContent = unitValueLabel(reportSlice.unit_value);
-      get("market-geo-rank").textContent = percent.format(share) + " do valor FOB do recorte · " +
-        rank + "º de " + digits.format(partners.length) + " parceiros";
-      const progress = get("market-geo-share");
-      progress.setAttribute("aria-valuenow", String(Math.round(share * 1000) / 10));
-      progress.setAttribute("aria-valuetext", percent.format(share) + " do valor FOB do recorte");
-      get("market-geo-share-fill").style.setProperty("--market-share", (share * 100) + "%");
+      const {partner_share: comparison} = reportSlice;
+      const rank = get("market-geo-rank");
+      rank.hidden = comparison.fob_usd.status !== "available";
+      rank.textContent = (partners.indexOf(selected) + 1) + "º de " + digits.format(partners.length) + " parceiros em valor FOB";
+      renderPartnerShares(get("market-geo-shares"), comparison);
       renderPartnerHistory(reportSlice.monthly);
     }
     renderMapFocus(selected);
@@ -618,6 +663,7 @@
       months,
       totals,
       unit_value: unitValue(records, totals),
+      partner_share: country.value ? partnerShare(totals, grouped) : null,
       monthly,
       records: records.map(({month, ncm, country, flow, fob_usd, kg}) => ({month, ncm, country, flow, fob_usd, kg})),
       partner_geography: reportGeography(partners.filter(partner => !country.value || partner.label === country.value)),
@@ -689,7 +735,7 @@
   }
 
   function renderReportPreview() {
-    const {filters, months, totals, unit_value, monthly, source, partner_geography: geography, news_context: context} = buildReport();
+    const {filters, months, totals, unit_value, partner_share, monthly, source, partner_geography: geography, news_context: context} = buildReport();
     const role = filters.country_role === "origin" ? "origem comercial" : "destino comercial";
     const partner = filters.country ? `${filters.country} (${role})` : "Todos os parceiros";
     get("market-report-scope").textContent = `${filters.product} (NCM ${filters.ncm}) · ` +
@@ -698,6 +744,8 @@
       `${money(totals.fob_usd)} FOB · ${digits.format(totals.kg)} kg` : "Sem registros de comércio";
     const covered = monthly.filter(row => row.record_count > 0).length;
     get("market-report-unit-value").textContent = unitValueLabel(unit_value);
+    get("market-report-partner-share").hidden = partner_share === null;
+    renderPartnerShares(get("market-report-shares"), partner_share);
     get("market-report-trade-coverage").textContent =
       `${countLabel(totals.record_count, "registro", "registros")} · ${covered} de ${monthly.length} meses com registros`;
     get("market-report-trade-source").textContent =

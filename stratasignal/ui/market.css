@@ -70,8 +70,8 @@
 .market-report-preview summary{min-height:44px;padding-block:12px;cursor:pointer;color:var(--navy);font-weight:650}
 .market-report-coverage{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:8px;margin:0 0 12px}
 .market-report-coverage>div{min-width:0;padding:12px;border:1px solid var(--line);border-radius:7px;background:var(--white)}
-.market-report-coverage dt{color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
-.market-report-coverage dd{display:grid;gap:3px;margin:5px 0 0;color:var(--navy);overflow-wrap:anywhere}
+.market-report-coverage>div>dt{color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
+.market-report-coverage>div>dd{display:grid;gap:3px;margin:5px 0 0;color:var(--navy);overflow-wrap:anywhere}
 .market-report .market-report-limits{margin:0 0 10px}
 .market-report-actions{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 16px}
 .market-report-actions .button{min-height:44px}
@@ -128,6 +128,10 @@
 .market-geo-context{margin:0 0 10px;padding:10px 12px;border:1px solid #b8d8d2;border-radius:7px;background:#eef8f5}
 .market-geo-context[hidden]{display:none}
 .market-geo-context p{margin:0 0 8px;color:#075f53;font-size:13px;font-weight:650;line-height:1.45}
+.market-shares{display:grid;gap:8px;margin:0;color:var(--ink);font-size:13px;font-variant-numeric:tabular-nums}
+.market-shares dt{font-weight:650}
+.market-shares dd{display:grid;gap:3px;margin:2px 0 0;overflow-wrap:anywhere}
+.market-shares small{color:var(--muted);font-size:12px}
 .market-geo-share{height:6px;overflow:hidden;border-radius:999px;background:#cce5df}
 .market-geo-share span{display:block;width:var(--market-share);height:100%;border-radius:inherit;background:var(--green);transition:width .28s cubic-bezier(.2,.65,.3,1)}
 .market-geo-context .market-geo-history-title{margin:13px 0 7px;padding-top:10px;border-top:1px solid #cce5df;color:var(--navy);font-size:12px;letter-spacing:.04em;text-transform:uppercase}

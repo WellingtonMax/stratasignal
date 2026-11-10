@@ -250,8 +250,10 @@ test("the public map and accessible partner table share the trade and news filte
   assert.equal(get("market-geo-pins").querySelector(".selected title").textContent, "China");
   assert.equal(get("market-fob").textContent, "US$ 1.700");
   assert.equal(get("market-geo-context").hidden, false);
-  assert.match(get("market-geo-rank").textContent, /85% do valor FOB do recorte · 1º de 2 parceiros/);
-  assert.equal(get("market-geo-share").getAttribute("aria-valuenow"), "85");
+  assert.equal(get("market-geo-rank").textContent, "1º de 2 parceiros em valor FOB");
+  assert.match(get("market-geo-shares").textContent, /85%.*US\$ 1\.700 de US\$ 2\.000/);
+  assert.match(get("market-geo-shares").textContent, /Peso incompleto/);
+  assert.equal(get("market-report-shares").textContent, get("market-geo-shares").textContent);
   const history = get("market-geo-history");
   assert.equal(history.children.length, 3);
   assert.deepEqual([...history.children].map(item => item.getAttribute("aria-label")), [
@@ -270,6 +272,11 @@ test("the public map and accessible partner table share the trade and news filte
   ]);
   assert.equal(get("market-geo-clear").hidden, false);
   const china = await download();
+  assert.deepEqual(china.partner_share, {
+    basis: "all_partners_same_ncm_flow_months",
+    fob_usd: {status: "available", numerator: 1700, denominator: 2000, fraction: 0.85},
+    kg: {status: "incomplete_weight", numerator: 1000, denominator: 1000, fraction: null},
+  });
   assert.deepEqual(china.partner_geography.points, [{country: "China", longitude: 106.3, latitude: 32.5}]);
   assert.deepEqual(china.partner_geography.partners_without_anchor, []);
   button(foreignLabel).click();
@@ -295,6 +302,37 @@ test("the public map and accessible partner table share the trade and news filte
   assert.equal(get("market-country").value, "");
   assert.equal(window.document.activeElement, get("market-country"));
   dom.window.close();
+});
+
+test("partner shares use independent totals for the same product, flow and months", async t => {
+  const records = [
+    ...sample.records.filter(row => row.country !== foreignLabel),
+    record("2025-01", "Alemanha", 800, 300),
+    record("2025-03", "Alemanha", 0, 0),
+    record("2025-03", "Japão", 0, 100, "export"),
+    record("2025-03", "Chile", 0, 100, "export"),
+  ];
+  const {dom, window, get, change} = open(() => response({...sample, records}));
+  t.after(() => dom.window.close());
+  const {download} = captureDownloads(window, get);
+  await settle(get);
+  assert.equal(get("market-report-partner-share").hidden, true);
+  assert.equal((await download()).partner_share, null);
+  change("market-country", "China");
+  change("market-period", "2025-01");
+  const {partner_share: comparison} = await download();
+  assert.deepEqual(comparison.fob_usd, {status: "available", numerator: 1200, denominator: 2000, fraction: 0.6});
+  assert.deepEqual(comparison.kg, {status: "available", numerator: 700, denominator: 1000, fraction: 0.7});
+  assert.match(get("market-geo-shares").textContent, /60%.*70%.*700 kg de 1\.000 kg/);
+  change("market-period", "2025-03");
+  change("market-country", "Alemanha");
+  assert.equal((await download()).partner_share.kg.fraction, 0);
+  change("market-flow", "export");
+  change("market-country", "Japão");
+  const {partner_share: zeroTotal} = await download();
+  assert.deepEqual(zeroTotal.fob_usd, {status: "zero_total", numerator: 0, denominator: 0, fraction: null});
+  assert.equal(zeroTotal.kg.fraction, 0.5);
+  assert.match(get("market-geo-shares").textContent, /Total declarado igual a zero/);
 });
 
 test("the trade report captures active filters, source bytes, units and monthly gaps", async () => {
@@ -348,6 +386,7 @@ test("the trade report captures active filters, source bytes, units and monthly 
   assert.deepEqual(empty.monthly.map(({unit_value, ...row}) => row), [{month: "2025-02", record_count: 0, fob_usd: null, kg: null}]);
   assert.deepEqual(empty.records, []);
   assert.equal(empty.unit_value.status, "no_records");
+  assert.equal(empty.partner_share.kg.status, "no_records");
   assert.equal(empty.unit_value.value, null);
   assert.match(get("market-report-unit-value").textContent, /sem registros/);
   change("market-country", "");
