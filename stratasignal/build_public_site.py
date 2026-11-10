@@ -12,7 +12,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from . import __version__
-from . import public_markets, public_markets_world, public_news
+from . import public_gallium, public_markets, public_markets_world, public_news
 from .build_demo import build_demo
 from .market import month
 from .schema import InputError, day, rows, text_value, unique_object
@@ -418,10 +418,12 @@ def _write_markets(output, ui):
     with (market / "dados.json").open("xb") as stream:
         stream.write(raw)
     issuer_snapshot = market / "markets-issuers.js"
+    world = public_markets_world.write_snapshot(market)
     return {"path": "mercados/dados.json", "sha256": hashlib.sha256(raw).hexdigest(),
-            "reviewed_on": snapshot["reviewed_on"], "global": public_markets_world.write_snapshot(market),
+            "reviewed_on": snapshot["reviewed_on"], "global": world,
             "issuer_evidence": {"path": "mercados/markets-issuers.js",
-                                "sha256": hashlib.sha256(issuer_snapshot.read_bytes()).hexdigest()}}
+                                "sha256": hashlib.sha256(issuer_snapshot.read_bytes()).hexdigest()},
+            "gallium_evidence": public_gallium.write_snapshot(market, world["release"], public_markets_world.YEARS)}
 
 
 def _write_observatory_ui(output, ui):

@@ -157,4 +157,4 @@ Em Mercados, o recorte Brasil ou Mundo com HS 2601 abre a ficha **De Carajás a 
 
 ### Materiais para semicondutores (UX-06 e UX-11)
 
-O próximo recorte de Mercados começa com a [ficha do gálio](GALIO_SEMICONDUTORES_PT.md). A pergunta é onde o Brasil atua na cadeia e qual elo pede investigação. A curadoria registra operações, pesquisa, projetos anunciados e lacunas separadamente. O próximo incremento valida as regras de oferta e classificação com uma edição versionada. A tela e o JSON devem ler a mesma edição, com os critérios de aceite da ficha.
+O próximo recorte de Mercados começa com a [ficha do gálio](GALIO_SEMICONDUTORES_PT.md). A pergunta é onde o Brasil atua na cadeia e qual elo pede investigação. A curadoria registra operações, pesquisa, projetos anunciados e lacunas separadamente. O publicador valida as regras de oferta e classificação e gera uma edição documental identificada por hash. A entrada da ficha na tela e no relatório deve usar essa mesma edição, com os critérios de aceite da ficha.

@@ -23,6 +23,7 @@ Os identificadores referenciam afirmações da ficha. Cada local, período e est
 
 - **Concentração da recuperação primária.** Para 2025, o USGS atribui à China **99% da produção mundial de gálio primário de baixa pureza**. É uma estimativa anual publicada no *Mineral Commodity Summaries 2026*. Usar a participação publicada, pois o total mundial da tabela é arredondado. O denominador cobre a produção primária dessa forma. Alta pureza, recuperação secundária e fabricação de chips exigem indicadores separados. [USGS, Events, Trends, and Issues e tabela mundial][usgs]
 - **Comércio declarado no Brasil.** A posição 81.12 do Classif lista vários metais. Os NCM **8112.92.00** (formas brutas, pós, sucata e resíduos) e **8112.99.00** (outros produtos) ficam na subposição residual 8112.9. Gálio e germânio estão entre os metais abrangidos pelo grupo. A tabela vigente em 10/11/2026 informa início em 01/04/2022 para as duas linhas, pela Resolução Gecex 272/2021. Ao associar uma edição do Comex, usar a nomenclatura aplicável ao período. Valores e pesos ficam no grupo original. A parcela de gálio permanece indisponível até existir uma fonte que a isole. [Receita Federal, Classif][classif]
+- **Recorte mundial em Mercados.** O capítulo 81 do HS 2022 mantém 811292 no grupo residual de metais. O BACI usa essa edição do HS para a série de 2022 a 2024 já empacotada. O código de seis dígitos tem identidade e vigência próprias na edição documental. A parcela de gálio permanece indisponível no total do grupo. [OMD, capítulo 81][hs2022] · [Entrada em vigor do HS 2022][hs2022-data]
 
 **Pergunta para política industrial.** Há uma unidade brasileira com recuperação de gálio demonstrada e especificação de saída conhecida? Procurar primeiro identificação da unidade, operação no período, forma e pureza do produto, volume e destinação. Se houver só pesquisa ou anúncio, registrar a maturidade do projeto. A presença dessas atividades no país motiva investigar se podem se integrar. Vínculos de fornecimento exigem evidência própria.
 
@@ -48,3 +49,5 @@ O conteúdo desta ficha consiste em fatos selecionados e resumos próprios com a
 [classif]: https://www.gov.br/receitafederal/pt-br/assuntos/aduana-e-comercio-exterior/classificacao-fiscal-de-mercadorias/download-ncm-nomenclatura-comum-do-mercosul
 [classif-json]: https://portalunico.siscomex.gov.br/classif/api/publico/nomenclatura/download/json
 [usgs-uso]: https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits
+[hs2022]: https://www.wcoomd.org/-/media/wco/public/global/pdf/topics/nomenclature/instruments-and-tools/hs-nomenclature-2022/2022/1581_2022e.pdf?la=en
+[hs2022-data]: https://www.wcoomd.org/en/faq/harmonized_system_faq.aspx

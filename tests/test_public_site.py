@@ -196,6 +196,19 @@ class PublicSiteTests(unittest.TestCase):
             catalog = json.loads(world)
             self.assertIn("AQ", catalog["countries"])
             self.assertIn("2603", catalog["products"])
+            gallium = markets["gallium_evidence"]
+            gallium_bytes = (output / gallium["path"]).read_bytes()
+            self.assertEqual(gallium["sha256"], hashlib.sha256(gallium_bytes).hexdigest())
+            self.assertEqual(gallium["path"], f'mercados/edicoes/galio-{gallium["sha256"]}.json')
+            evidence = json.loads(gallium_bytes)
+            self.assertEqual(evidence["dataset_kind"], "public_documentary_evidence")
+            self.assertEqual(evidence["baci_context"]["years"], catalog["years"])
+            self.assertEqual(evidence["baci_context"]["edition"], catalog["release"])
+            self.assertEqual(evidence["baci_context"]["status"], "group_only")
+            self.assertIsNone(evidence["baci_context"]["gallium_amounts"])
+            self.assertEqual([supply["status"] for supply in evidence["brazil_supply"]],
+                             ["unavailable", "unavailable"])
+            self.assertFalse((output / "carteira/galio.json").exists())
             self.assertEqual(catalog["products"].keys(), catalog["trade_sha256"].keys())
             for code, expected in catalog["trade_sha256"].items():
                 self.assertEqual(hashlib.sha256((output / f"mercados/comercio/{code}.json").read_bytes()).hexdigest(), expected)
