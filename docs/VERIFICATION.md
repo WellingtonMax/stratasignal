@@ -304,3 +304,13 @@ O minério bruto publicado é de 9.249.168 t em Goiás e 6.580.700 t em Minas Ge
 No Chromium em 320 px CSS, Enter abriu a tabela, Tab focou a referência da ANM e Enter abriu a prévia. Após o ajuste de quebra de texto, a tabela ocupou 243 px e as larguras útil e rolável da página coincidiram em 305 px. O comércio selecionado da China exibiu US$ 396.119.394 FOB em agosto a outubro de 2026, separado da produção de 2024. Os testes conferiram a retirada da seção ao mudar o produto e sua leitura com falha de comércio em um link direto.
 
 Passaram 66 testes de interface após `npm ci --ignore-scripts`, 117 casos em Python e 109 no modo sem dependências opcionais, com oito casos de ML ignorados. `git diff --check` passou. O pacote reaproveitou os arquivos da publicação anterior de comércio, Mercados, notícias e da Carteira sintética.
+
+### Período histórico no Mapa e no Panorama
+
+No Chromium em 320 px CSS, Enter abriu os filtros do Mapa e a tabela de parceiros. O seletor anual exibiu 12 meses para 2000. A seta passou de janeiro para fevereiro. A prévia abriu com Enter e mostrou US$ 23.139.450 FOB e 2.626.587 kg de exportações do NCM 72029300 em fevereiro de 2000. A curadoria informou ausência de cobertura para aquele mês. As larguras útil e rolável da página coincidiram em 305 px, com a tabela e a prévia abertas.
+
+O Panorama exibiu 12 barras e 12 linhas mensais para 2000. Em 320 px, o gráfico ficou em duas linhas de seis meses e a página manteve as mesmas larguras útil e rolável. As 122 linhas da edição recente de agosto a outubro de 2026 coincidiram com as linhas da consulta anual.
+
+Em 10 de novembro de 2026, a API oficial informou corte em outubro de 2026 e atualização em 6 de novembro. Algumas consultas retornaram HTTP 429. Os CSVs da distribuição de dados abertos retornaram HTTP 503 no ambiente de coleta. A validação usa consultas de períodos menores quando disponíveis. O manifesto enumera as edições efetivamente verificadas. [Dados abertos do Comex Stat](https://www.gov.br/mdic/pt-br/assuntos/comercio-exterior/estatisticas/base-de-dados-bruta)
+
+Passaram 69 testes de interface após `npm ci --ignore-scripts` e 120 casos na suíte Python. A execução com `python -S` passou 112 casos e ignorou oito opcionais de ML. Os casos novos conferem o mês histórico no JSON, a navegação, a igualdade da sobreposição no início do ano, a recuperação após falha de hash, a rejeição de mudança no corte durante a coleta e a identificação de anos sem edição validada. `git diff --check` passou.

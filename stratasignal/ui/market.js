@@ -24,17 +24,20 @@
   };
   selectValue(product, query.get("ncm"));
   selectValue(flow, query.get("fluxo"));
+  const tradeYear = get("market-year");
   const period = get("market-period");
   const country = get("market-country");
   const tradeControls = get("market-controls");
   const status = get("market-status");
   const retry = get("market-retry");
+  const recent = get("market-recent");
   const results = get("market-results");
   const reportPanel = get("market-report");
   const newsNotice = get("market-news-status");
   const newsRetry = get("market-news-retry");
   const newsList = get("market-news-items");
   const newsPeriod = get("market-news-period");
+  const allCuratedDates = "todas";
   const newsMineral = get("market-news-mineral");
   const newsCountry = get("market-news-country");
   const newsPublisher = get("market-news-publisher");
@@ -158,6 +161,9 @@
     select.replaceChildren(new Option(defaultLabel, ""), ...items.map(([label, value]) => new Option(label, value)));
   };
   let snapshot, snapshotSha256, reportSlice;
+  let releaseManifest, tradeHistory;
+  let requestedYear = query.get("ano") || "";
+  let requestedMonth = query.get("mes");
   let news, newsSha256;
   let newsState = "loading";
   let scopedNewsMonths = newsView && addressMonths.length > 1 ? addressMonths : [];
@@ -308,13 +314,39 @@
     get("market-edition-history").hidden = editions.length < 2;
   }
 
-  async function loadEditionHistory() {
-    get("market-edition-history").hidden = true;
+  function validateTradeHistory(manifest) {
+    const history = manifest?.trade_history;
+    if (manifest?.dataset_kind !== "public_aggregate" || history?.start_month !== "2000-01" ||
+        !validDate(history.end_month + "-01") || !/^20\d{2}-/.test(history.end_month) ||
+        !history.years || typeof history.years !== "object" || Array.isArray(history.years)) return null;
+    const lastYear = history.end_month.slice(0, 4);
+    if (!Object.hasOwn(history.years, "2000") || !Object.hasOwn(history.years, lastYear) ||
+        !Object.entries(history.years).every(([year, sha]) => /^20\d{2}$/.test(year) && year <= lastYear &&
+          typeof sha === "string" && /^[0-9a-f]{64}$/.test(sha))) return null;
+    return history;
+  }
+
+  async function loadTradeManifest() {
     try {
-      const {data} = await readSnapshot("/source-manifest.json", validateEditionManifest);
-      renderEditionHistory(data);
+      ({data: releaseManifest} = await readSnapshot("/source-manifest.json", data => data));
+      tradeHistory = validateTradeHistory(releaseManifest);
+      if (!tradeHistory) return;
+      const years = Object.keys(tradeHistory.years).reverse();
+      options(tradeYear, "Mais recentes", years.map(year => [year, year]));
+      get("market-year-filter").hidden = false;
+      get("market-filter-summary").textContent = "Ano, mês e parceiro";
+      const lastYear = Number(tradeHistory.end_month.slice(0, 4));
+      const missing = [];
+      for (let year = 2000; year <= lastYear; year++) {
+        if (!Object.hasOwn(tradeHistory.years, year)) missing.push(year);
+      }
+      const coverage = get("market-year-coverage");
+      coverage.textContent = "Edições do comércio entre " + monthSpan([tradeHistory.start_month, tradeHistory.end_month]) + ". " +
+        (missing.length ? "Aguardam validação as edições de " + missing.join(", ") + "." :
+          "Escolha um ano para ver seus meses publicados.");
+      coverage.hidden = false;
     } catch {
-      get("market-edition-history").hidden = true;
+      releaseManifest = null;
     }
   }
 
@@ -443,7 +475,9 @@
         element("td", row.record_count ? unitValueLabel(row.unit_value) : "—"));
       table.push(line);
     }
-    get("market-bars").replaceChildren(...bars);
+    const barList = get("market-bars");
+    barList.classList.toggle("market-bars-long", bars.length > 6);
+    barList.replaceChildren(...bars);
     get("market-monthly").replaceChildren(...table);
   }
 
@@ -620,7 +654,12 @@
   }
 
   const selectedMonths = () => period.value ? [period.value] : snapshot.months;
-  const newsMonths = () => newsPeriod.value ? [newsPeriod.value] : newsView ? scopedNewsMonths : selectedMonths();
+  const newsMonths = () => {
+    if (newsPeriod.value === allCuratedDates) return [];
+    return newsPeriod.value ? [newsPeriod.value] : newsView ? scopedNewsMonths : selectedMonths();
+  };
+  const publicationMonths = () => [...new Set(news.items.map(item => item.published_on.slice(0, 7)))].sort();
+  const publicationScope = months => months.length ? monthSpan(months) : "Todas as datas da curadoria";
   function relatedNews() {
     const months = newsMonths();
     const mineral = newsView ? newsMineral.value : product.value;
@@ -694,10 +733,11 @@
     const mineral = newsView ? newsMineral.selectedOptions[0].textContent : product.selectedOptions[0].dataset.mineral;
     const months = newsMonths();
     const place = newsView ? newsCountry.value : country.value;
-    const count = items.length ? items.length + (items.length === 1 ? " publicação" : " publicações") :
-      "Nenhuma notícia da curadoria neste recorte";
+    const outsideCoverage = months.length && !publicationMonths().some(month => months.includes(month));
+    const count = items.length ? countLabel(items.length, "publicação", "publicações") : outsideCoverage ?
+      "Sem cobertura da curadoria neste período" : "Nenhuma notícia da curadoria neste recorte";
     const filters = newsView ? [newsMineral.value && mineral, months.length && monthSpan(months), place].filter(Boolean) :
-      [mineral, monthSpan(months), place || "todos os países"];
+      [mineral, publicationScope(months), place || "todos os países"];
     if (newsPublisher.value) filters.push(newsPublisher.selectedOptions[0].textContent);
     const scope = [count, ...(filters.length ? filters : ["Mais recentes primeiro"])].join(" · ");
     if (newsNotice.textContent !== scope) newsNotice.textContent = scope;
@@ -787,7 +827,7 @@
     reportSlice = {
       filters: {
         ncm: product.value, product: product.selectedOptions[0].textContent, flow: flow.value,
-        period: period.value || null, country: country.value || null,
+        year: tradeYear.value || null, period: period.value || null, country: country.value || null,
         country_role: flow.value === "import" ? "origin" : "destination",
       },
       months,
@@ -814,6 +854,8 @@
     renderRanking(partners);
   }
 
+  const editionPath = sha => "/edicoes/comex-" + sha + ".json";
+
   function buildReport() {
     const stories = relatedNews();
     return {
@@ -825,8 +867,8 @@
         url: "https://comexstat.mdic.gov.br/pt/home",
         updated_on: snapshot.updated_on,
         fetched_at: snapshot.fetched_at,
-        snapshot_url: new URL("/edicoes/comex-" + snapshotSha256 + ".json", location.href).href,
-        mutable_snapshot_url: new URL("/comex.json", location.href).href,
+        snapshot_url: snapshotSha256 ? new URL(editionPath(snapshotSha256), location.href).href : null,
+        mutable_snapshot_url: reportSlice.filters.year ? null : new URL("/comex.json", location.href).href,
         snapshot_sha256: snapshotSha256,
         quality: "Estatísticas aduaneiras agregadas sujeitas a revisão pela fonte.",
       },
@@ -846,12 +888,14 @@
           quality: "Comunicados governamentais com curadoria editorial. Possíveis impactos são hipóteses qualitativas.",
         },
         coverage: news ? {feed_entries: news.feed_entries, curated_entries: news.canadaCount} : null,
+        publication_months: news ? publicationMonths() : null,
         mdic_source: news?.brazilSources.find(source => source.feed_url === mdicFeed) ?? null,
         mdic_archives: news?.brazilSources.filter(source => source.feed_url !== mdicFeed) ?? [],
         filters: {
           ncm: reportSlice.filters.ncm, months: newsMonths(), country: reportSlice.filters.country,
           ...(newsPublisher.value && {source_id: newsPublisher.value}),
-          period_mode: newsPeriod.value ? "independent" : "trade_period",
+          period_mode: newsPeriod.value === allCuratedDates ? "all_curated_dates" :
+            newsPeriod.value ? "independent" : "trade_period",
           country_role: "mentioned", month_basis: "published_on", flow_applies: false,
         },
         items: stories,
@@ -890,14 +934,16 @@
     get("market-report-map-coverage").textContent =
       countLabel(geography.partners_without_anchor.length, "parceiro sem ponto", "parceiros sem ponto");
     get("market-report-map-source").textContent = `${geography.source} ${geography.source_version} · ${geography.scale}`;
+    const outsideCoverage = context.filters.months.length && context.publication_months &&
+      !context.publication_months.some(month => context.filters.months.includes(month));
     get("market-report-news").textContent = {
       available: countLabel(context.items.length, "publicação", "publicações"),
-      no_matches: "Nenhuma publicação no recorte",
+      no_matches: outsideCoverage ? "Sem cobertura da curadoria neste período" : "Nenhuma publicação no recorte",
       loading: "Carregando notícias…",
       unavailable: "Edição de notícias indisponível",
     }[context.status];
     const publisher = context.filters.source_id ? " · " + newsPublisher.selectedOptions[0].textContent : "";
-    get("market-report-news-period").textContent = `Período de publicação · ${monthSpan(context.filters.months)}${publisher}`;
+    get("market-report-news-period").textContent = `Período de publicação · ${publicationScope(context.filters.months)}${publisher}`;
     const sources = [context.source, context.mdic_source, ...context.mdic_archives].filter(entry => entry?.fetched_at);
     const names = [...new Set(sources.map(entry => entry.name))].join(" e ");
     const latest = Math.max(...sources.map(entry => Date.parse(entry.fetched_at)));
@@ -911,7 +957,8 @@
     const url = URL.createObjectURL(blob);
     const link = element("a");
     link.href = url;
-    link.download = "stratasignal-comex-" + report.filters.ncm + "-" + report.filters.flow + ".json";
+    const historicalPeriod = report.filters.year ? "-" + (report.filters.period || report.filters.year) : "";
+    link.download = "stratasignal-comex-" + report.filters.ncm + "-" + report.filters.flow + historicalPeriod + ".json";
     link.hidden = true;
     document.body.append(link);
     link.click();
@@ -963,8 +1010,14 @@
       get("market-news-latest").textContent = news.items.length ?
         calendar.format(new Date(news.items[0].published_on)) : "Nenhuma publicada";
       get("market-news-summary").hidden = false;
+      const dates = publicationMonths();
+      const dateCoverage = get("market-news-date-coverage");
+      dateCoverage.textContent = dates.length ? "Datas da curadoria · " + monthSpan(dates) + "." :
+        "A edição atual da curadoria está vazia.";
+      dateCoverage.hidden = false;
       configureNewsPeriod();
-      selectValue(newsPeriod, addressMonths.length === 1 ? addressMonths[0] : "");
+      selectValue(newsPeriod, !newsView && query.get("noticias_mes") === allCuratedDates ? allCuratedDates :
+        addressMonths.length === 1 ? addressMonths[0] : "");
       const publishers = [[newsSource, "nrcan"]];
       if (news.brazilSources.length) publishers.push([mdicSource, "mdic"]);
       options(newsPublisher, "Todas as fontes", publishers);
@@ -992,58 +1045,93 @@
     renderNews();
   }
 
-  async function load() {
+  async function load(readdress = false) {
+    const restoreFocus = [tradeYear, retry, recent].includes(document.activeElement);
     tradeControls.disabled = true;
     retry.hidden = true;
+    recent.hidden = true;
     results.hidden = true;
     reportPanel.hidden = true;
     geographyContent.hidden = true;
+    get("market-edition").hidden = true;
+    get("market-edition-history").hidden = true;
+    get("market-source-download").hidden = true;
+    get("market-stale").hidden = true;
     geographyStatus.textContent = "Carregando parceiros do comércio…";
     status.textContent = "Carregando dados públicos…";
+    renderNews();
     try {
-      ({data: snapshot, sha256: snapshotSha256} = await readSnapshot("/comex.json", validate));
+      let loaded = requestedYear ? null : await readSnapshot("/comex.json", validate);
+      if (!releaseManifest || (requestedYear && !tradeHistory)) await loadTradeManifest();
+      if (requestedYear) {
+        const expectedHash = /^20\d{2}$/.test(requestedYear) && tradeHistory?.years[requestedYear];
+        if (!expectedHash) throw new Error("Year unavailable");
+        loaded = await readSnapshot(editionPath(expectedHash), validate);
+        const end = tradeHistory.end_month;
+        const length = end.slice(0, 4) === requestedYear ? Number(end.slice(5)) : 12;
+        if (loaded.sha256 !== expectedHash || loaded.data.months.length !== length ||
+            !loaded.data.months.every((value, index) => value === requestedYear + "-" + String(index + 1).padStart(2, "0"))) {
+          throw new Error("Invalid historical edition");
+        }
+      }
+      ({data: snapshot, sha256: snapshotSha256} = loaded);
       get("market-through").textContent = monthName(snapshot.months.at(-1));
       get("market-updated").textContent = calendar.format(new Date(snapshot.updated_on));
       get("market-geo-updated").textContent = "Atualização do Comex Stat em " + get("market-updated").textContent + ".";
       get("market-retrieved").textContent = "Consulta do StrataSignal em " + calendar.format(new Date(snapshot.fetched_at)) + ".";
       const edition = get("market-edition");
+      const sourceDownload = get("market-source-download");
+      sourceDownload.href = requestedYear ? editionPath(snapshotSha256) : "/comex.json";
+      sourceDownload.hidden = false;
       if (snapshotSha256) {
         get("market-edition-id").textContent = "SHA-256 " + snapshotSha256.slice(0, 12) + "…";
-        get("market-edition-download").href = "/edicoes/comex-" + snapshotSha256 + ".json";
+        get("market-edition-download").href = editionPath(snapshotSha256);
         get("market-edition-download").download = "stratasignal-comex-" + snapshotSha256.slice(0, 12) + ".json";
         edition.hidden = false;
-        if (view === "panorama") await loadEditionHistory();
+        if (view === "panorama" && !requestedYear) {
+          try { renderEditionHistory(validateEditionManifest(releaseManifest)); } catch { /* Optional retained editions. */ }
+        }
       } else {
         edition.hidden = true;
         get("market-edition-history").hidden = true;
       }
       get("market-stale").hidden = Date.now() - Date.parse(snapshot.updated_on) <= 45 * 86400000;
-      options(period, "Todo o período", snapshot.months.map(value => [monthName(value), value]));
-      selectValue(period, query.get("mes"));
+      selectValue(tradeYear, requestedYear);
+      options(period, requestedYear ? "Todos os meses publicados" : "Todo o período", snapshot.months.map(value => [monthName(value), value]));
+      selectValue(period, requestedMonth);
       refreshCountries();
       tradeControls.disabled = false;
-      render();
+      if (readdress) applyTradeFilters();
+      else render();
       reportPanel.hidden = false;
+      if (restoreFocus && document.activeElement === document.body) (tradeHistory ? tradeYear : product).focus();
     } catch {
       tradeControls.disabled = true;
       get("market-edition").hidden = true;
       get("market-edition-history").hidden = true;
       get("market-retrieved").textContent = "Carga publicada indisponível.";
-      status.textContent = "Não foi possível carregar o panorama. Tente novamente ou consulte o Comex Stat.";
-      geographyStatus.textContent = "Mapa indisponível enquanto a carga de comércio estiver indisponível.";
-      retry.hidden = false;
+      const missingYear = requestedYear && tradeHistory && !Object.hasOwn(tradeHistory.years, requestedYear);
+      status.textContent = missingYear ? "O ano solicitado ainda está sem edição validada. Volte ao comércio recente." :
+        requestedYear ? "Não foi possível carregar o ano solicitado. Tente novamente ou volte ao comércio recente." :
+          "Não foi possível carregar o panorama. Tente novamente ou consulte o Comex Stat.";
+      geographyStatus.textContent = requestedYear ? status.textContent :
+        "Mapa indisponível enquanto a carga de comércio estiver indisponível.";
+      retry.hidden = Boolean(missingYear);
+      recent.hidden = !requestedYear;
+      if (restoreFocus && document.activeElement === document.body) (missingYear ? recent : retry).focus();
     }
   }
 
   function configureNewsPeriod() {
-    const months = [...new Set([...news.items.map(item => item.published_on.slice(0, 7)), ...addressMonths])]
-      .sort().reverse();
+    const months = [...new Set([...publicationMonths(), ...addressMonths])].sort().reverse();
     const defaultLabel = newsView ? (scopedNewsMonths.length ? monthSpan(scopedNewsMonths) : "Todos os meses") :
       "Mesmo período do comércio";
-    options(newsPeriod, defaultLabel, months.map(month => [monthName(month), month]));
+    const items = months.map(month => [monthName(month), month]);
+    if (!newsView) items.unshift([publicationScope([]), allCuratedDates]);
+    options(newsPeriod, defaultLabel, items);
   }
 
-  const tradeFilters = {ncm: product, fluxo: flow, mes: period, pais: country, noticias_mes: newsPeriod};
+  const tradeFilters = {ncm: product, fluxo: flow, ano: tradeYear, mes: period, pais: country, noticias_mes: newsPeriod};
   function tradeQuery() {
     const params = new URLSearchParams();
     for (const [key, select] of Object.entries(tradeFilters)) {
@@ -1075,6 +1163,13 @@
   function applyTradeFilters() {
     history.replaceState(history.state, "", route(location.pathname, tradeQuery()) + location.hash);
     render();
+  }
+
+  function selectTradeYear(year) {
+    requestedYear = year;
+    requestedMonth = null;
+    pendingCountry = country.value || pendingCountry;
+    return load(true);
   }
 
   function applyNewsFilters() {
@@ -1109,10 +1204,15 @@
       if (select === country) pendingCountry = null;
       applyTradeFilters();
     });
+    tradeYear.addEventListener("change", () => selectTradeYear(tradeYear.value));
     get("market-clear").addEventListener("click", () => {
       pendingCountry = null;
       product.selectedIndex = flow.selectedIndex = period.selectedIndex = country.selectedIndex = newsPeriod.selectedIndex = 0;
       newsPublisher.selectedIndex = 0;
+      if (requestedYear) {
+        selectTradeYear("").then(() => product.focus());
+        return;
+      }
       refreshCountries();
       applyTradeFilters();
       product.focus();
@@ -1127,7 +1227,8 @@
       country.focus();
     });
     get("market-download").addEventListener("click", downloadReport);
-    retry.addEventListener("click", load);
+    retry.addEventListener("click", () => load(true));
+    recent.addEventListener("click", () => selectTradeYear(""));
     load();
   }
   newsRetry.addEventListener("click", loadNews);

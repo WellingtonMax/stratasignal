@@ -74,7 +74,7 @@
         <a href="#fonte">Fonte e metodologia ↓</a>
       </div>
       <details id="market-trade-disclosure" class="market-filter-panel" open>
-        <summary class="market-map-only">Filtros do mapa</summary>
+        <summary class="market-map-only">Filtros do mapa <small id="market-filter-summary">Produto, mês e parceiro</small></summary>
         <fieldset id="market-controls" class="market-filters" disabled>
           <legend class="market-visually-hidden">Filtros do comércio</legend>
           <label for="market-product">Produto
@@ -87,7 +87,10 @@
           <label for="market-flow">Fluxo
             <select id="market-flow"><option value="import">Importações</option><option value="export">Exportações</option></select>
           </label>
-          <label for="market-period">Período do comércio
+          <label id="market-year-filter" for="market-year" hidden>Ano do comércio
+            <select id="market-year" aria-describedby="market-year-coverage"><option value="">Mais recentes</option></select>
+          </label>
+          <label for="market-period">Mês do comércio
             <select id="market-period"><option value="">Todo o período</option></select>
           </label>
           <label for="market-country"><span id="market-country-label">País de origem</span>
@@ -96,9 +99,11 @@
           <button type="button" id="market-clear" class="button secondary">Limpar filtros</button>
         </fieldset>
       </details>
+      <p id="market-year-coverage" class="market-news-note" hidden></p>
       <p id="market-stale" class="market-notice" hidden>O corte tem mais de 45 dias. Confira na fonte se há uma publicação posterior.</p>
       <p id="market-status" class="market-status market-panorama-only" role="status">Carregando dados públicos…</p>
       <button type="button" id="market-retry" class="button secondary" hidden>Tentar carregar novamente</button>
+      <button type="button" id="market-recent" class="button secondary" hidden>Voltar ao comércio recente</button>
       <noscript><p>Ative o JavaScript para usar os filtros ou consulte o Comex Stat na seção de fontes.</p></noscript>
       <div id="market-results" hidden>
         <dl class="market-stats" aria-label="Indicadores do recorte">
@@ -259,7 +264,7 @@
             <select id="market-news-country"><option value="">Todos os países</option></select>
           </label>
           <label for="market-news-period">Mês de publicação
-            <select id="market-news-period" aria-describedby="market-news-period-help" disabled>
+            <select id="market-news-period" aria-describedby="market-news-period-help market-news-date-coverage" disabled>
               <option value="">Mesmo período do comércio</option>
             </select>
           </label>
@@ -274,6 +279,7 @@
           <span class="market-trade-only">Mês de publicação e fonte filtram as notícias. O recorte comercial usa seus próprios filtros.</span>
           <span class="market-news-only">Combine mineral, país citado, mês de publicação e fonte.</span>
         </p>
+        <p id="market-news-date-coverage" class="market-news-note" hidden></p>
       </details>
       <p id="market-news-stale" class="market-notice" hidden>Uma consulta tem mais de 30 dias. Confira a fonte para ver publicações posteriores.</p>
       <p id="market-news-status" class="market-status" role="status">Carregando notícias…</p>
@@ -365,13 +371,13 @@
     <section id="fonte" class="market-method market-trade-only" aria-labelledby="market-method-title">
       <div><p class="eyebrow">PROCEDÊNCIA E COBERTURA</p><h2 id="market-method-title">Como ler o painel</h2></div>
       <div>
-        <p>Estatísticas aduaneiras agregadas do Brasil por mês, país e produto. Grafita natural em pó ou escamas (NCM 25041000), carbonatos de lítio (NCM 28369100) e ferronióbio (NCM 72029300). O peso do ferronióbio é o da liga comercializada. A série mostra os três últimos meses disponíveis no momento da consulta.</p>
+        <p>Estatísticas aduaneiras agregadas do Brasil por mês, país e produto. Grafita natural em pó ou escamas (NCM 25041000), carbonatos de lítio (NCM 28369100) e ferronióbio (NCM 72029300). O peso do ferronióbio é o da liga comercializada. A seleção inicial mostra os três últimos meses publicados. Os anos disponíveis aparecem nos filtros de comércio.</p>
         <p>O valor FOB mede o comércio declarado em dólares correntes. Variações podem refletir peso, composição ou preço dos itens comercializados. Os códigos abrangem categorias aduaneiras. Eles não identificam pureza, mina ou fornecedor. Os valores da fonte podem ser revisados.</p>
         <p>Uma carga do Comex Stat é consultada a cada preparação de publicação. Os registros da carteira fictícia ficam separados deste painel.</p>
         <div class="market-source-links">
           <a href="https://comexstat.mdic.gov.br/pt/home">Consultar o Comex Stat ↗</a>
           <a href="https://api-comexstat.mdic.gov.br/docs">Documentação da API ↗</a>
-          <a href="/comex.json" download>Baixar a carga publicada (JSON)</a>
+          <a id="market-source-download" href="/comex.json" download>Baixar a carga do período (JSON)</a>
           <a id="market-baci-link" href="/mercados/" hidden>Ver a série anual da grafita no BACI</a>
         </div>
       </div>

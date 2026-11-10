@@ -8,7 +8,7 @@ from unittest.mock import patch
 from zipfile import ZipFile
 
 from stratasignal.build_public_site import (
-    build_public_site, collect_comex, collect_news, refresh_public_news,
+    build_public_site, collect_comex, collect_news, collect_trade_history, refresh_public_news,
 )
 from stratasignal.public_markets_world import VERSION, YEARS, _aggregate
 from stratasignal.public_news import (
@@ -57,6 +57,75 @@ FETCHED_AT = datetime(2026, 11, 7, 18, 0, tzinfo=timezone.utc)
 
 
 class PublicSiteTests(unittest.TestCase):
+    @patch("stratasignal.build_public_site.time.sleep")
+    @patch("stratasignal.build_public_site.collect_news")
+    @patch("stratasignal.build_public_site._fetch")
+    def test_annual_archive_matches_recent_rows_across_a_year_boundary(self, fetch, news, sleep):
+        status = {"year": "2001", "monthNumber": "02", "updated": "2001-03-08"}
+        imports = {"list": [trade_record(year="2000", monthNumber="12")]}
+        exports = {"list": [trade_record(year="2001", monthNumber="02", country="Japão")]}
+        feed = parse_feed(atom_feed(next(iter(EDITORIAL))), FETCHED_AT)
+        news.return_value = feed
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fetch.side_effect = list(map(reply, [status, imports, exports, status]))
+            history = collect_trade_history(root / "history")
+            self.assertEqual([call.args[1]["flow"] for call in fetch.call_args_list[1:3]], ["import", "export"])
+            self.assertEqual(fetch.call_args_list[1].args[1]["period"], {"from": "2000-01", "to": "2001-02"})
+            self.assertEqual(sleep.call_count, 2)
+
+            fetch.side_effect = list(map(reply, [status, imports, exports]))
+            output = build_public_site(root / "site", enable_ml=False, trade_history_from=history)
+            manifest = json.loads((output / "source-manifest.json").read_text())
+            catalog = manifest["trade_history"]
+            self.assertEqual(catalog["start_month"], "2000-01")
+            self.assertEqual(catalog["end_month"], "2001-02")
+            self.assertEqual(set(catalog["years"]), {"2000", "2001"})
+            for year, digest in catalog["years"].items():
+                raw = (history / f"{year}.json").read_bytes()
+                self.assertEqual(digest, hashlib.sha256(raw).hexdigest())
+                self.assertEqual((output / f"edicoes/comex-{digest}.json").read_bytes(), raw)
+            annual = json.loads((history / "2000.json").read_text())
+            self.assertEqual(len(annual["months"]), 12)
+            current = json.loads((history / "2001.json").read_text())
+            self.assertEqual(current["months"], ["2001-01", "2001-02"])
+
+            annual["records"][0]["fob_usd"] += 1
+            (history / "2000.json").write_text(json.dumps(annual), encoding="utf-8")
+            fetch.side_effect = list(map(reply, [status, imports, exports]))
+            with self.assertRaisesRegex(InputError, "diverge da carga recente"):
+                build_public_site(root / "different", enable_ml=False, trade_history_from=history)
+            self.assertFalse((root / "different").exists())
+
+    @patch("stratasignal.build_public_site.time.sleep")
+    @patch("stratasignal.build_public_site._fetch")
+    def test_history_collection_rejects_publication_change(self, fetch, _sleep):
+        status = {"year": "2000", "monthNumber": "01", "updated": "2000-02-08"}
+        fetch.side_effect = list(map(reply, [status, {"list": []}, {"list": []}, status | {"updated": "2000-02-09"}]))
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "history"
+            with self.assertRaisesRegex(InputError, "mudou durante a coleta"):
+                collect_trade_history(output)
+            self.assertFalse(output.exists())
+
+    @patch("stratasignal.build_public_site.time.sleep")
+    @patch("stratasignal.build_public_site.collect_news")
+    @patch("stratasignal.build_public_site._fetch")
+    def test_public_archive_identifies_only_verified_years(self, fetch, news, _sleep):
+        status = {"year": "2002", "monthNumber": "03", "updated": "2002-04-08"}
+        empty = {"list": []}
+        news.return_value = parse_feed(atom_feed(next(iter(EDITORIAL))), FETCHED_AT)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fetch.side_effect = list(map(reply, [status, empty, empty, status]))
+            history = collect_trade_history(root / "history")
+            (history / "2001.json").unlink()
+            fetch.side_effect = list(map(reply, [status, empty, empty]))
+            output = build_public_site(root / "site", enable_ml=False, trade_history_from=history)
+            archive = json.loads((output / "source-manifest.json").read_text())["trade_history"]
+            self.assertEqual(set(archive["years"]), {"2000", "2002"})
+            self.assertEqual(archive["end_month"], "2002-03")
+
     @patch("stratasignal.build_public_site.collect_news")
     @patch("stratasignal.build_public_site._fetch")
     def test_build_keeps_public_snapshots_outside_the_synthetic_workbench(self, fetch, news):

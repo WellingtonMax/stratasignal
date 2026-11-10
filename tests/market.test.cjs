@@ -67,7 +67,7 @@ function editionManifest(current = sample, previous = {...sample, fetched_at: "2
   }};
 }
 
-function open(fetcher, newsFetcher, query = "", manifestFetcher, view = "panorama") {
+function open(fetcher, newsFetcher, query = "", manifestFetcher, view = "panorama", yearFetcher) {
   const route = view === "panorama" ? "/" : `/${view}/`;
   const page = html.replace('data-view="panorama"', `data-view="${view}"`);
   const dom = new JSDOM(page, {runScripts: "outside-only", url: `https://example.invalid${route}${query}`});
@@ -81,6 +81,7 @@ function open(fetcher, newsFetcher, query = "", manifestFetcher, view = "panoram
     const attempts = calls.filter(call => call.url === url).length;
     if (url === "/news.json") return newsFetcher ? newsFetcher(attempts) : response(newsSample);
     if (url === "/source-manifest.json") return manifestFetcher ? manifestFetcher(attempts) : response(editionManifest());
+    if (yearFetcher && url.startsWith("/edicoes/")) return yearFetcher(url);
     assert.equal(url, "/comex.json");
     return fetcher ? fetcher(attempts) : response(sample);
   };
@@ -528,7 +529,7 @@ test("the map report preview and download distinguish the news and trade periods
   assert.match(get("market-report-news-source").textContent, /Natural Resources Canada.*9 de abril de 2025/);
   change("market-news-period", "");
   assert.equal(preview.open, true);
-  assert.equal(get("market-report-news").textContent, "Nenhuma publicação no recorte");
+  assert.equal(get("market-report-news").textContent, "Sem cobertura da curadoria neste período");
   assert.match(get("market-report-news-period").textContent, /fevereiro de 2025/);
   assert.equal((await download()).news_context.status, "no_matches");
 });
@@ -685,7 +686,95 @@ test("the dedicated map preserves the commerce slice, zooms a marker and links t
   assert.equal(get("market-geo-scene").style.transform, "");
   change("market-period", "");
   assert.equal(new URL(window.location.href).searchParams.has("mes"), false);
-  assert.deepEqual(calls.map(call => call.url), ["/comex.json", "/news.json"]);
+  assert.deepEqual(calls.map(call => call.url), ["/comex.json", "/news.json", "/source-manifest.json"]);
+});
+
+test("the map loads one verified year and carries its month through reports and navigation", async t => {
+  const annual = {...sample, months: Array.from({length: 12}, (_, index) => `2000-${String(index + 1).padStart(2, "0")}`),
+    records: [record("2000-01", "Canadá", 1000, 700, "export", "28369100"),
+      record("2000-04", "Canadá", 2500, 1200, "export", "28369100")]};
+  const digest = createHash("sha256").update(JSON.stringify(annual)).digest("hex");
+  const archive = `/edicoes/comex-${digest}.json`;
+  const manifest = {...editionManifest(), trade_history: {
+    start_month: "2000-01", end_month: "2000-12", years: {2000: digest},
+  }};
+  const {dom, window, get, calls, change} = open(null, null, "?ncm=28369100&fluxo=export&ano=2000&mes=2000-04&pais=Canadá",
+    () => response(manifest), "mapa", url => { assert.equal(url, archive); return response(annual); });
+  t.after(() => dom.window.close());
+  const {download, files} = captureDownloads(window, get);
+  await settle(get);
+  assert.deepEqual(calls.map(call => call.url), ["/source-manifest.json", "/news.json", archive]);
+  assert.deepEqual([...get("market-year").options].map(option => option.value), ["", "2000"]);
+  assert.equal(get("market-period").options.length, 13);
+  assert.match(get("market-year-coverage").textContent, /janeiro de 2000 a dezembro de 2000/);
+  assert.match(get("market-news-date-coverage").textContent, /março de 2025/);
+  assert.match(get("market-geo-amount").textContent, /2\.500 FOB/);
+  assert.match(get("market-report-news").textContent, /Sem cobertura da curadoria/);
+  const monthly = await download();
+  assert.equal(monthly.filters.year, "2000");
+  assert.deepEqual(monthly.months, ["2000-04"]);
+  assert.equal(files.at(-1).name, "stratasignal-comex-28369100-export-2000-04.json");
+  assert.equal(monthly.source.snapshot_url, `https://example.invalid${archive}`);
+  assert.equal(monthly.source.mutable_snapshot_url, null);
+  for (const id of ["market-chart-link", "market-context-news"]) {
+    const url = new URL(get(id).href);
+    assert.equal(url.searchParams.get("ano"), "2000");
+    assert.equal(url.searchParams.get("mes"), "2000-04");
+  }
+  change("market-period", "");
+  change("market-news-period", "todas");
+  const fullYear = await download();
+  assert.deepEqual(fullYear.months, annual.months);
+  assert.equal(fullYear.monthly[1].fob_usd, null);
+  assert.equal(fullYear.totals.fob_usd, 3500);
+  assert.equal(fullYear.news_context.filters.period_mode, "all_curated_dates");
+  assert.deepEqual(fullYear.news_context.publication_months, ["2025-03"]);
+  assert.deepEqual(fullYear.news_context.items, [newsItem]);
+  assert.equal(get("market-bars").classList.contains("market-bars-long"), true);
+  assert.equal(calls.length, 3);
+  change("market-year", "");
+  await settle(get);
+  assert.equal(new URL(window.location.href).searchParams.has("ano"), false);
+  assert.deepEqual((await download()).months, sample.months);
+  assert.equal(calls.at(-1).url, "/comex.json");
+});
+
+test("a damaged annual edition cannot show recent figures under the historical year", async t => {
+  const annual = {...sample, months: ["2000-01"], records: [record("2000-01", "China", 50, 2)]};
+  const digest = createHash("sha256").update(JSON.stringify(annual)).digest("hex");
+  const manifest = {...editionManifest(), trade_history: {
+    start_month: "2000-01", end_month: "2000-01", years: {2000: digest},
+  }};
+  const {dom, window, get, calls, change} = open(null, null, "", () => response(manifest), "mapa",
+    () => response({...annual, records: []}));
+  t.after(() => dom.window.close());
+  await settle(get);
+  change("market-year", "2000");
+  await settle(get);
+  assert.match(get("market-geo-status").textContent, /ano solicitado/);
+  assert.equal(get("market-report").hidden, true);
+  assert.equal(get("market-geo-content").hidden, true);
+  assert.equal(calls.filter(call => call.url === "/comex.json").length, 1);
+  get("market-recent").click();
+  await settle(get);
+  assert.equal(get("market-controls").disabled, false);
+  assert.equal(new URL(window.location.href).searchParams.has("ano"), false);
+  assert.equal(get("market-report").hidden, false);
+});
+
+test("the map labels missing annual coverage and rejects links to unverified years", async t => {
+  const manifest = {...editionManifest(), trade_history: {
+    start_month: "2000-01", end_month: "2002-03", years: {2000: "a".repeat(64), 2002: "b".repeat(64)},
+  }};
+  const {dom, get, calls} = open(null, null, "?ano=2001", () => response(manifest), "mapa");
+  t.after(() => dom.window.close());
+  await settle(get);
+  assert.match(get("market-year-coverage").textContent, /Aguardam validação as edições de 2001/);
+  assert.deepEqual([...get("market-year").options].map(option => option.value), ["", "2002", "2000"]);
+  assert.match(get("market-geo-status").textContent, /sem edição validada/);
+  assert.equal(get("market-report").hidden, true);
+  assert.equal(get("market-recent").hidden, false);
+  assert.deepEqual(calls.map(call => call.url), ["/source-manifest.json", "/news.json"]);
 });
 
 test("the dedicated news page lists the latest articles independently and can clear an empty scoped link", async t => {
