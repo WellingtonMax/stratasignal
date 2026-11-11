@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="markets-world.css">
   <script src="markets-quote.js" defer></script>
   <script src="markets-issuers.js" defer></script>
+  <script src="markets-gallium.js" defer></script>
   <script src="markets-world.js" defer></script>
 </head>
 <body class="market-page markets-page">
@@ -43,6 +44,7 @@
       <div class="world-banner-meta">
         <p id="world-coverage" aria-label="Cobertura do catálogo">Catálogo de comércio e bolsas</p>
         <a href="nacional.html">Séries nacionais de ferro · Brasil e Austrália</a>
+        <a id="world-gallium-link" href="?pais=BR&amp;produto=811292&amp;fluxo=export#world-gallium-title">Cadeia do gálio · Semicondutores</a>
       </div>
     </section>
 
@@ -68,6 +70,29 @@
         <button id="world-reset" class="button secondary" type="button">Limpar filtros</button>
       </div>
     </fieldset>
+    <section id="world-gallium-panel" class="card world-gallium" aria-labelledby="world-gallium-title" hidden>
+      <p class="eyebrow">MATERIAIS PARA TECNOLOGIA · CONTEXTO INDUSTRIAL</p>
+      <h2 id="world-gallium-title" tabindex="-1">Cadeia do gálio</h2>
+      <p>Onde o Brasil já atua, onde a produção se concentra e qual elo investigar?</p>
+      <p id="world-gallium-status" class="markets-context" role="status"></p>
+      <button id="world-gallium-retry" class="button secondary" type="button" hidden>Tentar carregar evidências</button>
+      <div id="world-gallium-body" hidden>
+        <p id="world-gallium-scope" class="markets-context"></p>
+        <div class="world-gallium-overview">
+          <article>
+            <p class="eyebrow">RECUPERAÇÃO PRIMÁRIA</p>
+            <strong id="world-gallium-concentration" class="world-gallium-number"></strong>
+            <p id="world-gallium-concentration-scope"></p>
+            <a id="world-gallium-concentration-source" class="markets-source">Consultar estimativa do USGS</a>
+          </article>
+          <dl id="world-gallium-supply"></dl>
+        </div>
+        <ol id="world-gallium-stages" class="world-gallium-stages" role="list"></ol>
+        <p class="market-notice">Próximo elo a investigar no Brasil · recuperação comercial de gálio com instalação, produto e período documentados. A ausência de evidência nesta curadoria representa uma lacuna de cobertura.</p>
+        <p class="markets-context">O comércio abaixo reúne outros metais no mesmo código HS 811292. A parcela específica de gálio é indisponível nesta fonte.</p>
+        <a id="world-gallium-edition-link" class="markets-source">Baixar edição documental com fontes e datas</a>
+      </div>
+    </section>
     <section class="world-coverage" aria-labelledby="world-coverage-title">
       <h2 id="world-coverage-title">Cobertura do recorte</h2>
       <div class="world-coverage-grid">
@@ -173,7 +198,7 @@
         <div class="world-report-action">
           <div>
             <h3>Relatório verificável do recorte</h3>
-            <p class="markets-context">Baixe os anos, unidades e lacunas da série, com filtros, SHA-256 e fichas documentadas de empresas quando disponíveis.</p>
+            <p class="markets-context">Baixe os anos, unidades e lacunas da série, com filtros, SHA-256 e as evidências industriais disponíveis no recorte.</p>
           </div>
           <button id="world-download" class="button" type="button" disabled>Baixar relatório JSON</button>
         </div>

@@ -8,7 +8,7 @@ const {JSDOM} = require("jsdom");
 
 const ui = path.join(__dirname, "../stratasignal/ui");
 const html = fs.readFileSync(path.join(ui, "markets-world.html"), "utf8");
-const scripts = ["markets-quote.js", "markets-issuers.js", "markets-world.js"];
+const scripts = ["markets-quote.js", "markets-issuers.js", "markets-gallium.js", "markets-world.js"];
 const series = {
   "2601": {code: "2601", series: {
     WORLD: [[4000, 12000, 2, 2], [4000, 12000, 2, 2], [7000, 18000, 2, 3], [7000, 18000, 2, 3], [10000, 24000, 2, 3], [10000, 24000, 2, 3]],
@@ -33,7 +33,7 @@ const sample = {
   trade_sha256: Object.fromEntries(Object.entries(series).map(([code, data]) => [code, digest(data)])),
 };
 
-function open(fetcher, query = "", catalog = sample, {includeIssuers = true} = {}) {
+function open(fetcher, query = "", catalog = sample, {includeIssuers = true, gallium = null} = {}) {
   const dom = new JSDOM(html, {runScripts: "outside-only", url: `https://example.invalid/mercados/${query}`});
   const {window} = dom;
   const get = id => window.document.getElementById(`world-${id}`);
@@ -51,7 +51,14 @@ function open(fetcher, query = "", catalog = sample, {includeIssuers = true} = {
   window.fetch = async (url, options) => {
     assert.equal(options.credentials, "omit");
     assert.equal(options.redirect, "error");
-    const value = url === "catalogo.json" ? catalog : await fetcher(url, series[url.match(/\d+/)?.[0]]);
+    let value = series[url.match(/\d+/)?.[0]];
+    if (url === "../source-manifest.json") {
+      value = {markets_snapshot: {gallium_evidence: {path: `mercados/edicoes/galio-${digest(gallium)}.json`,
+        sha256: digest(gallium), reviewed_on: gallium?.reviewed_on}}};
+    } else if (url.startsWith("../mercados/edicoes/")) {
+      value = gallium;
+    }
+    value = url === "catalogo.json" ? catalog : await fetcher(url, value);
     const bytes = new TextEncoder().encode(JSON.stringify(value));
     return {ok: true, arrayBuffer: async () => bytes.buffer};
   };
@@ -351,4 +358,110 @@ test("both trade directions share the year and preserve missing values in the co
   assert.equal(get("flow-comparison").hidden, true);
   get("download").click();
   assert.equal(JSON.parse(downloads[1].blob.parts.join("")).flow_comparison, null);
+});
+
+function galliumFixture() {
+  const data = JSON.parse(fs.readFileSync(path.join(ui, "../data/galio.json"), "utf8"));
+  data.brazil_supply = ["primary_recovery", "purification"].map(stage =>
+    ({country: "BR", stage, status: "unavailable", evidence_ids: []}));
+  data.baci_context = {edition: sample.release, years: sample.years, status: "group_only",
+    classification: data.classifications.find(group => group.system === "HS"), gallium_amounts: null};
+  const trade = {...series["2601"], code: "811292"};
+  return {data, trade, catalog: {...sample, products: {...sample.products,
+    "811292": ["Outros metais da posição 8112 em bruto, resíduos e pós", "refinado", "8112"]},
+    trade_sha256: {...sample.trade_sha256, "811292": digest(trade)}}};
+}
+
+async function settledGallium(get) {
+  for (let i = 0; i < 100 && /Carregando/.test(get("gallium-status").textContent); i++) {
+    await new Promise(resolve => setTimeout(resolve, 2));
+  }
+}
+
+test("gallium stages and the report share the checked edition while trade filters retain their own scope", async t => {
+  const {data, trade, catalog} = galliumFixture();
+  data.records[0].summary = "<img src=x onerror=alert(1)> descrição documental";
+  const {dom, downloads, get, input, window} = open((url, value) => url === "comercio/811292.json" ? trade : value,
+    "?pais=BR&produto=811292&fluxo=export#world-gallium-title", catalog, {gallium: data});
+  t.after(() => dom.window.close());
+  await settled(get);
+  await settledGallium(get);
+  assert.equal(get("gallium-panel").hidden, false);
+  assert.equal(window.document.activeElement, get("gallium-title"));
+  assert.match(get("gallium-status").textContent, /8 evidências/);
+  assert.equal(get("gallium-concentration").textContent, "99%");
+  assert.match(get("gallium-concentration-scope").textContent, /baixa pureza em 2025/);
+  assert.equal(get("gallium-stages").querySelectorAll("h3").length, 5);
+  assert.equal(get("gallium-stages").querySelectorAll("details").length, 8);
+  assert.equal(get("gallium-stages").querySelector("img"), null);
+  assert.match(get("gallium-stages").textContent, /<img src=x/);
+  assert.match(get("gallium-stages").textContent, /escala de pesquisa/);
+  assert.match(get("gallium-stages").textContent, /proposta|demonstração/);
+  assert.deepEqual([...get("gallium-supply").querySelectorAll("dd")].map(item => item.textContent),
+    ["Volume indisponível", "Volume indisponível"]);
+
+  input("flow", "import");
+  input("country", "CL");
+  await settled(get);
+  get("download").click();
+  const report = JSON.parse(downloads[0].blob.parts.join(""));
+  assert.equal(report.filters.country_code, "CL");
+  assert.equal(report.filters.flow, "import");
+  assert.deepEqual(report.gallium_evidence.edition, data);
+  assert.equal(report.gallium_evidence.source.sha256, digest(data));
+  assert.equal(report.gallium_evidence.source.snapshot_url, get("gallium-edition-link").href);
+  assert.equal(report.gallium_evidence.edition.baci_context.gallium_amounts, null);
+  assert.match(get("gallium-link").href, /pais=CL&produto=811292&fluxo=import/);
+  input("product", "2601");
+  await settled(get);
+  assert.equal(get("gallium-panel").hidden, true);
+  get("download").click();
+  assert.equal(JSON.parse(downloads[1].blob.parts.join("")).gallium_evidence, null);
+});
+
+test("gallium hash failure is explicit in the report and can recover without replacing the trade slice", async t => {
+  const {data, trade, catalog} = galliumFixture();
+  let altered = true;
+  const {dom, downloads, get} = open((url, value) => {
+    if (url === "comercio/811292.json") return trade;
+    return altered && url.startsWith("../mercados/edicoes/") ? {...value, records: []} : value;
+  }, "?pais=BR&produto=811292&fluxo=export", catalog, {gallium: data});
+  t.after(() => dom.window.close());
+  await settled(get);
+  await settledGallium(get);
+  assert.equal(get("trade").hidden, false);
+  assert.equal(get("gallium-body").hidden, true);
+  assert.equal(get("gallium-retry").hidden, false);
+  assert.match(get("gallium-status").textContent, /indisponíveis/);
+  get("download").click();
+  assert.equal(JSON.parse(downloads[0].blob.parts.join("")).gallium_evidence.status, "unavailable");
+  altered = false;
+  get("gallium-retry").click();
+  await settledGallium(get);
+  assert.equal(get("gallium-body").hidden, false);
+  get("download").click();
+  assert.equal(JSON.parse(downloads[1].blob.parts.join("")).gallium_evidence.source.sha256, digest(data));
+});
+
+test("gallium waits for its edition and rejects an unsafe source even when the file hash matches", async t => {
+  const {data, trade, catalog} = galliumFixture();
+  data.sources["hydro-mina"].url = "javascript:alert(1)";
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const {dom, downloads, get} = open(async (url, value) => {
+    if (url === "comercio/811292.json") return trade;
+    if (url.startsWith("../mercados/edicoes/")) await gate;
+    return value;
+  }, "?pais=BR&produto=811292&fluxo=export", catalog, {gallium: data});
+  t.after(() => dom.window.close());
+  await settled(get);
+  get("download").click();
+  assert.equal(downloads.length, 0);
+  assert.match(get("download-status").textContent, /Aguarde/);
+  release();
+  await settledGallium(get);
+  assert.equal(get("gallium-body").hidden, true);
+  assert.equal(get("gallium-stages").querySelector("a"), null);
+  get("download").click();
+  assert.equal(JSON.parse(downloads[0].blob.parts.join("")).gallium_evidence.status, "unavailable");
 });

@@ -410,7 +410,8 @@ def _write_markets(output, ui):
     for source, target in (("markets-world.html", "index.html"), ("markets.html", "nacional.html"),
                            ("markets.js", "markets.js"), ("markets.css", "markets.css"),
                            ("markets-world.js", "markets-world.js"), ("markets-world.css", "markets-world.css"),
-                           ("markets-quote.js", "markets-quote.js"), ("markets-issuers.js", "markets-issuers.js")):
+                           ("markets-quote.js", "markets-quote.js"), ("markets-issuers.js", "markets-issuers.js"),
+                           ("markets-gallium.js", "markets-gallium.js")):
         with (market / target).open("xb") as stream:
             stream.write((ui / source).read_bytes())
     snapshot = public_markets.SNAPSHOT
