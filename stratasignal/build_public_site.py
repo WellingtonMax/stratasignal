@@ -12,15 +12,16 @@ from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from . import __version__
-from . import public_markets, public_markets_world, public_news
+from . import public_gallium, public_markets, public_markets_world, public_news
 from .build_demo import build_demo
 from .market import month
 from .schema import InputError, day, rows, text_value, unique_object
 
 API = "https://api-comexstat.mdic.gov.br"
-PRODUCTS = ("25041000", "28369100")
+PRODUCTS = ("25041000", "28369100", "72029300")
 FLOWS = ("import", "export")
 LOOKBACK = 3
+HISTORY_START = 2000
 MAX_BYTES = 1024 * 1024
 MAX_ROWS = 2000
 MAX_SAFE_INTEGER = 2**53 - 1
@@ -104,29 +105,30 @@ def _records(payload, flow, start, end):
     return result
 
 
-def collect_comex():
-    """Fetch fixed public queries without accepting user data or destinations."""
+def _trade_status():
     status, status_hash = _fetch("/general/dates/updated")
     end = _period(status)
     updated_on = day(status.get("updated"))
     fetched_at = datetime.now(timezone.utc)
     if end >= fetched_at.strftime("%Y-%m") or not day(end + "-01") <= updated_on <= fetched_at.date():
         raise InputError("Período ou atualização incompatível com a data de consulta")
-    month_index = int(end[:4]) * 12 + int(end[5:]) - 1
-    periods = [f"{index // 12:04d}-{index % 12 + 1:02d}" for index in range(month_index - LOOKBACK + 1, month_index + 1)]
-    start = month(periods[0])
-    records, response_hashes = [], {"updated": status_hash}
-    for flow in FLOWS:
-        query = {
-            "flow": flow,
-            "monthDetail": True,
-            "period": {"from": start, "to": end},
-            "filters": [{"filter": "ncm", "values": [int(code) for code in PRODUCTS]}],
-            "details": ["country", "ncm"],
-            "metrics": ["metricFOB", "metricKG"],
-        }
-        payload, response_hashes[flow] = _fetch("/general?language=pt", query)
-        records.extend(_records(payload, flow, start, end))
+    return end, updated_on, fetched_at, status_hash
+
+
+def _query_trade(flow, start, end):
+    query = {
+        "flow": flow,
+        "monthDetail": True,
+        "period": {"from": start, "to": end},
+        "filters": [{"filter": "ncm", "values": [int(code) for code in PRODUCTS]}],
+        "details": ["country", "ncm"],
+        "metrics": ["metricFOB", "metricKG"],
+    }
+    payload, digest = _fetch("/general?language=pt", query)
+    return _records(payload, flow, start, end), digest
+
+
+def _trade_snapshot(periods, records, response_hashes, updated_on, fetched_at):
     return {
         "schema_version": 1,
         "dataset_kind": "public_aggregate",
@@ -137,6 +139,62 @@ def collect_comex():
         "response_sha256": response_hashes,
         "records": records,
     }
+
+
+def collect_comex():
+    """Fetch fixed public queries without accepting user data or destinations."""
+    end, updated_on, fetched_at, status_hash = _trade_status()
+    month_index = int(end[:4]) * 12 + int(end[5:]) - 1
+    periods = [f"{index // 12:04d}-{index % 12 + 1:02d}" for index in range(month_index - LOOKBACK + 1, month_index + 1)]
+    records, response_hashes = [], {"updated": status_hash}
+    for flow in FLOWS:
+        batch, response_hashes[flow] = _query_trade(flow, periods[0], end)
+        records.extend(batch)
+    return _trade_snapshot(periods, records, response_hashes, updated_on, fetched_at)
+
+
+def _year_months(year, end):
+    return [f"{year:04d}-{number:02d}" for number in range(1, 13) if f"{year:04d}-{number:02d}" <= end]
+
+
+def _snapshot_bytes(snapshot):
+    return (json.dumps(snapshot, ensure_ascii=False, allow_nan=False, indent=2) + "\n").encode("utf-8")
+
+
+def collect_trade_history(directory):
+    """Collect annual cuts from the same official publication in bounded batches."""
+    output = Path(directory)
+    if output.exists():
+        raise FileExistsError(output)
+    end, updated_on, _, status_hash = _trade_status()
+    last_year = int(end[:4])
+    if not HISTORY_START <= last_year < HISTORY_START + 100:
+        raise InputError("Cobertura histórica inesperada no Comex Stat")
+    annual = {}
+    for first in range(HISTORY_START, last_year + 1, 3):
+        last = min(last_year, first + 2)
+        records, hashes = [], {"updated": status_hash}
+        for flow in FLOWS:
+            time.sleep(12)
+            batch, hashes[flow] = _query_trade(flow, f"{first:04d}-01", min(end, f"{last:04d}-12"))
+            records.extend(batch)
+        fetched_at = datetime.now(timezone.utc)
+        for year in range(first, last + 1):
+            periods = _year_months(year, end)
+            annual[year] = _trade_snapshot(
+                periods, [row for row in records if row["month"] in periods], hashes, updated_on, fetched_at,
+            )
+    confirmed_end, confirmed_update, _, confirmed_hash = _trade_status()
+    if (confirmed_end, confirmed_update, confirmed_hash) != (end, updated_on, status_hash):
+        raise InputError("A edição do Comex Stat mudou durante a coleta histórica")
+    output.mkdir()
+    try:
+        for year, snapshot in annual.items():
+            (output / f"{year}.json").write_bytes(_snapshot_bytes(snapshot))
+    except Exception:
+        shutil.rmtree(output)
+        raise
+    return output
 
 
 def _validated_snapshot_bytes(path):
@@ -201,6 +259,49 @@ def _write_trade_editions(output, snapshot_bytes, retained_snapshots):
     return list({edition["sha256"]: edition for edition in result}.values())
 
 
+def _write_trade_history(output, current, annual_directory):
+    """Package reviewed annual cuts only when they agree with the current release."""
+    end = current["months"][-1]
+    last_year = int(end[:4])
+    if not HISTORY_START <= last_year < HISTORY_START + 100:
+        raise InputError("Cobertura histórica inesperada no Comex Stat")
+    annual_directory = Path(annual_directory)
+    years = {}
+    overlapping = []
+    for year in range(HISTORY_START, last_year + 1):
+        annual_path = annual_directory / f"{year}.json"
+        if not annual_path.exists():
+            continue
+        raw, snapshot = _validated_snapshot_bytes(annual_path)
+        hashes = snapshot.get("response_sha256")
+        if (snapshot["months"] != _year_months(year, end) or snapshot["updated_on"] != current["updated_on"]
+                or snapshot.keys() != current.keys() or not isinstance(hashes, dict)
+                or hashes.keys() != {"updated", *FLOWS}
+                or not all(isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) for value in hashes.values())
+                or hashes["updated"] != current["response_sha256"]["updated"]):
+            raise InputError(f"Cobertura ou procedência inesperada no histórico de {year}")
+        for row in snapshot["records"]:
+            if row.keys() != {"month", "ncm", "country", "flow", "fob_usd", "kg"}:
+                raise InputError(f"Campos inesperados no histórico de {year}")
+        overlapping.extend(row for row in snapshot["records"] if row["month"] in current["months"])
+        digest = hashlib.sha256(raw).hexdigest()
+        years[str(year)] = digest
+        path = output / EDITION_DIRECTORY / f"comex-{digest}.json"
+        if not path.exists():
+            with path.open("xb") as stream:
+                stream.write(raw)
+    required_years = {str(HISTORY_START), *(period[:4] for period in current["months"])}
+    if not required_years.issubset(years):
+        raise InputError("O histórico exige o primeiro ano e os anos da janela recente")
+
+    def row_key(row):
+        return row["month"], row["ncm"], row["flow"], row["country"]
+
+    if sorted(overlapping, key=row_key) != sorted(current["records"], key=row_key):
+        raise InputError("O histórico diverge da carga recente do Comex Stat")
+    return {"start_month": f"{HISTORY_START}-01", "end_month": end, "years": years}
+
+
 def _read_news_feed(url):
     request = Request(url, headers={
         "Accept": "application/atom+xml, application/rss+xml, application/rdf+xml, application/xml",
@@ -231,6 +332,17 @@ def collect_news():
         else:
             news["mdic_archives"].append(metadata)
         news["items"].extend(items)
+    archive_url = public_news.CANADA_ARCHIVE_FEED_URL
+    archive = public_news.parse_feed(
+        _read_news_feed(archive_url), datetime.now(timezone.utc), editorial=public_news.CANADA_ARCHIVE_EDITORIAL,
+    )
+    archive_items = archive.pop("items")
+    if not archive_items:
+        raise InputError("O arquivo canadense deixou de confirmar o comunicado selecionado")
+    news["canada_archive"] = {
+        key: archive[key] for key in ("source", "feed_updated_at", "fetched_at", "feed_sha256", "feed_entries")
+    } | {"feed_url": archive_url}
+    news["items"].extend(item | {"feed_url": archive_url} for item in archive_items)
     news["items"].sort(key=lambda item: item["published_on"], reverse=True)
     return news
 
@@ -244,7 +356,7 @@ def _news_manifest(news, news_bytes):
         "feed_updated_at": news["feed_updated_at"],
         "fetched_at": news["fetched_at"],
     }
-    for key in ("mdic", "mdic_archives"):
+    for key in ("mdic", "mdic_archives", "canada_archive"):
         if key in news:
             snapshot[key] = news[key]
     return snapshot
@@ -306,10 +418,12 @@ def _write_markets(output, ui):
     with (market / "dados.json").open("xb") as stream:
         stream.write(raw)
     issuer_snapshot = market / "markets-issuers.js"
+    world = public_markets_world.write_snapshot(market)
     return {"path": "mercados/dados.json", "sha256": hashlib.sha256(raw).hexdigest(),
-            "reviewed_on": snapshot["reviewed_on"], "global": public_markets_world.write_snapshot(market),
+            "reviewed_on": snapshot["reviewed_on"], "global": world,
             "issuer_evidence": {"path": "mercados/markets-issuers.js",
-                                "sha256": hashlib.sha256(issuer_snapshot.read_bytes()).hexdigest()}}
+                                "sha256": hashlib.sha256(issuer_snapshot.read_bytes()).hexdigest()},
+            "gallium_evidence": public_gallium.write_snapshot(market, world["release"], public_markets_world.YEARS)}
 
 
 def _write_observatory_ui(output, ui):
@@ -319,7 +433,7 @@ def _write_observatory_ui(output, ui):
         stream.write(template)
     for view, title, description in (
         ("mapa", "Parceiros comerciais do Brasil",
-         "Explore no mapa os parceiros do Brasil no comércio de grafita natural e carbonatos de lítio."),
+         "Explore os parceiros do Brasil no comércio de grafita natural, carbonatos de lítio e ferronióbio."),
         ("noticias", "Notícias da cadeia mineral",
          "Leia a curadoria de comunicados oficiais sobre grafita, lítio e políticas minerais."),
     ):
@@ -340,14 +454,14 @@ def _write_observatory_ui(output, ui):
             stream.write((ui / name).read_bytes())
 
 
-def build_public_site(directory, source_commit=None, *, enable_ml=True, retained_trade_snapshots=()):
+def build_public_site(directory, source_commit=None, *, enable_ml=True, retained_trade_snapshots=(), trade_history_from=None):
     if source_commit is not None and not re.fullmatch(r"[0-9a-f]{40}", source_commit):
         raise InputError("Commit de origem inválido")
     output = Path(directory)
     if output.exists():
         raise FileExistsError(output)
     snapshot = collect_comex()
-    snapshot_bytes = (json.dumps(snapshot, ensure_ascii=False, allow_nan=False, indent=2) + "\n").encode("utf-8")
+    snapshot_bytes = _snapshot_bytes(snapshot)
     news = collect_news()
     news_bytes = (json.dumps(news, ensure_ascii=False, allow_nan=False, indent=2) + "\n").encode("utf-8")
     ui = Path(__file__).with_name("ui")
@@ -376,6 +490,8 @@ def build_public_site(directory, source_commit=None, *, enable_ml=True, retained
                 "anchor_source": "Natural Earth · Admin 0 – Countries 5.1.1",
             },
         }
+        if trade_history_from is not None:
+            manifest["trade_history"] = _write_trade_history(output, snapshot, trade_history_from)
         with (output / "source-manifest.json").open("x", encoding="utf-8", newline="\n") as stream:
             stream.write(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
     except Exception:
@@ -390,17 +506,26 @@ def main():
     parser.add_argument("--source-commit")
     parser.add_argument("--without-ml", action="store_true")
     parser.add_argument("--retain-trade-snapshot", action="append", default=[])
-    parser.add_argument("--refresh-news-from",
-                        help="Reutilizar uma publicação validada e atualizar apenas a curadoria de notícias")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--refresh-news-from",
+                      help="Reutilizar uma publicação validada e atualizar apenas a curadoria de notícias")
+    mode.add_argument("--collect-trade-history", action="store_true",
+                      help="Gravar recortes anuais do Comex Stat desde 2000 no diretório de saída")
+    parser.add_argument("--trade-history-from", help="Incluir os recortes anuais verificados na publicação")
     args = parser.parse_args()
     try:
-        if args.refresh_news_from:
-            if args.retain_trade_snapshot or args.without_ml:
-                parser.error("--refresh-news-from não aceita opções de build completo")
+        if (args.refresh_news_from or args.collect_trade_history) and (
+                args.retain_trade_snapshot or args.without_ml or args.trade_history_from):
+            parser.error("Opções de build completo exigem o modo de publicação")
+        if args.collect_trade_history:
+            if args.source_commit:
+                parser.error("A coleta histórica não recebe --source-commit")
+            collect_trade_history(args.out)
+        elif args.refresh_news_from:
             refresh_public_news(args.refresh_news_from, args.out, args.source_commit)
         else:
             build_public_site(args.out, args.source_commit, enable_ml=not args.without_ml,
-                              retained_trade_snapshots=args.retain_trade_snapshot)
+                              retained_trade_snapshots=args.retain_trade_snapshot, trade_history_from=args.trade_history_from)
     except (InputError, OSError) as error:
         parser.error(str(error))
 

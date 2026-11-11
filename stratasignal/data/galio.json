@@ -1,0 +1,264 @@
+{
+  "schema_version": 1,
+  "dataset_kind": "public_documentary_evidence",
+  "material": "gallium",
+  "reviewed_on": "2026-11-10",
+  "coverage": "Casos selecionados do Brasil, Canadá e Estados Unidos, além da estimativa mundial do USGS para a recuperação primária em 2025.",
+  "sources": {
+    "hydro-mina": {
+      "publisher": "Hydro",
+      "url": "https://www.hydro.com/br/br/imprensa/noticias/2026/mineracao-paragominas-celebra-19-anos-de-contribuicao-para-o-desenvolvimento-da-regiao/",
+      "published_on": "2026-03-24",
+      "kind": "company",
+      "updated_on": null
+    },
+    "hydro-refino": {
+      "publisher": "Hydro",
+      "url": "https://www.hydro.com/br/br/imprensa/noticias/2026/alunorte-celebra-31-anos-com-investimentos-em-eficiencia-e-descarbonizacao/",
+      "published_on": "2026-10-20",
+      "kind": "company",
+      "updated_on": null
+    },
+    "bndes": {
+      "publisher": "BNDES",
+      "url": "https://agenciadenoticias.bndes.gov.br/noticia/Com-R%24-221-mi-BNDES-financia-planta-demonstracao-inovadora-de-beneficiamento-de-residuos-de-bauxita-no-Para/",
+      "published_on": "2025-11-16",
+      "kind": "government",
+      "updated_on": "2026-05-15"
+    },
+    "rio-pd": {
+      "publisher": "Rio Tinto",
+      "url": "https://www.riotinto.com/en/can/news/releases/2025/rio-tinto-extracts-first-gallium-from-its-alumina-refining-process-with-partner-indium-corporation",
+      "published_on": "2025-05-07",
+      "kind": "company",
+      "updated_on": null
+    },
+    "rio-piloto": {
+      "publisher": "Rio Tinto",
+      "url": "https://www.riotinto.com/news/releases/2026/rio-tinto-advances-gallium-metal-rd-project-in-partnership-with-the-government-of-canada",
+      "published_on": "2026-03-02",
+      "kind": "company",
+      "updated_on": null
+    },
+    "nrcan": {
+      "publisher": "Natural Resources Canada",
+      "url": "https://www.canada.ca/en/natural-resources-canada/news/2026/03/canada-secures-30-new-critical-minerals-partnerships-and-unlocks-121-billion-in-mining-project-capital.html",
+      "published_on": "2026-03-02",
+      "kind": "government",
+      "updated_on": null
+    },
+    "usgs": {
+      "publisher": "USGS · Mineral Commodity Summaries 2026",
+      "url": "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026.pdf",
+      "published_on": "2026-02",
+      "kind": "government",
+      "updated_on": null
+    },
+    "ifusp": {
+      "publisher": "Instituto de Física da USP",
+      "url": "https://portal.if.usp.br/mbe/pt-br/node/323",
+      "published_on": null,
+      "kind": "research",
+      "updated_on": null
+    },
+    "classif": {
+      "publisher": "Receita Federal · Classif",
+      "url": "https://www.gov.br/receitafederal/pt-br/assuntos/aduana-e-comercio-exterior/classificacao-fiscal-de-mercadorias/download-ncm-nomenclatura-comum-do-mercosul",
+      "published_on": null,
+      "kind": "classification",
+      "updated_on": null
+    },
+    "wco-hs2022": {
+      "publisher": "Organização Mundial das Aduanas · HS 2022, capítulo 81",
+      "url": "https://www.wcoomd.org/-/media/wco/public/global/pdf/topics/nomenclature/instruments-and-tools/hs-nomenclature-2022/2022/1581_2022e.pdf?la=en",
+      "published_on": null,
+      "kind": "classification",
+      "updated_on": null
+    }
+  },
+  "records": [
+    {
+      "id": "GA-01",
+      "stage": "bauxite",
+      "status": "operation_documented",
+      "country": "BR",
+      "place": "Paragominas e Barcarena, Pará",
+      "facility_id": "hydro-paragominas",
+      "reference_period": "2025",
+      "product": "bauxite",
+      "title": "Da mina de Paragominas à Alunorte",
+      "summary": "A Hydro declara ter comercializado mais de 10,5 milhões de toneladas de bauxita da mina para a Alunorte em 2025 e identifica o mineroduto entre as instalações.",
+      "limit": "Rota e volume declarado de bauxita.",
+      "sources": [
+        "hydro-mina"
+      ],
+      "measure": null
+    },
+    {
+      "id": "GA-02",
+      "stage": "alumina",
+      "status": "operation_documented",
+      "country": "BR",
+      "place": "Barcarena, Pará",
+      "facility_id": "hydro-alunorte",
+      "reference_period": "2026-10-20",
+      "product": "alumina",
+      "title": "Refino de alumina na Alunorte",
+      "summary": "A Hydro informou que a refinaria estava em operação e declarou capacidade de 6,3 milhões de toneladas de alumina por ano.",
+      "limit": "Capacidade declarada de alumina. A recuperação de gálio exige evidência própria.",
+      "sources": [
+        "hydro-refino"
+      ],
+      "measure": null
+    },
+    {
+      "id": "GA-03",
+      "stage": "primary_recovery",
+      "status": "coverage_gap",
+      "country": "BR",
+      "place": "Barcarena, Pará",
+      "facility_id": null,
+      "reference_period": null,
+      "product": null,
+      "title": "Recuperação comercial ainda sem evidência no recorte brasileiro",
+      "summary": "A Hydro documenta o refino de alumina. O BNDES descreve uma planta demonstrativa da Wave Aluminium voltada ao aproveitamento de resíduos para ferro e silicatos.",
+      "limit": "Para documentar oferta comercial de gálio, falta evidência da instalação, do processo, do produto e do período.",
+      "sources": [
+        "hydro-refino",
+        "bndes"
+      ],
+      "measure": null
+    },
+    {
+      "id": "GA-04",
+      "stage": "primary_recovery",
+      "status": "research_reported",
+      "country": "US",
+      "place": "Rome, Nova York, Estados Unidos",
+      "facility_id": "indium-rome-lab",
+      "reference_period": "2025-05",
+      "product": "gallium_metal",
+      "title": "Recuperação em laboratório",
+      "summary": "A Rio Tinto declarou recuperação de gálio em laboratório da Indium Corporation em Rome. O material de processo veio do refino da Vaudreuil, no Québec.",
+      "limit": "A origem do material e o local do ensaio são distintos. O resultado tem escala de pesquisa.",
+      "sources": [
+        "rio-pd"
+      ],
+      "measure": null
+    },
+    {
+      "id": "GA-05",
+      "stage": "primary_recovery",
+      "status": "project_announced",
+      "country": "CA",
+      "place": "Saguenay, Québec, Canadá",
+      "facility_id": "rio-jonquiere",
+      "reference_period": "2026-03-02",
+      "product": "gallium_metal",
+      "title": "Piloto anunciado em Saguenay",
+      "summary": "A Rio Tinto anunciou um piloto no Complexe Jonquière com previsão de operar em 2027 e propôs, no mesmo local, uma planta de demonstração de até 4 t de gálio por ano.",
+      "limit": "A data é uma previsão do piloto. A capacidade anunciada se refere à planta demonstrativa.",
+      "sources": [
+        "rio-piloto",
+        "nrcan"
+      ],
+      "planned_operation_year": 2027,
+      "measure": {
+        "kind": "announced_capacity_upper_bound",
+        "value": 4,
+        "unit": "t_gallium_per_year"
+      }
+    },
+    {
+      "id": "GA-06",
+      "stage": "purification",
+      "status": "operation_documented",
+      "country": "US",
+      "place": "Nova York, Estados Unidos",
+      "facility_id": null,
+      "reference_period": "2025",
+      "product": "gallium_high_purity",
+      "title": "Purificação e reciclagem de refugo industrial",
+      "summary": "O USGS registra recuperação e refino de gálio de alta pureza em Nova York com insumos importados de baixa pureza e refugo novo.",
+      "limit": "Evidência regional. Grau específico e produção por instalação exigem fonte própria.",
+      "sources": [
+        "usgs"
+      ],
+      "measure": null
+    },
+    {
+      "id": "GA-07",
+      "stage": "semiconductors",
+      "status": "application_documented",
+      "country": null,
+      "place": "Aplicações descritas pelo USGS",
+      "facility_id": null,
+      "reference_period": "2025",
+      "product": "gallium_compounds",
+      "title": "Compostos para circuitos e dispositivos optoeletrônicos",
+      "summary": "O USGS descreve o uso de arseneto de gálio em wafers e de nitreto de gálio em circuitos e dispositivos optoeletrônicos.",
+      "limit": "A aplicação documentada tem escopo distinto de vínculos entre fornecedores e fabricantes.",
+      "sources": [
+        "usgs"
+      ],
+      "measure": null
+    },
+    {
+      "id": "GA-08",
+      "stage": "semiconductors",
+      "status": "research_reported",
+      "country": "BR",
+      "place": "São Paulo, Brasil",
+      "facility_id": "ifusp-lnms",
+      "reference_period": null,
+      "product": "gallium_compounds",
+      "title": "Pesquisa em semicondutores no Brasil",
+      "summary": "O Instituto de Física da USP descreve pesquisas com estruturas de arsenetos de gálio, alumínio e índio e dispositivos optoeletrônicos.",
+      "limit": "Escala de laboratório. A página consultada carece de data de referência e de identificação da origem do insumo.",
+      "sources": [
+        "ifusp"
+      ],
+      "measure": null
+    }
+  ],
+  "concentration": {
+    "country": "CN",
+    "share_percent": 99,
+    "year": 2025,
+    "scope": "world_primary_low_purity_gallium",
+    "method": "published_estimate",
+    "source": "usgs"
+  },
+  "classifications": [
+    {
+      "system": "NCM",
+      "revision": "classif-2026-11-10",
+      "code": "81129200",
+      "label": "Outros metais da posição 81.12 em formas brutas, pós, resíduos e sucata",
+      "valid_from": "2022-04-01",
+      "verified_through": "2026-11-10",
+      "source": "classif",
+      "scope": "group"
+    },
+    {
+      "system": "NCM",
+      "revision": "classif-2026-11-10",
+      "code": "81129900",
+      "label": "Outros produtos do grupo residual de metais da posição 81.12",
+      "valid_from": "2022-04-01",
+      "verified_through": "2026-11-10",
+      "source": "classif",
+      "scope": "group"
+    },
+    {
+      "system": "HS",
+      "revision": "2022",
+      "code": "811292",
+      "label": "Outros metais da posição 81.12 em formas brutas, pós, resíduos e sucata",
+      "valid_from": "2022-01-01",
+      "verified_through": "2026-11-10",
+      "source": "wco-hs2022",
+      "scope": "group"
+    }
+  ]
+}

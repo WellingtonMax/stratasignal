@@ -115,6 +115,20 @@
             <div><dt>Volume em <span id="world-volume-year"></span></dt><dd id="world-volume"></dd><small id="world-volume-coverage"></small></div>
             <div><dt>Variação anual do valor</dt><dd id="world-change"></dd><small id="world-change-period"></small></div>
           </dl>
+          <details id="world-flow-comparison" class="market-table markets-table world-flow-comparison" hidden>
+            <summary>Comparar exportações e importações</summary>
+            <p id="world-flow-latest" class="world-flow-latest"></p>
+            <p id="world-flow-caption" class="markets-context"></p>
+            <p id="world-flow-coverage" class="markets-context"></p>
+            <p class="markets-context world-flow-scroll">Deslize a tabela para ver todas as colunas.</p>
+            <div class="table-wrap" role="region" aria-label="Tabela de exportações, importações e saldo" tabindex="0">
+              <table aria-describedby="world-flow-caption">
+                <thead><tr><th scope="col">Ano</th><th scope="col">Exportações</th><th scope="col">Importações</th><th scope="col">Saldo</th></tr></thead>
+                <tbody id="world-flow-rows"></tbody>
+              </table>
+            </div>
+            <p class="markets-context">O saldo subtrai as importações das exportações do mesmo ano. Se faltar um dos fluxos, o saldo fica indisponível.</p>
+          </details>
           <dl class="world-benchmarks" aria-label="Comparação com o mercado mundial">
             <div><dt>Participação mundial em <span id="world-share-year"></span></dt><dd id="world-share"></dd><small id="world-share-context"></small></div>
             <div><dt>Posição no recorte em <span id="world-position-year"></span></dt><dd id="world-position"></dd><small id="world-position-context"></small></div>
@@ -200,6 +214,13 @@
           <p id="world-issuer-scope" class="markets-context"></p>
           <ul id="world-issuer-records" class="world-issuer-records" role="list" hidden></ul>
           <p id="world-issuer-note" class="markets-context" hidden>As fichas seguem o país da atividade e o produto. A série BACI mede fluxos nacionais agregados. O fluxo e o período comerciais se aplicam apenas à série.</p>
+          <details id="world-issuer-corridor" class="world-issuer-corridor" hidden>
+            <summary>Cadeia do ferro · <span id="world-corridor-title"></span></summary>
+            <p id="world-corridor-scope" class="markets-context"></p>
+            <ol id="world-corridor-stages" class="world-issuer-records" role="list"></ol>
+            <p id="world-corridor-limits" class="markets-context"></p>
+            <ul id="world-corridor-sources"></ul>
+          </details>
         </section>
         <hr>
         <h3>Cotação por código</h3>

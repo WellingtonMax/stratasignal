@@ -197,6 +197,12 @@ Existing report integrity manifests remain valid because their generated report 
 - A evolução de participação repete o cálculo para cada ano disponível e oferece gráfico com tabela equivalente. O JSON preserva valor do país, total mundial, parcela e estado observado ou indisponível em cada período.
 - `npm ci --ignore-scripts && npm test` passou 52 testes de interação, incluindo estados observado, zero, fluxo ausente, peso parcial e país sem bolsa. A suíte Python passou 112 testes. Com `python -S`, 104 passaram e 8 dependentes de ML foram ignorados. `git diff --check` não encontrou erros.
 
+## Comparação de exportações e importações em 9 de novembro de 2026
+
+- A prévia de Mercados leu o recorte HS 2603 do BACI 202601. Para o Chile em 2024, mostrou US$ 30.995.596.759 de exportações, US$ 81.111.975 de importações e saldo de US$ 30.914.484.784. A tabela permaneceu igual ao trocar o seletor de fluxo. A China mostrou saldo negativo, a Antártida mostrou lacunas e a comparação ficou oculta no total mundial.
+- Enter abriu a comparação e Tab levou o foco à tabela. A 320 px CSS, o saldo mais recente e a edição ficaram acima da tabela. A largura rolável da página foi igual à área útil, com rolagem horizontal restrita à tabela. A prévia também mostrou a série mensal do parceiro no Mapa e o menu público na Carteira sintética, com importação privada desativada.
+- O teste DOM compara a tabela e o JSON, incluindo zero registrado e saldo indisponível por falta de fluxo. Passaram 61 testes de interface, 115 testes Python e 107 no caminho sem dependências opcionais, com 8 verificações de ML ignoradas. `git diff --check` passou. A geração de Mercados reproduziu os arquivos de dados da versão 30 byte a byte.
+
 ## Busca de bolsas e cobertura do recorte em 8 de novembro de 2026
 
 - Na prévia de `/mercados/`, o cartão de comércio mostrou 3 de 3 anos para o Brasil, de 2022 a 2024 no BACI 202601. O cadastro mostrou 5 registros no recorte e cobertura de 152 dos 250 países e territórios do catálogo. A consulta de cotações permaneceu separada.
@@ -235,3 +241,104 @@ Existing report integrity manifests remain valid because their generated report 
 - Na prévia em Chromium, Panorama, Mapa, Mercados e Notícias abriram no topo de suas páginas a partir da Carteira. Tab alcançou as abas com foco visível e Enter abriu o Mapa direto do atlas. Voltar pelo navegador recuperou o recorte de importação de grafita com a China selecionada.
 - A 320 px, as cinco abas ocuparam uma linha com alvos de 44 px de altura e sem rolagem horizontal. Em `/carteira/#atlas`, o menu ficou no topo e o título do atlas ficou visível abaixo dele. Enter abriu Notícias no topo da página.
 - O teste de empacotamento confere a presença do menu na publicação do observatório e sua ausência visual na demonstração independente. Passaram 60 testes DOM e 115 testes Python. Após uma falha em rodada concorrente, a repetição isolada sem dependências opcionais passou 107 testes, com 8 verificações de ML ignoradas. `git diff --check` passou.
+
+## Prévia do relatório do recorte em 9 de novembro de 2026
+
+- No Chromium em desktop, Enter abriu a prévia do Mapa e Tab levou ao botão de download com foco visível. Enter acionou o download JSON. O recorte de importações de grafita da China mostrou US$ 145.658 FOB, 124.120 kg e registros em dois dos três meses. O mapa apresentou uma referência de país e a curadoria não teve resultados nesse recorte.
+- Em 320 px CSS, as três fichas ocuparam uma coluna e a largura útil e rolável foi de 305 px. Nas exportações de carbonatos de lítio para o Canadá, a prévia mostrou ausência de comércio em setembro de 2026 e uma notícia publicada em outubro. A troca do mês editorial para setembro atualizou a contagem sem alterar o recorte comercial ou fechar a prévia.
+- Os testes DOM confrontam a prévia com o JSON, inclusive lacunas, zero registrado, parceiro sem ponto, falha e recarga da edição de notícias e rótulos externos como texto. Passaram 62 testes DOM, 115 testes Python e 107 sem dependências opcionais, com 8 verificações de ML ignoradas. `git diff --check` passou. A inspeção usou as cargas públicas retidas da versão 31.
+
+## Renovação da edição com validação XML em 9 de novembro de 2026
+
+- Atom e RSS/RDF foram exercitados com DTDs internas e externas. A tentativa de renovar a edição com uma DTD no RSS do MDIC deixou intacta a edição anterior e não criou um novo diretório. Texto parecido com marcação em CDATA foi aceito como conteúdo inerte e ficou fora da curadoria. Bandit 1.9.4 reportou zero apontamentos no nível do CI.
+- `python -S -m stratasignal.build_public_site --refresh-news-from` consultou três feeds oficiais às 19h19 de Brasília. A edição gerada manteve cinco comunicados revisados. As coberturas foram 2 de 50 para o Natural Resources Canada, 1 de 15 para setembro do MDIC e 2 de 12 para novembro do MDIC. O feed canadense informou atualização às 14h08 de Brasília. Os dois arquivos brasileiros informaram datas por comunicado. A comparação com a v32 encontrou 221 arquivos idênticos e mudanças em `news.json` e no manifesto.
+- Na prévia Chromium, Enter abriu as informações de fonte, cobertura e consulta. Em 320 px CSS, o comunicado de lítio de outubro abriu o Mapa e a prévia do relatório por teclado, preservando o recorte comercial canadense de setembro e a janela editorial de outubro. A largura útil e rolável mediu 305 px.
+- Passaram 117 testes Python, 109 no caminho sem dependências opcionais, com 8 verificações de ML ignoradas, e 62 testes DOM após `npm ci --ignore-scripts`. `git diff --check` passou.
+
+## Filtro de fonte editorial em 9 de novembro de 2026
+
+- No Chromium em 320 px, a tecla End selecionou o MDIC e a lista mostrou três publicações. Enter abriu o Mapa e a prévia exibiu dois comunicados do MDIC em novembro, com o comércio em setembro. Notícias e Mapa mediram 305 px de largura útil e rolável.
+- O teste DOM confere o estado vazio, a limpeza do filtro, a passagem da fonte pelo endereço e a lista filtrada no JSON. A troca de fonte conserva os registros e totais comerciais. Passaram 63 testes DOM, 117 Python e 109 no modo sem dependências opcionais, com 8 verificações de ML ignoradas. `git diff --check` passou.
+- Na sondagem com o cliente de publicação, o RSS mineral do USGS respondeu HTTP 202 com corpo vazio e tipo HTML. O feed do departamento australiano retornou HTTP 503. A avaliação dessas fontes depende de uma resposta XML válida no fluxo de coleta. [Catálogo do USGS](https://www.usgs.gov/mineral-resources-program/news) · [RSS australiano](https://www.industry.gov.au/news.xml)
+
+### Valor declarado por quilo no mapa e no relatório
+
+Em 9 de novembro de 2026, `npm ci --ignore-scripts && npm test` passou 63 testes. A regressão do recorte verifica o cálculo ponderado pelo peso, a igualdade entre o painel do parceiro, a prévia e o JSON e a indisponibilidade com peso zero, cobertura de peso insuficiente ou ausência de registros. As duas suítes de `AGENTS.md` executaram 117 casos cada. O modo `python -S` saltou os oito casos opcionais de ML.
+
+Na prévia do Site, o recorte de importações brasileiras de grafita da China exibiu US$ 145.658 FOB e 124.120 kg, com US$ 1,17353 FOB/kg no mapa e na prévia aberta com Enter. A conferência no navegador foi feita em desktop. Os hashes da edição comercial e da edição de notícias foram verificados antes da atualização dos arquivos de interface.
+
+### Três indicadores no histórico mensal do parceiro
+
+Em 9 de novembro de 2026, `npm ci --ignore-scripts && npm test` passou 63 testes. A regressão alterna valor FOB, peso líquido e valor por quilo, confere a tabela e o JSON mensal e verifica as lacunas sem registros ou com peso insuficiente. As duas suítes Python de `AGENTS.md` executaram 117 casos cada, com oito saltos de ML no modo `python -S`.
+
+Na prévia do Site a 320 px, o teclado alternou o indicador, abriu o Panorama com o mesmo recorte e expandiu a tabela. Nas importações de grafita da China, agosto apareceu sem registros e setembro e outubro mostraram respectivamente US$ 1,35842 e US$ 0,976218 FOB/kg no mapa e na tabela. A prévia utilizou os arquivos públicos de comércio e notícias da edição existente, com hashes conferidos.
+
+### Participação do parceiro por valor e por peso
+
+Em 10 de novembro de 2026, `npm ci --ignore-scripts && npm test` passou 64 testes. A regressão confere denominadores independentes, mudança de mês e fluxo, zero observado, total zero, ausência de registros e peso incompleto. As duas suítes Python de `AGENTS.md` executaram 117 casos cada, com oito saltos de ML no modo `python -S`.
+
+Na prévia de 320 px, o teclado abriu a prévia do relatório, alterou o mês e selecionou a Alemanha pela tabela de parceiros. Para a China nas importações de grafita de setembro de 2026, mapa e prévia exibiram 90,8% do valor FOB (US$ 87.041 de US$ 95.816) e 96,7% do peso líquido (64.075 de 66.254 kg). Em outubro, exibiram 59,8% do valor FOB e a mensagem de peso incompleto. Os hashes das edições de comércio e notícias conferiram com o manifesto da publicação anterior.
+
+### Ferronióbio no comércio exterior brasileiro
+
+Em 10 de novembro de 2026, a consulta ao Comex Stat retornou a atualização de 6 de novembro e cobriu agosto a outubro de 2026. No NCM 72029300, as exportações somaram US$ 852.628.533 FOB e 29.448.546 kg em 38 registros de 16 destinos. As importações somaram US$ 10.530.602 FOB e 343.000 kg em 5 registros de 3 origens declaradas. Os 79 registros de grafita e carbonatos de lítio coincidiram com a edição anterior. O SHA-256 da nova carga é `43ef51bcd952d8d7014f75e07697e0eacef286a59bd046f1bbbb31ef25a1fe8c`.
+
+Na prévia em 320 px, Enter abriu o relatório das exportações para a China, com US$ 396.119.394 FOB e 13.764.000 kg. Pelo teclado, o seletor mudou para importações e a tabela aplicou o Canadá como origem. A prévia exibiu a mesma origem e explicou a base de peso da liga. O link para Notícias manteve o tema nióbio, o país e os três meses. A curadoria publicada não tinha correspondências nesses recortes.
+
+As duas suítes Python de `AGENTS.md` executaram 117 casos cada, com oito saltos opcionais de ML no modo `python -S`. `npm ci --ignore-scripts && npm test` passou 65 testes, incluindo o vínculo entre mapa, filtros editoriais e relatório JSON do ferronióbio e o estado sem registros de comércio. `git diff --check` passou.
+
+### Da mina à liga em Araxá
+
+Em 10 de novembro de 2026, foram conferidas as páginas 15–17 do Radar Tecnológico 39 do INPI e a página 52.2 do anuário do USGS. A ficha documenta extração pela COMIPA e beneficiamento, refino e metalurgia pela CBMM. O USGS registra 87.880 t de ferronióbio informadas pela CBMM para 2022 em edição publicada em março de 2026. A ficha identifica o volume como massa da liga produzida. Os CSVs abertos de produção bruta e beneficiada da ANM retornaram HTTP 503 no ambiente da consulta. A entrega usa o caso histórico e conserva os períodos e a cobertura de cada fonte.
+
+No Chromium, Enter abriu **Da mina à liga** e Tab levou à fonte do INPI com foco visível. Em 320 px CSS, as etapas ocuparam uma coluna e a página teve 305 px de largura útil e rolável. No desktop, as quatro etapas ficaram lado a lado. Com a China como destino, a prévia mostrou US$ 396.119.394 FOB de agosto a outubro de 2026. A troca pelo teclado para importações de todos os parceiros mostrou US$ 10.530.602 FOB e manteve as 87.880 t de 2022 na seção industrial.
+
+`npm ci --ignore-scripts && npm test` passou 66 testes, com cobertura para a equivalência da ficha, prévia e JSON, a retirada ao trocar de produto e a leitura da ficha em caso de falha do comércio. As duas suítes Python executaram 117 casos cada. O modo `python -S` passou 109 e ignorou oito opcionais de ML. `git diff --check` passou. Os hashes da carga do Comex Stat, das quatro edições retidas, das notícias e do manifesto de Mercados conferiram com o pacote anterior. A Carteira sintética ficou fora das alterações.
+
+### Produção de nióbio por estado
+
+Em 10 de novembro de 2026, os CSVs de produção bruta e beneficiada da ANM retornaram HTTP 503. O PDF do Anuário Mineral Brasileiro 2025 foi baixado e conferido. A página 3 indica a versão 2 de maio de 2026 e autoriza reprodução com crédito. A página 16 apresenta o ano-base 2024 e o apêndice A2 explica as bases e a cobertura. O SHA-256 do PDF é `768d9349f1649a5cab29aba91ac3ec22cf84cf6ed05b7225031f9362964fd9ed`.
+
+O minério bruto publicado é de 9.249.168 t em Goiás e 6.580.700 t em Minas Gerais, com 15.829.868 t no Brasil. A soma estadual de produto beneficiado é 224.674 t. O total Brasil publicado é 213.668 t. A diferença de 11.006 t fica visível na tabela e na prévia e está estruturada no JSON. Nenhum valor foi corrigido por inferência.
+
+No Chromium em 320 px CSS, Enter abriu a tabela, Tab focou a referência da ANM e Enter abriu a prévia. Após o ajuste de quebra de texto, a tabela ocupou 243 px e as larguras útil e rolável da página coincidiram em 305 px. O comércio selecionado da China exibiu US$ 396.119.394 FOB em agosto a outubro de 2026, separado da produção de 2024. Os testes conferiram a retirada da seção ao mudar o produto e sua leitura com falha de comércio em um link direto.
+
+Passaram 66 testes de interface após `npm ci --ignore-scripts`, 117 casos em Python e 109 no modo sem dependências opcionais, com oito casos de ML ignorados. `git diff --check` passou. O pacote reaproveitou os arquivos da publicação anterior de comércio, Mercados, notícias e da Carteira sintética.
+
+### Período histórico no Mapa e no Panorama
+
+No Chromium em 320 px CSS, Enter abriu os filtros do Mapa e a tabela de parceiros. O seletor anual exibiu 12 meses para 2000. A seta passou de janeiro para fevereiro. A prévia abriu com Enter e mostrou US$ 23.139.450 FOB e 2.626.587 kg de exportações do NCM 72029300 em fevereiro de 2000. A curadoria informou ausência de cobertura para aquele mês. As larguras útil e rolável da página coincidiram em 305 px, com a tabela e a prévia abertas.
+
+O Panorama exibiu 12 barras e 12 linhas mensais para 2000. Em 320 px, o gráfico ficou em duas linhas de seis meses e a página manteve as mesmas larguras útil e rolável. As 122 linhas da edição recente de agosto a outubro de 2026 coincidiram com as linhas da consulta anual.
+
+Em 10 de novembro de 2026, a API oficial informou corte em outubro de 2026 e atualização em 6 de novembro. Algumas consultas retornaram HTTP 429. Os CSVs da distribuição de dados abertos retornaram HTTP 503 no ambiente de coleta. A validação usa consultas de períodos menores quando disponíveis. O manifesto enumera as edições efetivamente verificadas. [Dados abertos do Comex Stat](https://www.gov.br/mdic/pt-br/assuntos/comercio-exterior/estatisticas/base-de-dados-bruta)
+
+O pacote reúne 11.623 linhas agregadas em 27 edições anuais, com 322 meses de janeiro de 2000 a outubro de 2026. Os dois lotes que incluíram 2021 passaram pela comparação com os anos vizinhos já coletados. Os hashes dos 27 arquivos foram conferidos. Na prévia completa, End no seletor trocou outubro de 2026 pelo ano de 2000. Mapa e relatório passaram a mostrar janeiro a dezembro de 2000. A edição anual de 2000 tem SHA-256 `3e74b0b030ed79546e8529bdda0629fdd0750a0ed0abc4d77ba34f624ae70a39`.
+
+Passaram 69 testes de interface após `npm ci --ignore-scripts` e 120 casos na suíte Python. A execução com `python -S` passou 112 casos e ignorou oito opcionais de ML. Os casos novos conferem o mês histórico no JSON, a navegação, a igualdade da sobreposição no início do ano, a recuperação após falha de hash, a rejeição de mudança no corte durante a coleta e a identificação de anos sem edição validada. `git diff --check` passou.
+
+### Notícias de março de 2025
+
+Em 10 de novembro de 2026, a renovação consultou o arquivo Atom do Natural Resources Canada às 13h12 de Brasília. O arquivo trouxe 50 entradas e informou atualização em 27 de abril de 2026. A curadoria confirmou um comunicado de 3 de março de 2025 sobre a proposta de estender o incentivo canadense à pesquisa mineral. O SHA-256 do arquivo é `6d7c6de2a64c577815960ac6c5a9d40f1e9305dc92be353fe44a153f4045b1ee`. A edição reúne as cinco publicações anteriores e o novo comunicado, disponível nos filtros de grafita e lítio. O comunicado original fica na fonte e o cartão usa título e resumo próprios. [Comunicado](https://www.canada.ca/en/natural-resources-canada/news/2025/03/investing-to-make-canada-a-global-critical-minerals-superpower0.html)
+
+### Caso logístico de minério de ferro
+
+Em 10 de novembro de 2026, a seção Sistema Norte do relatório anual de 2025 da Vale confirmou três complexos minerários, a Estrada de Ferro Carajás e o Terminal Marítimo de Ponta da Madeira. A ficha da ANTT confirmou a concessão da ferrovia no Pará e no Maranhão. A ficha pública resume as etapas em texto próprio e usa os documentos como evidência documental. Embarques, destinos e valores por empresa exigem evidência própria. [Relatório anual da Vale](https://www.vale.com/documents/d/guest/relatorio-anual-2025_14042026) · [Concessão na ANTT](https://www.gov.br/antt/pt-br/assuntos/ferrovias/concessoes-ferroviarias/vale-estrada-de-ferro-carajas)
+
+A prévia de Mercados com Brasil e produto 2601 abriu a ficha por Enter e mostrou as três etapas na ordem esperada. Em uma janela de 320 px, a largura útil e a largura rolável foram ambas de 305 px. O teste do relatório JSON conferiu fontes, ordem e ausência da ficha fora do recorte. Passaram 70 testes JavaScript e 120 Python. Com `python -S`, passaram 112 casos e oito opcionais foram ignorados. `git diff --check` passou.
+
+### Ficha de evidências do gálio
+
+Em 10 de novembro de 2026, a curadoria conferiu as oito afirmações da [ficha](GALIO_SEMICONDUTORES_PT.md) nas publicações de origem e verificou 11 referências do Markdown. O local do ensaio de 2025 foi conferido no comunicado da Rio Tinto. A comunicação de março de 2026 e o anúncio do governo canadense distinguem pesquisa, piloto e apoio condicionado.
+
+O [download público do Classif](https://portalunico.siscomex.gov.br/classif/api/publico/nomenclatura/download/json) retornou HTTP 200 após redirecionamento para o perfil público. Duas consultas trouxeram os mesmos 3.149.450 bytes e 15.157 linhas de nomenclatura. SHA-256 `2241af45d1b1954b8863b571b5665d5187a31c7f10341ce3dabbf584b5f819f8`. O JSON declara vigência em 10/11/2026. Foram conferidas a hierarquia da posição 81.12, a subposição 8112.9 e suas duas linhas de oito dígitos. O Classif vigente fundamenta a ficha documental. A série histórica de comércio para esse grupo depende de validar a classificação de cada período.
+
+Passaram 120 testes Python, 112 no modo `python -S` com oito opcionais ignorados e 70 testes JavaScript após `npm ci --ignore-scripts`. `git diff --cached --check` passou. A rodada entrega a curadoria e o aceite em documentação. Os testes de tela e JSON do gálio pertencem à integração da ficha.
+
+### Edição documental e regras do gálio
+
+Em 10 de novembro de 2026, o publicador validou a entrada curada com oito afirmações e gerou `mercados/edicoes/galio-de285b37923467e18055379665dc45881a18267218eea24e0111111118ab2f58.json`. O SHA-256 do conteúdo é `de285b37923467e18055379665dc45881a18267218eea24e0111111118ab2f58`. O manifesto associa a edição à revisão documental. As duas etapas de oferta brasileira ficam indisponíveis. O contexto BACI registra `group_only` para HS 2022, 811292, com a parcela do gálio nula. A classificação e a vigência foram conferidas nas referências da OMD acrescentadas à ficha.
+
+Os casos automatizados cobriram alumina, pesquisa, capacidade anunciada, observação comercial fictícia com zero, produto incompatível, falta de instalação ou período, unidade, país e etapa, valor inválido, origem de link, evidência duplicada e vigência da classificação. A mesma entrada gerou os mesmos bytes em duas pastas. Uma revisão sintética mudou o hash e preservou a edição anterior. A comparação com o pacote de referência da versão 43 manteve idênticos os 195 arquivos anteriores de Mercados.
+
+Passaram 125 testes Python, 117 no modo `python -S` com oito opcionais ignorados e 70 testes JavaScript após `npm ci --ignore-scripts`. O wheel foi construído, instalado num ambiente separado e usado fora do checkout para gerar a mesma edição e os arquivos de Mercados. `git diff --cached --check` passou. A próxima etapa integra essa edição na tela e na exportação do recorte.

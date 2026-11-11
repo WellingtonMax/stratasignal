@@ -164,15 +164,43 @@
 
   function issuerSlice() {
     if (typeof marketsIssuerEvidence === "undefined") return {status: "unavailable", records: []};
-    const {coverage, reviewed_on, quality, records} = marketsIssuerEvidence;
+    const {coverage, reviewed_on, quality, records, corridor} = marketsIssuerEvidence;
     const matchesCountry = selection.pais === "WORLD" || selection.pais === coverage.activity_country_code;
     const inScope = matchesCountry && selection.produto === coverage.hs_code;
     return {status: inScope ? "documented" : "outside_coverage", coverage, reviewed_on, quality,
-      records: inScope ? records : []};
+      records: inScope ? records : [], corridor: inScope ? corridor : null};
+  }
+
+  function renderCorridor(corridor) {
+    const panel = get("issuer-corridor");
+    panel.hidden = !corridor;
+    if (!corridor) {
+      panel.open = false;
+      return;
+    }
+    get("corridor-title").textContent = corridor.title;
+    get("corridor-scope").textContent = `${corridor.operator} · ${corridor.reference_period} · Revisão em ${dates.format(new Date(corridor.reviewed_on))}. ${corridor.quality}`;
+    get("corridor-limits").textContent = corridor.limits;
+    get("corridor-stages").replaceChildren(...corridor.stages.map(({stage, location, detail}, index) => {
+      const item = element("li", "");
+      const context = element("p", `${location}. ${detail}`);
+      context.className = "markets-context";
+      item.append(element("h4", `${index + 1}. ${stage}`), context);
+      return item;
+    }));
+    get("corridor-sources").replaceChildren(...corridor.sources.map(({title, url}) => {
+      const item = element("li", "");
+      const link = element("a", title);
+      link.className = "markets-source";
+      link.href = url;
+      item.append(link);
+      return item;
+    }));
   }
 
   function renderIssuers() {
     const slice = issuerSlice();
+    renderCorridor(slice.corridor);
     const list = get("issuer-records");
     list.replaceChildren();
     list.hidden = !slice.records.length;
@@ -225,6 +253,41 @@
 
   function money(value) {
     return value === undefined ? "Sem registro" : `US$ ${compact.format(value)}`;
+  }
+
+  function renderFlowComparison(cells) {
+    const comparison = get("flow-comparison");
+    comparison.hidden = selection.pais === "WORLD";
+    if (comparison.hidden) return null;
+
+    const annual = catalog.years.map((year, index) => {
+      const exports = cells?.[2 * index]?.[0] ?? null;
+      const imports = cells?.[2 * index + 1]?.[0] ?? null;
+      return {
+        year,
+        exports_fob_usd: exports,
+        imports_fob_usd: imports,
+        balance_fob_usd: exports !== null && imports !== null ? exports - imports : null,
+      };
+    });
+    const comparableYears = annual.filter(row => row.balance_fob_usd !== null).length;
+    const latest = annual.at(-1);
+    const latestBalance = latest.balance_fob_usd === null ? "Indisponível" : `US$ ${number.format(latest.balance_fob_usd)}`;
+    get("flow-latest").textContent = `Saldo em ${latest.year} · ${latestBalance}`;
+    get("flow-coverage").textContent = `${comparableYears} de ${annual.length} anos com os dois fluxos registrados.`;
+    get("flow-caption").textContent = `${region(selection.pais)} · HS ${selection.produto} · BACI ${catalog.release} · US$ correntes, equivalente FOB`;
+    const format = value => value === null ? "Sem registro" : number.format(value);
+    get("flow-rows").replaceChildren(...annual.map(row => {
+      const tr = document.createElement("tr");
+      const label = element("th", row.year);
+      label.scope = "row";
+      tr.append(label,
+        element("td", format(row.exports_fob_usd)),
+        element("td", format(row.imports_fob_usd)),
+        element("td", row.balance_fob_usd === null ? "Indisponível" : number.format(row.balance_fob_usd)));
+      return tr;
+    }));
+    return {comparable_years: comparableYears, annual};
   }
 
   function renderSeries(series) {
@@ -319,6 +382,7 @@
       item.append(button);
       return item;
     }));
+    const flowComparison = renderFlowComparison(series[selection.pais]);
     reportSlice = {
       filters: {
         country_code: selection.pais,
@@ -338,6 +402,7 @@
           weight_coverage: {flows_with_weight: cell[2], total_flows: cell[3], status: cell[2] === cell[3] ? "complete" : "partial"},
         } : {year, status: "no_record", fob_usd: null, net_weight_kg: null, weight_coverage: null};
       }),
+      flow_comparison: flowComparison,
       ranking: {
         year,
         scope: `Países e territórios identificados com ${flows[selection.fluxo].toLowerCase()} registradas`,
@@ -440,9 +505,10 @@
         "Um código HS descreve mercadorias aduaneiras e não comprova espécie, teor, origem física ou etapa industrial.",
         "Recortes de família e detalhe HS são alternativas e não devem ser somados, pois podem duplicar comércio.",
         "Ausência de registro é uma lacuna da carga e não equivale a valor zero.",
+        "O saldo do produto compara somente os valores anuais dos dois fluxos disponíveis na mesma edição BACI.",
         "Peso parcial soma somente fluxos com quantidade disponível.",
         "As fichas de empresas são contexto documental com período próprio. Fluxos BACI são agregados nacionais.",
-        "Cotações, preços de referência, produção, capitalização e cadastros de instalações ficam fora desta exportação.",
+        "Cotações, preços de referência, volumes de produção, capitalização e cadastros abrangentes de instalações ficam fora desta exportação.",
       ],
     };
     const blob = new Blob([JSON.stringify(report, null, 2) + "\n"], {type: "application/json"});

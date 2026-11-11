@@ -67,7 +67,7 @@ function editionManifest(current = sample, previous = {...sample, fetched_at: "2
   }};
 }
 
-function open(fetcher, newsFetcher, query = "", manifestFetcher, view = "panorama") {
+function open(fetcher, newsFetcher, query = "", manifestFetcher, view = "panorama", yearFetcher) {
   const route = view === "panorama" ? "/" : `/${view}/`;
   const page = html.replace('data-view="panorama"', `data-view="${view}"`);
   const dom = new JSDOM(page, {runScripts: "outside-only", url: `https://example.invalid${route}${query}`});
@@ -81,6 +81,7 @@ function open(fetcher, newsFetcher, query = "", manifestFetcher, view = "panoram
     const attempts = calls.filter(call => call.url === url).length;
     if (url === "/news.json") return newsFetcher ? newsFetcher(attempts) : response(newsSample);
     if (url === "/source-manifest.json") return manifestFetcher ? manifestFetcher(attempts) : response(editionManifest());
+    if (yearFetcher && url.startsWith("/edicoes/")) return yearFetcher(url);
     assert.equal(url, "/comex.json");
     return fetcher ? fetcher(attempts) : response(sample);
   };
@@ -207,6 +208,10 @@ test("the graphite deep link drives the official chart, map and report and survi
   assert.equal(report.filters.flow, "export");
   assert.equal(report.filters.country_role, "destination");
   assert.deepEqual(report.totals, {record_count: 1, fob_usd: 5000, kg: 1800, partner_count: 1});
+  assert.equal(get("market-report-trade").textContent, "US$ 5.000 FOB · 1.800 kg");
+  assert.equal(get("market-report-trade-coverage").textContent, "1 registro · 1 de 3 meses com registros");
+  assert.match(get("market-report-trade-source").textContent, /Comex Stat.*8 de abril de 2025/);
+  assert.equal(get("market-report-map").textContent, "1 parceiro com ponto");
   assert.equal(get("market-baci-link").href, "https://example.invalid/mercados/?pais=BR&produto=250410&fluxo=export");
   change("market-flow", "import");
   assert.equal(window.location.search, "?ncm=25041000&fluxo=import");
@@ -214,6 +219,97 @@ test("the graphite deep link drives the official chart, map and report and survi
   assert.equal(new URL(get("market-baci-link").href).searchParams.get("fluxo"), "import");
   change("market-product", "28369100");
   assert.equal(get("market-baci-link").hidden, true);
+});
+
+test("ferroniobium has its own trade, news and report scope", async t => {
+  const data = {...sample, records: [
+    ...sample.records,
+    record("2025-02", "Japão", 2500, 100, "export", "72029300"),
+  ]};
+  const {dom, window, get, change} = open(() => response(data), null, "?ncm=72029300&fluxo=export&pais=Japão", null, "mapa");
+  t.after(() => dom.window.close());
+  const {download} = captureDownloads(window, get);
+  await settle(get);
+  await settle(get, "market-news-status");
+  const report = await download();
+  assert.equal(get("market-geo-selection").textContent, "Japão");
+  assert.equal(report.filters.ncm, "72029300");
+  assert.equal(report.filters.country_role, "destination");
+  assert.equal(report.totals.fob_usd, 2500);
+  assert.equal(report.totals.kg, 100);
+  assert.equal(report.unit_value.value, 25);
+  assert.match(get("market-report-alloy").textContent, /massa da liga/);
+  assert.ok(report.limits.includes(get("market-report-alloy").textContent));
+  assert.equal(report.news_context.status, "no_matches");
+  assert.equal(new URL(get("market-context-news").href).searchParams.get("mineral"), "72029300");
+  assert.equal(get("market-baci-link").hidden, true);
+  assert.equal(get("market-chain").hidden, false);
+  assert.equal(get("market-report-chain").hidden, false);
+  const industry = report.industrial_context;
+  assert.equal(industry.location, "Araxá (MG)");
+  assert.equal(industry.related_ncm, "72029300");
+  assert.deepEqual(industry.stages.map(({name, operator}) => [name, operator]), [
+    ["Extração", "COMIPA"], ["Beneficiamento", "CBMM"], ["Refino", "CBMM"], ["Metalurgia", "CBMM"],
+  ]);
+  assert.deepEqual(Array.from(get("market-chain-stages").querySelectorAll("strong"), node => node.textContent),
+    industry.stages.map(stage => stage.name));
+  assert.equal(get("market-chain-source").href, industry.source.url);
+  assert.equal(get("market-chain-production-source").href, industry.production.source.url);
+  assert.equal(industry.production.year, 2022);
+  assert.equal(industry.production.quantity, 87880);
+  assert.equal(industry.production.unit, "t");
+  assert.match(get("market-chain-production").textContent, /87\.880 t de ferronióbio.*2022/);
+  assert.equal(get("market-report-chain-production").textContent, get("market-chain-production").textContent);
+  assert.equal(industry.limits, get("market-chain-limits").textContent);
+  const regional = report.production_by_state;
+  assert.equal(get("market-regional-production").hidden, false);
+  assert.equal(get("market-report-regional").hidden, false);
+  assert.equal(regional.year, 2024);
+  assert.equal(regional.source.revised_month, "2026-05");
+  assert.equal(get("market-regional-source").href, regional.source.url);
+  assert.deepEqual(regional.states.map(row => [row.uf, row.rom_t, row.beneficiated_t]),
+    [["GO", 9249168, 42475], ["MG", 6580700, 182199]]);
+  assert.equal(regional.brazil.beneficiated_t, 213668);
+  assert.equal(regional.beneficiated_reconciliation.sum_listed_states_t, 224674);
+  assert.equal(regional.beneficiated_reconciliation.difference_listed_minus_published_t, 11006);
+  assert.match(get("market-regional-rows").textContent, /Minas Gerais6\.580\.700182\.199/);
+  assert.match(get("market-regional-difference").textContent, /224\.674.*213\.668.*11\.006/);
+  assert.equal(get("market-report-regional-difference").textContent, get("market-regional-difference").textContent);
+  change("market-period", "2025-03");
+  assert.equal(get("market-results").hidden, true);
+  assert.equal(get("market-chain").hidden, false);
+  assert.deepEqual((await download()).industrial_context, industry);
+  change("market-flow", "import");
+  const empty = await download();
+  assert.equal(empty.filters.country_role, "origin");
+  assert.equal(empty.totals.fob_usd, null);
+  assert.deepEqual(empty.industrial_context, industry);
+  assert.deepEqual(empty.production_by_state, regional);
+  change("market-product", "25041000");
+  assert.equal(get("market-report-alloy").hidden, true);
+  assert.equal(get("market-chain").hidden, true);
+  assert.equal(get("market-report-chain").hidden, true);
+  assert.equal(get("market-regional-production").hidden, true);
+  assert.equal(get("market-report-regional").hidden, true);
+  const other = await download();
+  assert.equal(other.industrial_context, null);
+  assert.equal(other.production_by_state, null);
+});
+
+test("a ferroniobium link keeps the documented case available when trade loading fails", async t => {
+  const {dom, get, calls} = open(() => ({ok: false}), null, "?ncm=72029300");
+  t.after(() => dom.window.close());
+  assert.match(get("market-status").textContent, /Carregando/);
+  assert.equal(get("market-chain").hidden, false);
+  await settle(get);
+  await settle(get, "market-news-status");
+  assert.equal(get("market-retry").hidden, false);
+  assert.equal(get("market-report").hidden, true);
+  assert.equal(get("market-chain").hidden, false);
+  assert.equal(get("market-chain-stages").children.length, 4);
+  assert.equal(get("market-regional-production").hidden, false);
+  assert.equal(get("market-regional-rows").children.length, 3);
+  assert.deepEqual(calls.map(call => call.url), ["/comex.json", "/news.json"]);
 });
 
 test("the panorama falls back to its default controls for unsupported URL filters", async t => {
@@ -246,8 +342,10 @@ test("the public map and accessible partner table share the trade and news filte
   assert.equal(get("market-geo-pins").querySelector(".selected title").textContent, "China");
   assert.equal(get("market-fob").textContent, "US$ 1.700");
   assert.equal(get("market-geo-context").hidden, false);
-  assert.match(get("market-geo-rank").textContent, /85% do valor FOB do recorte · 1º de 2 parceiros/);
-  assert.equal(get("market-geo-share").getAttribute("aria-valuenow"), "85");
+  assert.equal(get("market-geo-rank").textContent, "1º de 2 parceiros em valor FOB");
+  assert.match(get("market-geo-shares").textContent, /85%.*US\$ 1\.700 de US\$ 2\.000/);
+  assert.match(get("market-geo-shares").textContent, /Peso incompleto/);
+  assert.equal(get("market-report-shares").textContent, get("market-geo-shares").textContent);
   const history = get("market-geo-history");
   assert.equal(history.children.length, 3);
   assert.deepEqual([...history.children].map(item => item.getAttribute("aria-label")), [
@@ -256,13 +354,27 @@ test("the public map and accessible partner table share the trade and news filte
     "março de 2025: US$ 500",
   ]);
   assert.match(history.children[0].querySelector(".market-geo-history-track span").style.getPropertyValue("--market-month-share"), /^100%$/);
+  change("market-geo-metric", "kg");
+  assert.deepEqual([...history.children].map(item => item.querySelector("strong").textContent), [
+    "700 kg", "Sem registros", "300 kg",
+  ]);
+  change("market-geo-metric", "unit_value");
+  assert.deepEqual([...history.children].map(item => item.querySelector("strong").textContent), [
+    "US$ 1,71429 FOB/kg", "Sem registros", "US$ 1,66667 FOB/kg",
+  ]);
   assert.equal(get("market-geo-clear").hidden, false);
   const china = await download();
+  assert.deepEqual(china.partner_share, {
+    basis: "all_partners_same_ncm_flow_months",
+    fob_usd: {status: "available", numerator: 1700, denominator: 2000, fraction: 0.85},
+    kg: {status: "incomplete_weight", numerator: 1000, denominator: 1000, fraction: null},
+  });
   assert.deepEqual(china.partner_geography.points, [{country: "China", longitude: 106.3, latitude: 32.5}]);
   assert.deepEqual(china.partner_geography.partners_without_anchor, []);
   button(foreignLabel).click();
   assert.deepEqual((await download()).partner_geography.partners_without_anchor, [foreignLabel]);
   assert.equal(get("market-geo-pins").querySelector(".selected"), null);
+  assert.match(history.children[0].querySelector("strong").textContent, /peso líquido insuficiente/);
   change("market-period", "2025-02");
   assert.equal(get("market-geo-content").hidden, true);
   assert.match(get("market-geo-status").textContent, /Nenhum parceiro com registros/);
@@ -282,6 +394,37 @@ test("the public map and accessible partner table share the trade and news filte
   assert.equal(get("market-country").value, "");
   assert.equal(window.document.activeElement, get("market-country"));
   dom.window.close();
+});
+
+test("partner shares use independent totals for the same product, flow and months", async t => {
+  const records = [
+    ...sample.records.filter(row => row.country !== foreignLabel),
+    record("2025-01", "Alemanha", 800, 300),
+    record("2025-03", "Alemanha", 0, 0),
+    record("2025-03", "Japão", 0, 100, "export"),
+    record("2025-03", "Chile", 0, 100, "export"),
+  ];
+  const {dom, window, get, change} = open(() => response({...sample, records}));
+  t.after(() => dom.window.close());
+  const {download} = captureDownloads(window, get);
+  await settle(get);
+  assert.equal(get("market-report-partner-share").hidden, true);
+  assert.equal((await download()).partner_share, null);
+  change("market-country", "China");
+  change("market-period", "2025-01");
+  const {partner_share: comparison} = await download();
+  assert.deepEqual(comparison.fob_usd, {status: "available", numerator: 1200, denominator: 2000, fraction: 0.6});
+  assert.deepEqual(comparison.kg, {status: "available", numerator: 700, denominator: 1000, fraction: 0.7});
+  assert.match(get("market-geo-shares").textContent, /60%.*70%.*700 kg de 1\.000 kg/);
+  change("market-period", "2025-03");
+  change("market-country", "Alemanha");
+  assert.equal((await download()).partner_share.kg.fraction, 0);
+  change("market-flow", "export");
+  change("market-country", "Japão");
+  const {partner_share: zeroTotal} = await download();
+  assert.deepEqual(zeroTotal.fob_usd, {status: "zero_total", numerator: 0, denominator: 0, fraction: null});
+  assert.equal(zeroTotal.kg.fraction, 0.5);
+  assert.match(get("market-geo-shares").textContent, /Total declarado igual a zero/);
 });
 
 test("the trade report captures active filters, source bytes, units and monthly gaps", async () => {
@@ -308,29 +451,87 @@ test("the trade report captures active filters, source bytes, units and monthly 
   assert.equal(report.filters.period, null);
   assert.equal(report.filters.country, "China");
   assert.deepEqual(report.totals, {record_count: 2, fob_usd: 1700, kg: 1000, partner_count: 1});
+  assert.deepEqual(report.unit_value, {
+    status: "available", value: 1.7, unit: "USD FOB por kg de peso líquido",
+    method: "Soma do valor FOB ÷ soma do peso líquido dos registros do recorte.",
+  });
+  assert.equal(get("market-geo-unit-value").textContent, "US$ 1,7 FOB/kg");
+  assert.equal(get("market-report-unit-value").textContent, "US$ 1,7 FOB/kg");
   assert.deepEqual(report.records, [sample.records[0], sample.records[2]]);
-  assert.deepEqual(report.monthly, [
+  assert.deepEqual(report.monthly.map(({unit_value, ...row}) => row), [
     {month: "2025-01", record_count: 1, fob_usd: 1200, kg: 700},
     {month: "2025-02", record_count: 0, fob_usd: null, kg: null},
     {month: "2025-03", record_count: 1, fob_usd: 500, kg: 300},
   ]);
+  assert.deepEqual(report.monthly.map(({unit_value}) => [unit_value.status, unit_value.value]), [
+    ["available", 1200 / 700], ["no_records", null], ["available", 500 / 300],
+  ]);
+  assert.match(get("market-monthly").textContent, /US\$ 1,71429 FOB\/kg/);
   assert.match(get("market-fob").textContent, /1\.700/);
   assert.match(get("market-monthly").textContent, /fevereiro de 2025Sem registros/);
   change("market-period", "2025-02");
   assert.equal(get("market-report").hidden, false);
   const empty = await download();
   assert.equal(empty.filters.period, "2025-02");
+  assert.equal(get("market-report-trade").textContent, "Sem registros de comércio");
   assert.deepEqual(empty.totals, {record_count: 0, fob_usd: null, kg: null, partner_count: 0});
-  assert.deepEqual(empty.monthly, [{month: "2025-02", record_count: 0, fob_usd: null, kg: null}]);
+  assert.deepEqual(empty.monthly.map(({unit_value, ...row}) => row), [{month: "2025-02", record_count: 0, fob_usd: null, kg: null}]);
   assert.deepEqual(empty.records, []);
+  assert.equal(empty.unit_value.status, "no_records");
+  assert.equal(empty.partner_share.kg.status, "no_records");
+  assert.equal(empty.unit_value.value, null);
+  assert.match(get("market-report-unit-value").textContent, /sem registros/);
+  change("market-country", "");
+  change("market-period", "");
+  const mixed = await download();
+  assert.equal(mixed.totals.kg, 1000);
+  assert.equal(mixed.unit_value.status, "insufficient_weight");
+  assert.equal(mixed.unit_value.value, null);
   change("market-period", "2025-01");
   change("market-country", foreignLabel);
   const zero = await download();
   assert.equal(zero.totals.kg, 0);
+  assert.equal(zero.unit_value.status, "insufficient_weight");
+  assert.equal(zero.monthly[0].unit_value.status, "insufficient_weight");
+  assert.match(get("market-report-unit-value").textContent, /peso líquido insuficiente/);
   assert.deepEqual(zero.records, [sample.records[1]]);
+  assert.equal(get("market-report-trade").textContent, "US$ 300 FOB · 0 kg");
+  assert.equal(get("market-report-map-coverage").textContent, "1 parceiro sem ponto");
+  assert.match(get("market-report-scope").textContent, /<img src=x onerror=alert\(1\)>/);
+  assert.equal(get("market-report-scope").querySelector("img"), null);
   assert.equal(calls.length, 3);
   await settle(get, "market-news-status");
   dom.window.close();
+});
+
+test("the map report preview and download distinguish the news and trade periods", async t => {
+  const params = new URLSearchParams({ncm: "28369100", fluxo: "export", mes: "2025-02", pais: "Canadá", noticias_mes: "2025-03"});
+  const {dom, window, get, change} = open(null, null, "?" + params, null, "mapa");
+  t.after(() => dom.window.close());
+  const {download} = captureDownloads(window, get);
+  await settle(get);
+  await settle(get, "market-news-status");
+  const preview = get("market-report").querySelector("details");
+  assert.equal(preview.open, false);
+  preview.querySelector("summary").click();
+  assert.equal(preview.open, true);
+  const report = await download();
+  assert.equal(report.filters.country, "Canadá");
+  assert.deepEqual(report.months, ["2025-02"]);
+  assert.match(get("market-report-scope").textContent, /Carbonatos de lítio .* Exportações · Canadá \(destino comercial\) · fevereiro de 2025/);
+  assert.equal(get("market-report-trade").textContent, "Sem registros de comércio");
+  assert.deepEqual(report.partner_geography.points, []);
+  assert.equal(get("market-report-map").textContent, "0 parceiros com ponto");
+  assert.deepEqual(report.news_context.filters.months, ["2025-03"]);
+  assert.deepEqual(report.news_context.items, [newsItem]);
+  assert.equal(get("market-report-news").textContent, "1 publicação");
+  assert.match(get("market-report-news-period").textContent, /março de 2025/);
+  assert.match(get("market-report-news-source").textContent, /Natural Resources Canada.*9 de abril de 2025/);
+  change("market-news-period", "");
+  assert.equal(preview.open, true);
+  assert.equal(get("market-report-news").textContent, "Sem cobertura da curadoria neste período");
+  assert.match(get("market-report-news-period").textContent, /fevereiro de 2025/);
+  assert.equal((await download()).news_context.status, "no_matches");
 });
 
 test("curated news and the report share mineral, month and country without applying trade direction", async () => {
@@ -381,8 +582,10 @@ test("a rejected news link leaves commerce available and a valid retry restores 
   assert.equal(get("market-news-retry").hidden, false);
   assert.equal(get("market-news-period").disabled, true);
   assert.match(get("market-news-status").textContent, /indisponível/);
+  assert.equal(get("market-report-news").textContent, "Edição de notícias indisponível");
   assert.equal((await download()).news_context.status, "unavailable");
   get("market-news-retry").click();
+  assert.equal(get("market-report-news").textContent, "Carregando notícias…");
   await settle(get, "market-news-status");
   change("market-product", "28369100");
   assert.equal(get("market-news-items").hidden, false);
@@ -414,6 +617,37 @@ test("Brazilian policy appears for graphite without changing the Canadian feed p
   change("market-product", "28369100");
   assert.equal(get("market-news-items").querySelector("a").href, newsItem.url);
   dom.window.close();
+});
+
+test("the Canadian archive is filterable and keeps its own provenance in the report", async () => {
+  const archive = {source: newsSample.source,
+    feed_url: "https://api.io.canada.ca/io-server/gc/news/en/v2?dept=naturalresourcescanada&sort=publishedDate&orderBy=desc&publishedDate%3C=2025-03-31&pick=50&format=atom&atomtitle=Natural%20Resources%20Canada",
+    feed_updated_at: "2026-04-27T13:25:36Z", fetched_at: "2026-11-10T16:00:00Z",
+    feed_sha256: "c".repeat(64), feed_entries: 50};
+  const story = {...newsItem, url: "https://www.canada.ca/en/natural-resources-canada/news/2025/03/example.html",
+    feed_url: archive.feed_url, published_on: "2025-03-03", event_on: "2025-03-03",
+    ncm: "25041000", related_ncms: ["28369100"]};
+  const news = {...newsSample, canada_archive: archive, items: [story]};
+  const {dom, window, get, change} = open(null, () => response(news));
+  const {download} = captureDownloads(window, get);
+  await settle(get);
+  await settle(get, "market-news-status");
+  change("market-news-period", "2025-03");
+  change("market-news-publisher", "nrcan");
+  change("market-product", "28369100");
+  assert.match(get("market-news-status").textContent, /1 publicação.*março de 2025/);
+  assert.match(get("market-news-canada-archive-coverage").textContent, /1 entre 50 entradas/);
+  const report = await download();
+  assert.equal(report.news_context.coverage.curated_entries, 0);
+  assert.equal(report.news_context.canada_archive.feed_sha256, archive.feed_sha256);
+  assert.deepEqual(report.news_context.items, [story]);
+  dom.window.close();
+
+  const unsafe = open(null, () => response({...news, canada_archive: {...archive, feed_url: "https://example.invalid/"}}));
+  await settle(unsafe.get, "market-news-status");
+  await settle(unsafe.get);
+  assert.equal(unsafe.get("market-news-retry").hidden, false);
+  unsafe.dom.window.close();
 });
 
 test("a separate news month preserves the trade slice and exports each period and feed", async () => {
@@ -483,7 +717,95 @@ test("the dedicated map preserves the commerce slice, zooms a marker and links t
   assert.equal(get("market-geo-scene").style.transform, "");
   change("market-period", "");
   assert.equal(new URL(window.location.href).searchParams.has("mes"), false);
-  assert.deepEqual(calls.map(call => call.url), ["/comex.json", "/news.json"]);
+  assert.deepEqual(calls.map(call => call.url), ["/comex.json", "/news.json", "/source-manifest.json"]);
+});
+
+test("the map loads one verified year and carries its month through reports and navigation", async t => {
+  const annual = {...sample, months: Array.from({length: 12}, (_, index) => `2000-${String(index + 1).padStart(2, "0")}`),
+    records: [record("2000-01", "Canadá", 1000, 700, "export", "28369100"),
+      record("2000-04", "Canadá", 2500, 1200, "export", "28369100")]};
+  const digest = createHash("sha256").update(JSON.stringify(annual)).digest("hex");
+  const archive = `/edicoes/comex-${digest}.json`;
+  const manifest = {...editionManifest(), trade_history: {
+    start_month: "2000-01", end_month: "2000-12", years: {2000: digest},
+  }};
+  const {dom, window, get, calls, change} = open(null, null, "?ncm=28369100&fluxo=export&ano=2000&mes=2000-04&pais=Canadá",
+    () => response(manifest), "mapa", url => { assert.equal(url, archive); return response(annual); });
+  t.after(() => dom.window.close());
+  const {download, files} = captureDownloads(window, get);
+  await settle(get);
+  assert.deepEqual(calls.map(call => call.url), ["/source-manifest.json", "/news.json", archive]);
+  assert.deepEqual([...get("market-year").options].map(option => option.value), ["", "2000"]);
+  assert.equal(get("market-period").options.length, 13);
+  assert.match(get("market-year-coverage").textContent, /janeiro de 2000 a dezembro de 2000/);
+  assert.match(get("market-news-date-coverage").textContent, /março de 2025/);
+  assert.match(get("market-geo-amount").textContent, /2\.500 FOB/);
+  assert.match(get("market-report-news").textContent, /Sem cobertura da curadoria/);
+  const monthly = await download();
+  assert.equal(monthly.filters.year, "2000");
+  assert.deepEqual(monthly.months, ["2000-04"]);
+  assert.equal(files.at(-1).name, "stratasignal-comex-28369100-export-2000-04.json");
+  assert.equal(monthly.source.snapshot_url, `https://example.invalid${archive}`);
+  assert.equal(monthly.source.mutable_snapshot_url, null);
+  for (const id of ["market-chart-link", "market-context-news"]) {
+    const url = new URL(get(id).href);
+    assert.equal(url.searchParams.get("ano"), "2000");
+    assert.equal(url.searchParams.get("mes"), "2000-04");
+  }
+  change("market-period", "");
+  change("market-news-period", "todas");
+  const fullYear = await download();
+  assert.deepEqual(fullYear.months, annual.months);
+  assert.equal(fullYear.monthly[1].fob_usd, null);
+  assert.equal(fullYear.totals.fob_usd, 3500);
+  assert.equal(fullYear.news_context.filters.period_mode, "all_curated_dates");
+  assert.deepEqual(fullYear.news_context.publication_months, ["2025-03"]);
+  assert.deepEqual(fullYear.news_context.items, [newsItem]);
+  assert.equal(get("market-bars").classList.contains("market-bars-long"), true);
+  assert.equal(calls.length, 3);
+  change("market-year", "");
+  await settle(get);
+  assert.equal(new URL(window.location.href).searchParams.has("ano"), false);
+  assert.deepEqual((await download()).months, sample.months);
+  assert.equal(calls.at(-1).url, "/comex.json");
+});
+
+test("a damaged annual edition cannot show recent figures under the historical year", async t => {
+  const annual = {...sample, months: ["2000-01"], records: [record("2000-01", "China", 50, 2)]};
+  const digest = createHash("sha256").update(JSON.stringify(annual)).digest("hex");
+  const manifest = {...editionManifest(), trade_history: {
+    start_month: "2000-01", end_month: "2000-01", years: {2000: digest},
+  }};
+  const {dom, window, get, calls, change} = open(null, null, "", () => response(manifest), "mapa",
+    () => response({...annual, records: []}));
+  t.after(() => dom.window.close());
+  await settle(get);
+  change("market-year", "2000");
+  await settle(get);
+  assert.match(get("market-geo-status").textContent, /ano solicitado/);
+  assert.equal(get("market-report").hidden, true);
+  assert.equal(get("market-geo-content").hidden, true);
+  assert.equal(calls.filter(call => call.url === "/comex.json").length, 1);
+  get("market-recent").click();
+  await settle(get);
+  assert.equal(get("market-controls").disabled, false);
+  assert.equal(new URL(window.location.href).searchParams.has("ano"), false);
+  assert.equal(get("market-report").hidden, false);
+});
+
+test("the map labels missing annual coverage and rejects links to unverified years", async t => {
+  const manifest = {...editionManifest(), trade_history: {
+    start_month: "2000-01", end_month: "2002-03", years: {2000: "a".repeat(64), 2002: "b".repeat(64)},
+  }};
+  const {dom, get, calls} = open(null, null, "?ano=2001", () => response(manifest), "mapa");
+  t.after(() => dom.window.close());
+  await settle(get);
+  assert.match(get("market-year-coverage").textContent, /Aguardam validação as edições de 2001/);
+  assert.deepEqual([...get("market-year").options].map(option => option.value), ["", "2002", "2000"]);
+  assert.match(get("market-geo-status").textContent, /sem edição validada/);
+  assert.equal(get("market-report").hidden, true);
+  assert.equal(get("market-recent").hidden, false);
+  assert.deepEqual(calls.map(call => call.url), ["/source-manifest.json", "/news.json"]);
 });
 
 test("the dedicated news page lists the latest articles independently and can clear an empty scoped link", async t => {
@@ -529,4 +851,41 @@ test("the dedicated news page lists the latest articles independently and can cl
   scoped.get("market-news-clear").click();
   assert.equal(scoped.get("market-news-items").children.length, 2);
   assert.equal(scoped.window.location.search, "");
+});
+
+test("the publisher filter travels from News to the map and report without changing trade totals", async t => {
+  const archive = "https://www.gov.br/mdic/pt-br/assuntos/noticias/2026/setembro";
+  const mdic = {source: "MDIC · Brasil", feed_url: archive + "/RSS", feed_updated_at: null,
+    fetched_at: newsSample.fetched_at, feed_sha256: "b".repeat(64), feed_entries: 15};
+  const brazil = {...newsItem, source_id: "mdic", url: archive + "/example", countries: ["Brasil"]};
+  const fetchNews = () => response({...newsSample, mdic, items: [newsItem, brazil]});
+  const listing = open(null, fetchNews, "?ncm=28369100&fluxo=import&mes=2025-03&noticias_fonte=mdic",
+    undefined, "noticias");
+  t.after(() => listing.dom.window.close());
+  await settle(listing.get, "market-news-status");
+  assert.match(listing.get("market-news-status").textContent, /1 publicação.*MDIC/);
+  assert.equal(listing.get("market-news-items").querySelector("a").href, brazil.url);
+  listing.change("market-news-country", "Canadá");
+  assert.match(listing.get("market-news-status").textContent, /Nenhuma notícia.*Canadá.*MDIC/);
+  listing.change("market-news-country", "");
+  const mapUrl = new URL(listing.get("market-news-items").querySelector(".market-news-map-link").href);
+  assert.equal(mapUrl.searchParams.get("noticias_fonte"), "mdic");
+  const map = open(null, fetchNews, mapUrl.search, undefined, "mapa");
+  t.after(() => map.dom.window.close());
+  const {download} = captureDownloads(map.window, map.get);
+  await settle(map.get);
+  await settle(map.get, "market-news-status");
+  const filtered = await download();
+  assert.equal(filtered.news_context.filters.source_id, "mdic");
+  assert.deepEqual(filtered.news_context.items, [brazil]);
+  assert.match(map.get("market-report-news-period").textContent, /MDIC/);
+  assert.equal(new URL(map.get("market-context-news").href).searchParams.get("noticias_fonte"), "mdic");
+  map.change("market-news-publisher", "nrcan");
+  const canadian = await download();
+  assert.equal(canadian.news_context.filters.source_id, "nrcan");
+  assert.deepEqual(canadian.news_context.items, [newsItem]);
+  for (const key of ["filters", "totals", "records"]) assert.deepEqual(canadian[key], filtered[key]);
+  listing.get("market-news-clear").click();
+  assert.equal(listing.get("market-news-items").children.length, 2);
+  assert.equal(new URL(listing.window.location.href).searchParams.has("noticias_fonte"), false);
 });

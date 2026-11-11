@@ -2,7 +2,10 @@
 
 import hashlib
 from datetime import datetime, timezone
-from xml.etree import ElementTree
+
+# TreeBuilder consumes events only. The Expat reader below rejects DTDs and external entities.
+from xml.etree import ElementTree  # nosemgrep: python.lang.security.use-defused-xml.use-defused-xml
+from xml.parsers import expat  # nosemgrep: python.lang.security.use-defused-xml.use-defused-xml
 
 from .schema import InputError
 
@@ -13,6 +16,32 @@ FEED_URL = (
     "&format=atom&atomtitle=Natural%20Resources%20Canada"
 )
 ARTICLE_ROOT = "https://www.canada.ca/en/natural-resources-canada/news/"
+CANADA_ARCHIVE_FEED_URL = (
+    "https://api.io.canada.ca/io-server/gc/news/en/v2?dept=naturalresourcescanada"
+    "&sort=publishedDate&orderBy=desc&publishedDate%3C=2025-03-31&pick=50"
+    "&format=atom&atomtitle=Natural%20Resources%20Canada"
+)
+CANADA_ARCHIVE_ARTICLE = ARTICLE_ROOT + "2025/03/investing-to-make-canada-a-global-critical-minerals-superpower0.html"
+CANADA_ARCHIVE_EDITORIAL = {
+    CANADA_ARCHIVE_ARTICLE: {
+        "title": "Canadá propôs estender incentivo à exploração de minerais críticos",
+        "summary": (
+            "Na convenção PDAC de 2025, o governo canadense anunciou a intenção de estender "
+            "o crédito fiscal para despesas elegíveis de exploração. Grafita e lítio figuravam entre os minerais abrangidos."
+        ),
+        "possible_impact": (
+            "A medida proposta poderia facilitar o financiamento da pesquisa mineral. "
+            "O comunicado registra a proposta e deixa em aberto o efeito sobre a oferta."
+        ),
+        "published_on": "2025-03-03",
+        "event_on": "2025-03-03",
+        "ncm": "25041000",
+        "related_ncms": ["28369100"],
+        "countries": ["Canadá"],
+        "companies": [],
+        "topic": "Política mineral",
+    },
+}
 MDIC_SOURCE = "MDIC · Brasil"
 MDIC_ARCHIVE = "https://www.gov.br/mdic/pt-br/assuntos/noticias/2026/setembro"
 MDIC_FEED_URL = MDIC_ARCHIVE + "/RSS"
@@ -113,19 +142,37 @@ EDITORIAL = {
 }
 
 
+def _reject_xml_declaration(*_):
+    raise InputError("Declaração XML proibida no feed de notícias")
+
+
+def _expanded_name(name):
+    # Expat emits uri}local. ElementTree looks up {uri}local.
+    return "{" + name if "}" in name else name
+
+
 def _read_xml(raw):
     if len(raw) > MAX_FEED_BYTES:
         raise InputError("Feed de notícias excede 512 KiB")
+    tree = ElementTree.TreeBuilder()
+    parser = expat.ParserCreate(namespace_separator="}")
+    parser.StartDoctypeDeclHandler = _reject_xml_declaration
+    parser.ExternalEntityRefHandler = _reject_xml_declaration
+
+    def start(name, attrs):
+        tree.start(_expanded_name(name), {_expanded_name(key): value for key, value in attrs.items()})
+
+    parser.StartElementHandler = start
+    parser.EndElementHandler = lambda name: tree.end(_expanded_name(name))
+    parser.CharacterDataHandler = tree.data
     try:
-        xml = raw.decode("utf-8")
-        if "<!DOCTYPE" in xml or "<!ENTITY" in xml:
-            raise InputError("Declaração XML proibida no feed de notícias")
-        return ElementTree.fromstring(xml)
-    except (UnicodeDecodeError, ElementTree.ParseError, ValueError) as error:
+        parser.Parse(raw.decode("utf-8"), True)
+    except (UnicodeDecodeError, expat.ExpatError) as error:
         raise InputError("Feed de notícias inválido") from error
+    return tree.close()
 
 
-def parse_feed(raw, fetched_at):
+def parse_feed(raw, fetched_at, *, editorial=EDITORIAL):
     """Read bounded Atom metadata. All displayed text and links are editorially reviewed."""
     feed = _read_xml(raw)
     if feed.tag != ATOM + "feed" or feed.findtext(ATOM + "title") != SOURCE:
@@ -148,7 +195,7 @@ def parse_feed(raw, fetched_at):
     }
     items = [
         {"url": url, **item}
-        for url, item in EDITORIAL.items()
+        for url, item in editorial.items()
         if url in observed and item["published_on"] <= updated.date().isoformat()
     ]
     items.sort(key=lambda item: item["published_on"], reverse=True)

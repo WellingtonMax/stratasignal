@@ -213,6 +213,11 @@ test("issuer evidence follows the covered product and country and prefills quote
     "www.vale.com", "ri.csnmineracao.com.br", "www.rad.cvm.gov.br",
   ]);
   assert.match(links[2].textContent, /12\/08\/2026/);
+  const corridor = get("issuer-corridor");
+  assert.equal(corridor.hidden, false);
+  assert.match(corridor.querySelector("summary").textContent, /Carajás.*Ponta da Madeira/);
+  assert.deepEqual([...get("corridor-stages").querySelectorAll("h4")].map(node => node.textContent),
+    ["1. Extração", "2. Transporte ferroviário", "3. Embarque marítimo"]);
 
   const [valeButton, csnButton] = get("issuer-records").querySelectorAll("button");
   valeButton.click();
@@ -236,10 +241,14 @@ test("issuer evidence follows the covered product and country and prefills quote
   assert.equal(report.issuer_evidence.quality, "reviewed_issuer_disclosure");
   assert.deepEqual(report.issuer_evidence.records.map(item => item.listing.ticker), ["VALE3", "CMIN3"]);
   assert.equal(report.issuer_evidence.records[1].sources[1].published_on, "2026-08-12");
+  assert.equal(report.issuer_evidence.corridor.reference_period, "Exercício 2025");
+  assert.deepEqual(report.issuer_evidence.corridor.sources.map(source => source.url),
+    [...get("corridor-sources").querySelectorAll("a")].map(link => link.href));
 
   input("country", "WORLD");
   assert.equal(names().length, 2);
   input("country", "CL");
+  assert.equal(corridor.hidden, true);
   assert.equal(get("issuer-records").hidden, true);
   assert.match(get("issuer-count").textContent, /Chile.*sem fichas/);
   input("country", "BR");
@@ -251,6 +260,7 @@ test("issuer evidence follows the covered product and country and prefills quote
   assert.equal(outside.status, "outside_coverage");
   assert.equal(outside.coverage.hs_code, "2601");
   assert.deepEqual(outside.records, []);
+  assert.equal(outside.corridor, null);
 });
 
 test("missing issuer evidence keeps the trade series and report available", async t => {
@@ -300,4 +310,45 @@ test("world report freezes filters, observations, coverage, registry, source has
   const empty = JSON.parse(downloads[1].blob.parts.join(""));
   assert.equal(empty.exchange_registry.status, "no_matches");
   assert.equal(empty.observations[2].status, "no_record");
+});
+
+test("both trade directions share the year and preserve missing values in the comparison and report", async t => {
+  const {dom, downloads, get, input, window} = open((_, value) => value, "?pais=CL&produto=2603&fluxo=export");
+  t.after(() => dom.window.close());
+  await settled(get);
+  assert.equal(get("flow-comparison").hidden, false);
+  assert.match(get("flow-caption").textContent, /Chile · HS 2603 · BACI 202601/);
+  assert.equal(get("flow-latest").textContent, "Saldo em 2024 · US$ 6.000");
+  assert.equal(get("flow-coverage").textContent, "1 de 3 anos com os dois fluxos registrados.");
+  const tableRows = () => Array.from(get("flow-rows").rows, row =>
+    Array.from(row.cells, cell => cell.textContent));
+  const chileRows = [
+    ["2022", "Sem registro", "Sem registro", "Indisponível"],
+    ["2023", "5.000", "Sem registro", "Indisponível"],
+    ["2024", "6.000", "0", "6.000"],
+  ];
+  assert.deepEqual(tableRows(), chileRows);
+
+  input("flow", "import");
+  assert.deepEqual(tableRows(), chileRows);
+  assert.equal(new URLSearchParams(window.location.search).get("fluxo"), "import");
+  get("download").click();
+  const report = JSON.parse(downloads[0].blob.parts.join(""));
+  assert.equal(report.filters.flow, "import");
+  assert.deepEqual(report.flow_comparison, {
+    comparable_years: 1,
+    annual: [
+      {year: 2022, exports_fob_usd: null, imports_fob_usd: null, balance_fob_usd: null},
+      {year: 2023, exports_fob_usd: 5000, imports_fob_usd: null, balance_fob_usd: null},
+      {year: 2024, exports_fob_usd: 6000, imports_fob_usd: 0, balance_fob_usd: 6000},
+    ],
+  });
+  input("country", "AQ");
+  assert.equal(get("flow-latest").textContent, "Saldo em 2024 · Indisponível");
+  assert.equal(get("flow-coverage").textContent, "0 de 3 anos com os dois fluxos registrados.");
+  assert.deepEqual(tableRows().at(-1), ["2024", "Sem registro", "Sem registro", "Indisponível"]);
+  input("country", "WORLD");
+  assert.equal(get("flow-comparison").hidden, true);
+  get("download").click();
+  assert.equal(JSON.parse(downloads[1].blob.parts.join("")).flow_comparison, null);
 });

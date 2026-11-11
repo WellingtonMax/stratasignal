@@ -8,10 +8,11 @@ from unittest.mock import patch
 from zipfile import ZipFile
 
 from stratasignal.build_public_site import (
-    build_public_site, collect_comex, collect_news, refresh_public_news,
+    build_public_site, collect_comex, collect_news, collect_trade_history, refresh_public_news,
 )
 from stratasignal.public_markets_world import VERSION, YEARS, _aggregate
 from stratasignal.public_news import (
+    CANADA_ARCHIVE_ARTICLE, CANADA_ARCHIVE_FEED_URL,
     EDITORIAL, FEED_URL, MAX_FEED_BYTES, MDIC_ARTICLE, MDIC_FEED_URL,
     MDIC_NOVEMBER_ARTICLE, MDIC_NOVEMBER_FEED_URL, MDIC_NOVEMBER_SEMINAR, SOURCE, parse_feed, parse_mdic_feed,
 )
@@ -57,10 +58,80 @@ FETCHED_AT = datetime(2026, 11, 7, 18, 0, tzinfo=timezone.utc)
 
 
 class PublicSiteTests(unittest.TestCase):
+    @patch("stratasignal.build_public_site.time.sleep")
+    @patch("stratasignal.build_public_site.collect_news")
+    @patch("stratasignal.build_public_site._fetch")
+    def test_annual_archive_matches_recent_rows_across_a_year_boundary(self, fetch, news, sleep):
+        status = {"year": "2001", "monthNumber": "02", "updated": "2001-03-08"}
+        imports = {"list": [trade_record(year="2000", monthNumber="12")]}
+        exports = {"list": [trade_record(year="2001", monthNumber="02", country="Japão")]}
+        feed = parse_feed(atom_feed(next(iter(EDITORIAL))), FETCHED_AT)
+        news.return_value = feed
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fetch.side_effect = list(map(reply, [status, imports, exports, status]))
+            history = collect_trade_history(root / "history")
+            self.assertEqual([call.args[1]["flow"] for call in fetch.call_args_list[1:3]], ["import", "export"])
+            self.assertEqual(fetch.call_args_list[1].args[1]["period"], {"from": "2000-01", "to": "2001-02"})
+            self.assertEqual(sleep.call_count, 2)
+
+            fetch.side_effect = list(map(reply, [status, imports, exports]))
+            output = build_public_site(root / "site", enable_ml=False, trade_history_from=history)
+            manifest = json.loads((output / "source-manifest.json").read_text())
+            catalog = manifest["trade_history"]
+            self.assertEqual(catalog["start_month"], "2000-01")
+            self.assertEqual(catalog["end_month"], "2001-02")
+            self.assertEqual(set(catalog["years"]), {"2000", "2001"})
+            for year, digest in catalog["years"].items():
+                raw = (history / f"{year}.json").read_bytes()
+                self.assertEqual(digest, hashlib.sha256(raw).hexdigest())
+                self.assertEqual((output / f"edicoes/comex-{digest}.json").read_bytes(), raw)
+            annual = json.loads((history / "2000.json").read_text())
+            self.assertEqual(len(annual["months"]), 12)
+            current = json.loads((history / "2001.json").read_text())
+            self.assertEqual(current["months"], ["2001-01", "2001-02"])
+
+            annual["records"][0]["fob_usd"] += 1
+            (history / "2000.json").write_text(json.dumps(annual), encoding="utf-8")
+            fetch.side_effect = list(map(reply, [status, imports, exports]))
+            with self.assertRaisesRegex(InputError, "diverge da carga recente"):
+                build_public_site(root / "different", enable_ml=False, trade_history_from=history)
+            self.assertFalse((root / "different").exists())
+
+    @patch("stratasignal.build_public_site.time.sleep")
+    @patch("stratasignal.build_public_site._fetch")
+    def test_history_collection_rejects_publication_change(self, fetch, _sleep):
+        status = {"year": "2000", "monthNumber": "01", "updated": "2000-02-08"}
+        fetch.side_effect = list(map(reply, [status, {"list": []}, {"list": []}, status | {"updated": "2000-02-09"}]))
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "history"
+            with self.assertRaisesRegex(InputError, "mudou durante a coleta"):
+                collect_trade_history(output)
+            self.assertFalse(output.exists())
+
+    @patch("stratasignal.build_public_site.time.sleep")
+    @patch("stratasignal.build_public_site.collect_news")
+    @patch("stratasignal.build_public_site._fetch")
+    def test_public_archive_identifies_only_verified_years(self, fetch, news, _sleep):
+        status = {"year": "2002", "monthNumber": "03", "updated": "2002-04-08"}
+        empty = {"list": []}
+        news.return_value = parse_feed(atom_feed(next(iter(EDITORIAL))), FETCHED_AT)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fetch.side_effect = list(map(reply, [status, empty, empty, status]))
+            history = collect_trade_history(root / "history")
+            (history / "2001.json").unlink()
+            fetch.side_effect = list(map(reply, [status, empty, empty]))
+            output = build_public_site(root / "site", enable_ml=False, trade_history_from=history)
+            archive = json.loads((output / "source-manifest.json").read_text())["trade_history"]
+            self.assertEqual(set(archive["years"]), {"2000", "2002"})
+            self.assertEqual(archive["end_month"], "2002-03")
+
     @patch("stratasignal.build_public_site.collect_news")
     @patch("stratasignal.build_public_site._fetch")
     def test_build_keeps_public_snapshots_outside_the_synthetic_workbench(self, fetch, news):
-        fetch.side_effect = [reply(metadata()), reply({"list": [trade_record()]}), reply({"list": []})]
+        fetch.side_effect = [reply(metadata()), reply({"list": [trade_record()]}),
+                             reply({"list": [trade_record(coNcm="72029300", country="Japão")]})]
         news.return_value = parse_feed(atom_feed(next(iter(EDITORIAL))), FETCHED_AT)
         november, items = parse_mdic_feed(
             mdic_feed(MDIC_NOVEMBER_FEED_URL, MDIC_NOVEMBER_ARTICLE, "2026-11-05"),
@@ -77,6 +148,9 @@ class PublicSiteTests(unittest.TestCase):
             self.assertEqual(public["months"], ["2024-11", "2024-12", "2025-01"])
             self.assertEqual(public["records"], [{
                 "month": "2024-12", "ncm": "25041000", "country": "China", "flow": "import",
+                "fob_usd": 1200, "kg": 700,
+            }, {
+                "month": "2024-12", "ncm": "72029300", "country": "Japão", "flow": "export",
                 "fob_usd": 1200, "kg": 700,
             }])
             self.assertEqual(manifest["trade_snapshot"]["sha256"], hashlib.sha256(public_bytes).hexdigest())
@@ -122,6 +196,19 @@ class PublicSiteTests(unittest.TestCase):
             catalog = json.loads(world)
             self.assertIn("AQ", catalog["countries"])
             self.assertIn("2603", catalog["products"])
+            gallium = markets["gallium_evidence"]
+            gallium_bytes = (output / gallium["path"]).read_bytes()
+            self.assertEqual(gallium["sha256"], hashlib.sha256(gallium_bytes).hexdigest())
+            self.assertEqual(gallium["path"], f'mercados/edicoes/galio-{gallium["sha256"]}.json')
+            evidence = json.loads(gallium_bytes)
+            self.assertEqual(evidence["dataset_kind"], "public_documentary_evidence")
+            self.assertEqual(evidence["baci_context"]["years"], catalog["years"])
+            self.assertEqual(evidence["baci_context"]["edition"], catalog["release"])
+            self.assertEqual(evidence["baci_context"]["status"], "group_only")
+            self.assertIsNone(evidence["baci_context"]["gallium_amounts"])
+            self.assertEqual([supply["status"] for supply in evidence["brazil_supply"]],
+                             ["unavailable", "unavailable"])
+            self.assertFalse((output / "carteira/galio.json").exists())
             self.assertEqual(catalog["products"].keys(), catalog["trade_sha256"].keys())
             for code, expected in catalog["trade_sha256"].items():
                 self.assertEqual(hashlib.sha256((output / f"mercados/comercio/{code}.json").read_bytes()).hexdigest(), expected)
@@ -139,6 +226,8 @@ class PublicSiteTests(unittest.TestCase):
             self.assertIn('href="/carteira/" aria-current="page"', navigation)
             self.assertEqual([call.args[1]["flow"] for call in fetch.call_args_list[1:]], ["import", "export"])
             self.assertEqual(fetch.call_args_list[1].args[1]["period"], {"from": "2024-11", "to": "2025-01"})
+            for call in fetch.call_args_list[1:]:
+                self.assertEqual(call.args[1]["filters"], [{"filter": "ncm", "values": [25041000, 28369100, 72029300]}])
             with self.assertRaises(FileExistsError):
                 build_public_site(output)
             self.assertEqual(fetch.call_count, 3)
@@ -201,6 +290,33 @@ class PublicSiteTests(unittest.TestCase):
             with self.assertRaisesRegex(InputError, "Contrato inesperado"):
                 refresh_public_news(source, Path(directory) / "invalid-manifest", "c" * 40)
             self.assertEqual(news.call_count, 2)
+
+    @patch("stratasignal.build_public_site._read_news_feed")
+    def test_news_refresh_rejects_unsafe_xml_before_creating_an_edition(self, read):
+        atom = atom_feed(next(iter(EDITORIAL)))
+        unsafe = b'<!DOCTYPE rdf:RDF SYSTEM "https://example.invalid/feed.dtd">'
+        read.side_effect = [atom, unsafe + mdic_feed(MDIC_FEED_URL, MDIC_ARTICLE, "2026-09-16")]
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "published"
+            source.mkdir()
+            trade = b"{}"
+            (source / "comex.json").write_bytes(trade)
+            (source / "news.json").write_text("{}\n", encoding="utf-8")
+            manifest = source / "source-manifest.json"
+            previous = json.dumps({
+                "product": "StrataSignal", "dataset_kind": "public_aggregate", "private_file_import": False,
+                "trade_snapshot": {"path": "comex.json", "sha256": hashlib.sha256(trade).hexdigest()},
+            })
+            manifest.write_text(previous, encoding="utf-8")
+            output = Path(directory) / "rejected"
+            with patch("stratasignal.build_public_site.datetime", wraps=datetime) as clock:
+                clock.now.return_value = FETCHED_AT
+                with self.assertRaisesRegex(InputError, "Declaração XML proibida"):
+                    refresh_public_news(source, output, "c" * 40)
+            self.assertFalse(output.exists())
+            self.assertEqual(manifest.read_text(encoding="utf-8"), previous)
+            self.assertEqual((source / "news.json").read_text(encoding="utf-8"), "{}\n")
+            self.assertEqual([call.args[0] for call in read.call_args_list], [FEED_URL, MDIC_FEED_URL])
 
     @patch("stratasignal.build_public_site.collect_news")
     @patch("stratasignal.build_public_site._fetch")
@@ -283,14 +399,18 @@ class NewsFeedTests(unittest.TestCase):
         september = mdic_feed(MDIC_FEED_URL, MDIC_ARTICLE, "2026-09-16")
         november = mdic_feed(MDIC_NOVEMBER_FEED_URL, MDIC_NOVEMBER_ARTICLE, "2026-11-05",
                             (MDIC_NOVEMBER_SEMINAR, "2026-11-03"))
-        read.side_effect = [atom_feed(next(iter(EDITORIAL))), september, november]
+        archive = atom_feed(CANADA_ARCHIVE_ARTICLE, CANADA_ARCHIVE_ARTICLE, updated="2026-04-27T09:25:36-04:00")
+        read.side_effect = [atom_feed(next(iter(EDITORIAL))), september, november, archive]
         with patch("stratasignal.build_public_site.datetime", wraps=datetime) as clock:
             clock.now.return_value = FETCHED_AT
             news = collect_news()
         self.assertEqual([call.args[0] for call in read.call_args_list],
-                         [FEED_URL, MDIC_FEED_URL, MDIC_NOVEMBER_FEED_URL])
+                         [FEED_URL, MDIC_FEED_URL, MDIC_NOVEMBER_FEED_URL, CANADA_ARCHIVE_FEED_URL])
         self.assertEqual([item["published_on"] for item in news["items"]],
-                         ["2026-11-05", "2026-11-03", "2026-10-28", "2026-09-16"])
+                         ["2026-11-05", "2026-11-03", "2026-10-28", "2026-09-16", "2025-03-03"])
+        self.assertEqual(news["canada_archive"]["feed_sha256"], hashlib.sha256(archive).hexdigest())
+        self.assertEqual(news["items"][-1]["feed_url"], CANADA_ARCHIVE_FEED_URL)
+        self.assertEqual(news["items"][-1]["related_ncms"], ["28369100"])
         self.assertEqual(news["mdic"]["feed_sha256"], hashlib.sha256(september).hexdigest())
         self.assertEqual(news["mdic_archives"][0]["feed_sha256"], hashlib.sha256(november).hexdigest())
         for article in news["items"][:2]:
@@ -304,6 +424,7 @@ class NewsFeedTests(unittest.TestCase):
     def test_reconciles_reviewed_urls_and_ignores_feed_markup(self):
         primary, second = EDITORIAL
         raw = atom_feed(second, primary, primary, primary.replace("www.canada.ca", "www.canada.ca.example.invalid"))
+        raw = raw.replace(b"TEXTO EXTERNO", b"<![CDATA[TEXTO EXTERNO <!DOCTYPE feed>]]>")
         news = parse_feed(raw, FETCHED_AT)
         self.assertEqual(news["feed_entries"], 4)
         self.assertEqual(news["feed_updated_at"], "2026-11-06T20:41:37+00:00")
@@ -313,9 +434,23 @@ class NewsFeedTests(unittest.TestCase):
         self.assertNotIn("TEXTO EXTERNO", json.dumps(news))
         self.assertNotIn("localhost", json.dumps(news))
 
-    def test_rejects_doctype_unbounded_and_invalid_feeds(self):
+    def test_rejects_document_type_declarations_in_atom_and_rdf(self):
+        feeds = (
+            (parse_feed, "feed", atom_feed()),
+            (parse_mdic_feed, "rdf:RDF", mdic_feed(MDIC_FEED_URL, MDIC_ARTICLE, "2026-09-16")),
+        )
+        for parse, root, raw in feeds:
+            for declaration in (
+                f'<!DOCTYPE {root} [<!ENTITY x "invalid">]>',
+                f'<!DOCTYPE {root} SYSTEM "https://example.invalid/feed.dtd">',
+            ):
+                with self.subTest(root=root, declaration=declaration):
+                    with self.assertRaisesRegex(InputError, "Declaração XML proibida"):
+                        parse(declaration.encode() + raw, FETCHED_AT)
+
+    def test_rejects_unbounded_and_invalid_feeds(self):
         samples = [
-            b'<!DOCTYPE feed [<!ENTITY x "invalid">]>' + atom_feed(),
+            b"\xff",
             b"x" * (MAX_FEED_BYTES + 1),
             atom_feed(*(["https://example.invalid/"] * 51)),
             atom_feed(updated="2026-11-06T15:41:37"),

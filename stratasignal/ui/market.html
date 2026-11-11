@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
-  <meta name="description" content="Compare os fluxos de grafita natural e carbonatos de lítio no comércio exterior brasileiro, com dados públicos do Comex Stat.">
+  <meta name="description" content="Compare os fluxos de grafita natural, carbonatos de lítio e ferronióbio no comércio exterior brasileiro, com dados públicos do Comex Stat.">
   <title>StrataSignal · Panorama mineral do Brasil</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/app.css">
@@ -34,7 +34,7 @@
       <div class="market-hero-copy">
         <p class="eyebrow"><span class="market-dot" aria-hidden="true"></span> OBSERVATÓRIO PÚBLICO · BRASIL</p>
         <h1 id="market-title">Comércio mineral do Brasil</h1>
-        <p>Compare importações e exportações de grafita natural e carbonatos de lítio por mês e país parceiro.</p>
+        <p>Compare importações e exportações de grafita natural, carbonatos de lítio e ferronióbio por mês e país parceiro.</p>
         <div class="market-hero-actions">
           <a class="button primary" href="#explorar">Comparar fluxos <span aria-hidden="true">↓</span></a>
           <a class="button market-atlas-link" id="market-map-link" href="/mapa/">Explorar no mapa <span aria-hidden="true">→</span></a>
@@ -74,19 +74,23 @@
         <a href="#fonte">Fonte e metodologia ↓</a>
       </div>
       <details id="market-trade-disclosure" class="market-filter-panel" open>
-        <summary class="market-map-only">Filtros do mapa</summary>
+        <summary class="market-map-only">Filtros do mapa <small id="market-filter-summary">Produto, mês e parceiro</small></summary>
         <fieldset id="market-controls" class="market-filters" disabled>
           <legend class="market-visually-hidden">Filtros do comércio</legend>
           <label for="market-product">Produto
             <select id="market-product">
               <option value="25041000" data-mineral="grafita">Grafita natural em pó ou escamas</option>
               <option value="28369100" data-mineral="lítio">Carbonatos de lítio</option>
+              <option value="72029300" data-mineral="nióbio">Ferronióbio (ferroliga)</option>
             </select>
           </label>
           <label for="market-flow">Fluxo
             <select id="market-flow"><option value="import">Importações</option><option value="export">Exportações</option></select>
           </label>
-          <label for="market-period">Período do comércio
+          <label id="market-year-filter" for="market-year" hidden>Ano do comércio
+            <select id="market-year" aria-describedby="market-year-coverage"><option value="">Mais recentes</option></select>
+          </label>
+          <label for="market-period">Mês do comércio
             <select id="market-period"><option value="">Todo o período</option></select>
           </label>
           <label for="market-country"><span id="market-country-label">País de origem</span>
@@ -95,9 +99,11 @@
           <button type="button" id="market-clear" class="button secondary">Limpar filtros</button>
         </fieldset>
       </details>
+      <p id="market-year-coverage" class="market-news-note" hidden></p>
       <p id="market-stale" class="market-notice" hidden>O corte tem mais de 45 dias. Confira na fonte se há uma publicação posterior.</p>
       <p id="market-status" class="market-status market-panorama-only" role="status">Carregando dados públicos…</p>
       <button type="button" id="market-retry" class="button secondary" hidden>Tentar carregar novamente</button>
+      <button type="button" id="market-recent" class="button secondary" hidden>Voltar ao comércio recente</button>
       <noscript><p>Ative o JavaScript para usar os filtros ou consulte o Comex Stat na seção de fontes.</p></noscript>
       <div id="market-results" hidden>
         <dl class="market-stats" aria-label="Indicadores do recorte">
@@ -116,7 +122,7 @@
               <div class="table-wrap" role="region" aria-label="Tabela de comércio por mês" tabindex="0">
                 <table>
                   <caption id="market-table-caption"></caption>
-                  <thead><tr><th scope="col">Mês</th><th scope="col">Valor FOB (US$)</th><th scope="col">Peso líquido (kg)</th></tr></thead>
+                  <thead><tr><th scope="col">Mês</th><th scope="col">Valor FOB (US$)</th><th scope="col">Peso líquido (kg)</th><th scope="col">Valor por quilo (US$ FOB/kg)</th></tr></thead>
                   <tbody id="market-monthly"></tbody>
                 </table>
               </div>
@@ -158,11 +164,19 @@
             <p id="market-geo-amount"></p>
             <div id="market-geo-context" class="market-geo-context" hidden>
               <p id="market-geo-rank"></p>
-              <div id="market-geo-share" class="market-geo-share" role="progressbar" aria-label="Participação do parceiro no valor FOB do recorte" aria-valuemin="0" aria-valuemax="100">
-                <span id="market-geo-share-fill"></span>
-              </div>
-              <p class="market-geo-history-title">Valor mensal do parceiro</p>
-              <ol id="market-geo-history" class="market-geo-history" aria-label="Valor FOB mensal do parceiro selecionado"></ol>
+              <p class="market-news-note">Participação no total de todos os parceiros para o mesmo produto, fluxo e período.</p>
+              <dl id="market-geo-shares" class="market-shares"></dl>
+              <p class="market-geo-history-title">Valor declarado por quilo</p>
+              <strong id="market-geo-unit-value"></strong>
+              <p class="market-news-note">Valor FOB total dividido pelo peso líquido do recorte. Indicador aduaneiro agregado, distinto de cotação ou margem.</p>
+              <p class="market-geo-history-title">Histórico mensal do parceiro</p>
+              <label for="market-geo-metric">Indicador mensal</label>
+              <select id="market-geo-metric">
+                <option value="fob_usd">Valor FOB (US$)</option>
+                <option value="kg">Peso líquido (kg)</option>
+                <option value="unit_value">Valor por quilo (US$ FOB/kg)</option>
+              </select>
+              <ol id="market-geo-history" class="market-geo-history" aria-label="Histórico mensal do parceiro"></ol>
             </div>
             <button id="market-geo-focus" type="button" class="button secondary" aria-pressed="false" disabled>Aproximar parceiro</button>
             <button id="market-geo-clear" type="button" class="button secondary" hidden>Ver todos os parceiros</button>
@@ -189,6 +203,32 @@
         <a class="button secondary" href="/carteira/#atlas">Abrir atlas fictício <span aria-hidden="true">↗</span></a>
       </aside>
     </section>
+    <details id="market-chain" class="market-chain market-trade-only" hidden>
+      <summary>Da mina à liga <span id="market-chain-scope"></span></summary>
+      <ol id="market-chain-stages" aria-label="Etapas documentadas em Araxá"></ol>
+      <div class="market-chain-production">
+        <strong id="market-chain-production"></strong>
+        <p id="market-chain-production-quality"></p>
+      </div>
+      <p id="market-chain-limits"></p>
+      <p id="market-chain-reviewed"></p>
+      <div class="market-source-links">
+        <a id="market-chain-source"></a>
+        <a id="market-chain-production-source"></a>
+      </div>
+    </details>
+    <details id="market-regional-production" class="market-chain market-trade-only" hidden>
+      <summary>Produção de nióbio por estado <span id="market-regional-scope"></span></summary>
+      <table class="market-regional-table">
+        <caption id="market-regional-caption"></caption>
+        <thead><tr><th scope="col">Território</th><th scope="col">Bruto (t)</th><th scope="col">Beneficiado (t)</th></tr></thead>
+        <tbody id="market-regional-rows"></tbody>
+      </table>
+      <p id="market-regional-difference" class="market-notice"></p>
+      <p id="market-regional-coverage"></p>
+      <p id="market-regional-limits"></p>
+      <div class="market-source-links"><a id="market-regional-source"></a></div>
+    </details>
     <section id="noticias" class="market-news" aria-labelledby="market-context-title" tabindex="-1">
       <div class="market-page-intro market-news-only">
         <div>
@@ -217,22 +257,29 @@
               <option value="">Todos os minerais</option>
               <option value="25041000">Grafita</option>
               <option value="28369100">Lítio</option>
+              <option value="72029300">Nióbio</option>
             </select>
           </label>
           <label class="market-news-only" for="market-news-country">País citado
             <select id="market-news-country"><option value="">Todos os países</option></select>
           </label>
           <label for="market-news-period">Mês de publicação
-            <select id="market-news-period" aria-describedby="market-news-period-help" disabled>
+            <select id="market-news-period" aria-describedby="market-news-period-help market-news-date-coverage" disabled>
               <option value="">Mesmo período do comércio</option>
+            </select>
+          </label>
+          <label for="market-news-publisher">Fonte das notícias
+            <select id="market-news-publisher" aria-describedby="market-news-period-help">
+              <option value="">Todas as fontes</option>
             </select>
           </label>
           <button type="button" id="market-news-clear" class="button secondary market-news-only">Limpar filtros</button>
         </fieldset>
         <p id="market-news-period-help" class="market-news-note">
-          <span class="market-trade-only">O mês das notícias pode ser diferente do período comercial no relatório.</span>
-          <span class="market-news-only">Filtre por mineral, país citado e mês de publicação.</span>
+          <span class="market-trade-only">Mês de publicação e fonte filtram as notícias. O recorte comercial usa seus próprios filtros.</span>
+          <span class="market-news-only">Combine mineral, país citado, mês de publicação e fonte.</span>
         </p>
+        <p id="market-news-date-coverage" class="market-news-note" hidden></p>
       </details>
       <p id="market-news-stale" class="market-notice" hidden>Uma consulta tem mais de 30 dias. Confira a fonte para ver publicações posteriores.</p>
       <p id="market-news-status" class="market-status" role="status">Carregando notícias…</p>
@@ -244,10 +291,12 @@
         <p id="market-news-coverage" class="market-news-note" hidden></p>
         <p id="market-news-mdic-coverage" class="market-news-note" hidden></p>
         <p id="market-news-mdic-november-coverage" class="market-news-note" hidden></p>
+        <p id="market-news-canada-archive-coverage" class="market-news-note" hidden></p>
         <div class="market-source-links">
           <a id="market-news-feed" href="https://natural-resources.canada.ca/corporate/rss-feeds">Catálogo de feeds do Canadá ↗</a>
           <a id="market-news-mdic-feed" href="https://www.gov.br/mdic/pt-br/assuntos/noticias/2026/setembro/RSS" hidden>RSS do MDIC · setembro ↗</a>
           <a id="market-news-mdic-november-feed" href="https://www.gov.br/mdic/pt-br/assuntos/noticias/2026/novembro/RSS" hidden>RSS do MDIC · novembro ↗</a>
+          <a id="market-news-canada-archive" href="https://api.io.canada.ca/io-server/gc/news/en/v2?dept=naturalresourcescanada&amp;sort=publishedDate&amp;orderBy=desc&amp;publishedDate%3C=2025-03-31&amp;pick=50&amp;format=atom&amp;atomtitle=Natural%20Resources%20Canada" hidden>Arquivo Atom do Canadá ↗</a>
         </div>
       </details>
       <noscript><p>Ative o JavaScript para ler a edição publicada de notícias.</p></noscript>
@@ -255,22 +304,82 @@
     <section id="market-report" class="market-report market-trade-only" aria-labelledby="market-report-title" hidden>
       <div>
         <h2 id="market-report-title">Relatório do recorte</h2>
-        <p id="market-report-description">Registros de comércio, referências geográficas e notícias relacionadas, com datas e fontes.</p>
+        <p id="market-report-scope"></p>
       </div>
-      <button type="button" id="market-download" class="button primary" aria-describedby="market-report-description">
-        Baixar relatório JSON <span aria-hidden="true">↓</span>
-      </button>
+      <details class="market-report-preview">
+        <summary>Ver prévia do relatório</summary>
+        <dl class="market-report-coverage">
+          <div>
+            <dt>Comércio exterior</dt>
+            <dd>
+              <strong id="market-report-trade"></strong>
+              <p id="market-report-trade-coverage"></p>
+              <p id="market-report-trade-source"></p>
+              <p>Valor declarado por quilo <strong id="market-report-unit-value"></strong></p>
+              <p id="market-report-alloy" hidden></p>
+            </dd>
+          </div>
+          <div id="market-report-partner-share" hidden>
+            <dt>Participação do parceiro</dt>
+            <dd>
+              <p>Total de todos os parceiros para o mesmo produto, fluxo e período.</p>
+              <dl id="market-report-shares" class="market-shares"></dl>
+            </dd>
+          </div>
+          <div>
+            <dt>Referências no mapa</dt>
+            <dd>
+              <strong id="market-report-map"></strong>
+              <p id="market-report-map-coverage"></p>
+              <p id="market-report-map-source"></p>
+            </dd>
+          </div>
+          <div id="market-report-chain" hidden>
+            <dt>Contexto industrial</dt>
+            <dd>
+              <strong id="market-report-chain-coverage"></strong>
+              <p id="market-report-chain-production"></p>
+              <p id="market-report-chain-source"></p>
+              <p>Os filtros de mês, fluxo e parceiro se aplicam ao comércio.</p>
+            </dd>
+          </div>
+          <div id="market-report-regional" hidden>
+            <dt>Produção por estado</dt>
+            <dd>
+              <strong id="market-report-regional-scope"></strong>
+              <p id="market-report-regional-brazil"></p>
+              <p id="market-report-regional-difference"></p>
+            </dd>
+          </div>
+          <div>
+            <dt>Notícias relacionadas</dt>
+            <dd>
+              <strong id="market-report-news"></strong>
+              <p id="market-report-news-period"></p>
+              <p id="market-report-news-source"></p>
+            </dd>
+          </div>
+        </dl>
+        <p class="market-report-limits">O comércio reúne agregados aduaneiros sujeitos a revisão. O mapa usa pontos aproximados de países. Possíveis impactos nas notícias são hipóteses.</p>
+        <p class="market-report-limits"><strong>Fora do recorte</strong> · Origem por embarque, trajetos logísticos e imagens de satélite.</p>
+      </details>
+      <div class="market-report-actions">
+        <p>Arquivo com registros, filtros, fontes e datas da edição pública.</p>
+        <button type="button" id="market-download" class="button primary" aria-describedby="market-report-scope">
+          Baixar relatório JSON <span aria-hidden="true">↓</span>
+        </button>
+      </div>
     </section>
     <section id="fonte" class="market-method market-trade-only" aria-labelledby="market-method-title">
       <div><p class="eyebrow">PROCEDÊNCIA E COBERTURA</p><h2 id="market-method-title">Como ler o painel</h2></div>
       <div>
-        <p>Estatísticas aduaneiras agregadas do Brasil por mês, país e produto. Grafita natural em pó ou escamas (NCM 25041000) e carbonatos de lítio (NCM 28369100). A série mostra os três últimos meses disponíveis no momento da consulta.</p>
+        <p>Estatísticas aduaneiras agregadas do Brasil por mês, país e produto. Grafita natural em pó ou escamas (NCM 25041000), carbonatos de lítio (NCM 28369100) e ferronióbio (NCM 72029300). O peso do ferronióbio é o da liga comercializada. A seleção inicial mostra os três últimos meses publicados. Os anos disponíveis aparecem nos filtros de comércio.</p>
         <p>O valor FOB mede o comércio declarado em dólares correntes. Variações podem refletir peso, composição ou preço dos itens comercializados. Os códigos abrangem categorias aduaneiras. Eles não identificam pureza, mina ou fornecedor. Os valores da fonte podem ser revisados.</p>
         <p>Uma carga do Comex Stat é consultada a cada preparação de publicação. Os registros da carteira fictícia ficam separados deste painel.</p>
         <div class="market-source-links">
           <a href="https://comexstat.mdic.gov.br/pt/home">Consultar o Comex Stat ↗</a>
           <a href="https://api-comexstat.mdic.gov.br/docs">Documentação da API ↗</a>
-          <a href="/comex.json" download>Baixar a carga publicada (JSON)</a>
+          <a id="market-source-download" href="/comex.json" download>Baixar a carga do período (JSON)</a>
           <a id="market-baci-link" href="/mercados/" hidden>Ver a série anual da grafita no BACI</a>
         </div>
       </div>

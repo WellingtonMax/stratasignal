@@ -24,25 +24,30 @@
   };
   selectValue(product, query.get("ncm"));
   selectValue(flow, query.get("fluxo"));
+  const tradeYear = get("market-year");
   const period = get("market-period");
   const country = get("market-country");
   const tradeControls = get("market-controls");
   const status = get("market-status");
   const retry = get("market-retry");
+  const recent = get("market-recent");
   const results = get("market-results");
   const reportPanel = get("market-report");
   const newsNotice = get("market-news-status");
   const newsRetry = get("market-news-retry");
   const newsList = get("market-news-items");
   const newsPeriod = get("market-news-period");
+  const allCuratedDates = "todas";
   const newsMineral = get("market-news-mineral");
   const newsCountry = get("market-news-country");
+  const newsPublisher = get("market-news-publisher");
   const geographyContent = get("market-geo-content");
   const geographyStatus = get("market-geo-status");
   const geographyRows = get("market-geo-partners");
   const geographySource = get("market-geo-source");
   const focusPartner = get("market-geo-focus");
   const clearPartner = get("market-geo-clear");
+  const historyMetric = get("market-geo-metric");
   const svgNamespace = "http://www.w3.org/2000/svg";
   // Reviewed Comex Stat names matched to Natural Earth 5.1.1 Admin 0 label points,
   // rounded to tenths of a degree. Unknown names stay in the table and report.
@@ -62,9 +67,50 @@
   ]);
   const newsSource = "Natural Resources Canada";
   const mdicSource = "MDIC · Brasil";
+  const alloyScope = "O peso líquido do ferronióbio mede a massa da liga. A massa de nióbio contido depende do teor.";
+  const araxa = {
+    related_ncm: "72029300",
+    location: "Araxá (MG)",
+    country_code: "BR",
+    coverage: "1 operação documentada",
+    quality: "Estudo público · contexto histórico",
+    reviewed_on: "2026-11-10",
+    source: {
+      publisher: "INPI",
+      title: "Radar Tecnológico 39",
+      published_month: "2024-01",
+      pages: "15–17",
+      url: "https://www.gov.br/inpi/pt-br/assuntos/informacao/TecnologiascomNibio_RadarTecnolgico_DIESP_jan2023_revisadocomResumoExecutivo.pdf#page=15",
+    },
+    stages: [
+      {name: "Extração", operator: "COMIPA", description: "Lavra do minério com pirocloro, mineral que contém nióbio."},
+      {name: "Beneficiamento", operator: "CBMM", description: "Separação do pirocloro para obter um concentrado rico em nióbio."},
+      {name: "Refino", operator: "CBMM", description: "Remoção de impurezas do concentrado antes da metalurgia."},
+      {name: "Metalurgia", operator: "CBMM", description: "Conversão do concentrado refinado em liga ferro-nióbio para uso siderúrgico."},
+    ],
+    production: {
+      company: "CBMM",
+      year: 2022,
+      quantity: 87880,
+      unit: "t",
+      product: "ferronióbio",
+      basis: "Massa da liga produzida",
+      quality: "Volume informado pela CBMM e compilado pelo USGS.",
+      source: {
+        publisher: "USGS",
+        title: "Minerals Yearbook, capítulo Niobium",
+        published_month: "2026-03",
+        pages: "52.2",
+        url: "https://pubs.usgs.gov/myb/vol1/2022/myb1-2022-niobium.pdf#page=4",
+      },
+    },
+    limits: "Mês, fluxo e país parceiro filtram o comércio. O caso industrial tem períodos próprios. A origem de cada embarque e os compradores ficam indeterminados.",
+  };
   const mdicFeed = get("market-news-mdic-feed").href;
   const mdicNovemberFeed = get("market-news-mdic-november-feed").href;
+  const canadaArchiveLink = get("market-news-canada-archive");
   const digits = new Intl.NumberFormat("pt-BR");
+  const unitValueDigits = new Intl.NumberFormat("pt-BR", {maximumSignificantDigits: 6});
   const percent = new Intl.NumberFormat("pt-BR", {style: "percent", maximumFractionDigits: 1});
   const calendar = new Intl.DateTimeFormat("pt-BR", {dateStyle: "long", timeZone: "UTC"});
   const timestamp = new Intl.DateTimeFormat("pt-BR", {dateStyle: "medium", timeStyle: "short", timeZone: "UTC"});
@@ -74,16 +120,51 @@
   const monthSpan = months => months.length === 1 ? monthName(months[0]) :
     monthName(months[0]) + " a " + monthName(months.at(-1));
   const money = value => "US$ " + digits.format(value);
+  const countLabel = (count, singular, plural) => digits.format(count) + " " + (count === 1 ? singular : plural);
   const validDate = value => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) &&
     Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
   const addressMonths = [...new Set(query.getAll(newsView ? "publicado" : "noticias_mes").slice(0, 12))]
     .filter(month => validDate(month + "-01")).sort();
   const integer = value => Number.isSafeInteger(value) && value >= 0;
   const sum = (records, metric) => records.reduce((total, record) => total + record[metric], 0);
+  const regionalStates = [
+    {uf: "GO", name: "Goiás", rom_t: 9249168, beneficiated_t: 42475},
+    {uf: "MG", name: "Minas Gerais", rom_t: 6580700, beneficiated_t: 182199},
+  ];
+  const brazilProduction = {name: "Brasil publicado", rom_t: 15829868, beneficiated_t: 213668};
+  const stateBeneficiatedTotal = sum(regionalStates, "beneficiated_t");
+  const regionalProduction = {
+    substance: "Nióbio",
+    related_ncm: araxa.related_ncm,
+    year: 2024,
+    unit: "t",
+    measurement: {rom_t: "Massa de minério bruto (ROM)", beneficiated_t: "Massa de produto beneficiado"},
+    source: {
+      publisher: "ANM",
+      title: "Anuário Mineral Brasileiro 2025",
+      version: 2,
+      revised_month: "2026-05",
+      table_page: 16,
+      url: "https://www.gov.br/anm/pt-br/assuntos/economia-mineral/publicacoes/anuario-mineral/anuario-mineral-brasileiro/amb_metalicos__rev_2.pdf#page=16",
+      sha256: "768d9349f1649a5cab29aba91ac3ec22cf84cf6ed05b7225031f9362964fd9ed",
+    },
+    quality: "Agregados publicados pela ANM com base em declarações de lavra.",
+    coverage: "O anuário exclui usinas de beneficiamento independentes das áreas de lavra ou integradas a etapas industriais posteriores.",
+    brazil: brazilProduction,
+    states: regionalStates,
+    beneficiated_reconciliation: {
+      sum_listed_states_t: stateBeneficiatedTotal,
+      difference_listed_minus_published_t: stateBeneficiatedTotal - brazilProduction.beneficiated_t,
+    },
+    limits: "A causa da diferença permanece indeterminada. As colunas medem massas de etapas distintas. Mês, fluxo e parceiro filtram apenas o comércio de ferronióbio.",
+  };
   const options = (select, defaultLabel, items) => {
     select.replaceChildren(new Option(defaultLabel, ""), ...items.map(([label, value]) => new Option(label, value)));
   };
   let snapshot, snapshotSha256, reportSlice;
+  let releaseManifest, tradeHistory;
+  let requestedYear = query.get("ano") || "";
+  let requestedMonth = query.get("mes");
   let news, newsSha256;
   let newsState = "loading";
   let scopedNewsMonths = newsView && addressMonths.length > 1 ? addressMonths : [];
@@ -140,6 +221,13 @@
       throw new Error("Invalid MDIC news source");
     }
     const mdicSources = [data.mdic, ...archives].filter(Boolean);
+    const archive = data.canada_archive;
+    if (archive !== undefined && (archive?.source !== newsSource ||
+        archive.feed_url !== canadaArchiveLink.href || !instant(archive.feed_updated_at) ||
+        !instant(archive.fetched_at) || Date.parse(archive.feed_updated_at) > Date.parse(archive.fetched_at) ||
+        !hash(archive.feed_sha256) || !feedCount(archive.feed_entries))) {
+      throw new Error("Invalid Canadian archive");
+    }
     const canadaArticle = /^https:\/\/www\.canada\.ca\/en\/natural-resources-canada\/news\/\d{4}\/\d{2}\/[a-z0-9-]+\.html$/;
     const mdicArticle = (url, feed) => {
       if (!mdicSources.some(source => source.feed_url === feed)) return false;
@@ -156,7 +244,9 @@
       const related = item?.related_ncms;
       if (!item || !text(item.url, 300) || item.url !== item.url.trim() || seen.has(item.url) ||
           (mdicItem ? !mdicArticle(item.url, feed) :
-            !canadaArticle.test(item.url) || item.source_id !== undefined || item.feed_url !== undefined) ||
+            !canadaArticle.test(item.url) || item.source_id !== undefined ||
+              (item.feed_url !== undefined && (!archive || item.feed_url !== archive.feed_url ||
+                item.published_on > "2025-03-31"))) ||
           !text(item.title, 150) || !text(item.summary, 400) || !text(item.possible_impact, 400) ||
           !text(item.topic, 80) || !validDate(item.published_on) ||
           (item.event_on !== null && !validDate(item.event_on)) ||
@@ -176,12 +266,19 @@
       feed_sha256: source.feed_sha256, feed_entries: source.feed_entries,
       curated_entries: items.filter(item => item.source_id === "mdic" && (item.feed_url ?? mdicFeed) === source.feed_url).length,
     }));
-    const canadaCount = items.filter(item => item.source_id === undefined).length;
-    if (brazilSources.some(source => source.curated_entries > source.feed_entries) || canadaCount > data.feed_entries) {
+    const canadaCount = items.filter(item => item.source_id === undefined && item.feed_url === undefined).length;
+    const archiveCount = archive ? items.filter(item => item.feed_url === archive.feed_url).length : 0;
+    if (brazilSources.some(source => source.curated_entries > source.feed_entries) || canadaCount > data.feed_entries ||
+        (archive && (!archiveCount || archiveCount > archive.feed_entries))) {
       throw new Error("Invalid news coverage");
     }
+    const canadaArchive = archive ? {
+      name: newsSource, feed_url: archive.feed_url, feed_updated_at: archive.feed_updated_at,
+      fetched_at: archive.fetched_at, feed_sha256: archive.feed_sha256, feed_entries: archive.feed_entries,
+      curated_entries: archiveCount,
+    } : null;
     items.sort((first, second) => second.published_on.localeCompare(first.published_on));
-    return {...data, items, brazilSources, canadaCount};
+    return {...data, items, brazilSources, canadaCount, canadaArchive};
   }
 
   function validateEditionManifest(data) {
@@ -234,13 +331,39 @@
     get("market-edition-history").hidden = editions.length < 2;
   }
 
-  async function loadEditionHistory() {
-    get("market-edition-history").hidden = true;
+  function validateTradeHistory(manifest) {
+    const history = manifest?.trade_history;
+    if (manifest?.dataset_kind !== "public_aggregate" || history?.start_month !== "2000-01" ||
+        !validDate(history.end_month + "-01") || !/^20\d{2}-/.test(history.end_month) ||
+        !history.years || typeof history.years !== "object" || Array.isArray(history.years)) return null;
+    const lastYear = history.end_month.slice(0, 4);
+    if (!Object.hasOwn(history.years, "2000") || !Object.hasOwn(history.years, lastYear) ||
+        !Object.entries(history.years).every(([year, sha]) => /^20\d{2}$/.test(year) && year <= lastYear &&
+          typeof sha === "string" && /^[0-9a-f]{64}$/.test(sha))) return null;
+    return history;
+  }
+
+  async function loadTradeManifest() {
     try {
-      const {data} = await readSnapshot("/source-manifest.json", validateEditionManifest);
-      renderEditionHistory(data);
+      ({data: releaseManifest} = await readSnapshot("/source-manifest.json", data => data));
+      tradeHistory = validateTradeHistory(releaseManifest);
+      if (!tradeHistory) return;
+      const years = Object.keys(tradeHistory.years).reverse();
+      options(tradeYear, "Mais recentes", years.map(year => [year, year]));
+      get("market-year-filter").hidden = false;
+      get("market-filter-summary").textContent = "Ano, mês e parceiro";
+      const lastYear = Number(tradeHistory.end_month.slice(0, 4));
+      const missing = [];
+      for (let year = 2000; year <= lastYear; year++) {
+        if (!Object.hasOwn(tradeHistory.years, year)) missing.push(year);
+      }
+      const coverage = get("market-year-coverage");
+      coverage.textContent = "Histórico do comércio de " + monthSpan([tradeHistory.start_month, tradeHistory.end_month]) + ". " +
+        (missing.length ? "Aguardam validação as edições de " + missing.join(", ") + "." :
+          "Escolha um ano para ver seus meses publicados.");
+      coverage.hidden = false;
     } catch {
-      get("market-edition-history").hidden = true;
+      releaseManifest = null;
     }
   }
 
@@ -275,6 +398,72 @@
     };
   }
 
+  function unitValue(records, totals) {
+    const status = !records.length ? "no_records" :
+      !totals.kg || records.some(row => row.fob_usd > 0 && row.kg === 0) ? "insufficient_weight" : "available";
+    return {
+      status,
+      value: status === "available" ? totals.fob_usd / totals.kg : null,
+      unit: "USD FOB por kg de peso líquido",
+      method: "Soma do valor FOB ÷ soma do peso líquido dos registros do recorte.",
+    };
+  }
+
+  function unitValueLabel(indicator) {
+    if (indicator.status === "available") return "US$ " + unitValueDigits.format(indicator.value) + " FOB/kg";
+    if (indicator.status === "no_records") return "Indisponível · sem registros no recorte";
+    return "Indisponível · peso líquido insuficiente para o cálculo";
+  }
+
+  function partnerShare(totals, grouped) {
+    const allPartners = summarize(grouped);
+    const incompleteWeight = grouped.some(row => row.fob_usd > 0 && row.kg === 0);
+    const share = (metric, incomplete = false) => {
+      const numerator = totals[metric];
+      const denominator = allPartners[metric];
+      const status = numerator === null ? "no_records" : incomplete ? "incomplete_weight" :
+        denominator === 0 ? "zero_total" : "available";
+      return {status, numerator, denominator, fraction: status === "available" ? numerator / denominator : null};
+    };
+    return {
+      basis: "all_partners_same_ncm_flow_months",
+      fob_usd: share("fob_usd"),
+      kg: share("kg", incompleteWeight),
+    };
+  }
+
+  function renderPartnerShares(list, comparison) {
+    list.replaceChildren();
+    if (!comparison) return;
+    const messages = {
+      no_records: "Sem registros para o parceiro",
+      zero_total: "Total declarado igual a zero",
+      incomplete_weight: "Peso incompleto · há registros com valor FOB e peso zero",
+    };
+    for (const [metric, label, format] of [
+      ["fob_usd", "Valor FOB", money],
+      ["kg", "Peso líquido", value => digits.format(value) + " kg"],
+    ]) {
+      const {status, numerator, denominator, fraction} = comparison[metric];
+      const row = element("div");
+      const details = element("dd");
+      if (fraction === null) {
+        details.textContent = messages[status];
+      } else {
+        const track = element("div");
+        track.className = "market-geo-share";
+        track.setAttribute("aria-hidden", "true");
+        const fill = element("span");
+        fill.style.setProperty("--market-share", (fraction * 100) + "%");
+        track.append(fill);
+        details.append(element("strong", percent.format(fraction)),
+          element("small", format(numerator) + " de " + format(denominator)), track);
+      }
+      row.append(element("dt", label), details);
+      list.append(row);
+    }
+  }
+
   function renderSeries(series, caption) {
     const peak = Math.max(...series.map(row => row.fob_usd ?? 0));
     get("market-scale").textContent = "Escala de " + money(0) + " a " + money(peak) + " FOB";
@@ -299,10 +488,13 @@
       const header = element("th", monthName(row.month));
       header.scope = "row";
       line.append(header, element("td", row.record_count ? digits.format(row.fob_usd) : "Sem registros"),
-        element("td", row.record_count ? digits.format(row.kg) : "—"));
+        element("td", row.record_count ? digits.format(row.kg) : "—"),
+        element("td", row.record_count ? unitValueLabel(row.unit_value) : "—"));
       table.push(line);
     }
-    get("market-bars").replaceChildren(...bars);
+    const barList = get("market-bars");
+    barList.classList.toggle("market-bars-long", bars.length > 6);
+    barList.replaceChildren(...bars);
     get("market-monthly").replaceChildren(...table);
   }
 
@@ -385,7 +577,32 @@
     scene.style.transform = `translate(${dx}px, ${dy}px) scale(${zoom})`;
   }
 
-  function renderGeography(partners, scope, grouped, months) {
+  function renderPartnerHistory(history) {
+    const metric = historyMetric.value;
+    const indicator = {
+      fob_usd: {amount: row => row.fob_usd, label: row => money(row.fob_usd)},
+      kg: {amount: row => row.kg, label: row => digits.format(row.kg) + " kg"},
+      unit_value: {amount: row => row.unit_value.value, label: row => unitValueLabel(row.unit_value)},
+    }[metric];
+    const peak = Math.max(...history.map(row => indicator.amount(row) ?? 0), 0);
+    get("market-geo-history").replaceChildren(...history.map(item => {
+      const row = element("li");
+      const label = element("time", monthName(item.month, monthShort));
+      label.dateTime = item.month;
+      const track = element("span");
+      track.className = "market-geo-history-track";
+      track.setAttribute("aria-hidden", "true");
+      const bar = element("span");
+      bar.style.setProperty("--market-month-share", (peak ? (indicator.amount(item) ?? 0) / peak * 100 : 0) + "%");
+      track.append(bar);
+      const value = element("strong", item.record_count ? indicator.label(item) : "Sem registros");
+      row.setAttribute("aria-label", monthName(item.month) + ": " + value.textContent);
+      row.append(label, track, value);
+      return row;
+    }));
+  }
+
+  function renderGeography(partners, scope) {
     geographyContent.hidden = !partners.length;
     const mapped = partners.filter(partner => partner.anchor);
     geographyStatus.textContent = (partners.length ?
@@ -401,38 +618,16 @@
         (selected.anchor ? "" : " · Sem ponto no mapa") :
       country.value ? "Sem registros neste período." : "Selecione um país para ver o valor e o peso.";
     const context = get("market-geo-context");
-    const totalFob = sum(partners, "fob_usd");
-    const share = selected && totalFob ? selected.fob_usd / totalFob : 0;
-    const rank = selected ? partners.indexOf(selected) + 1 : 0;
     context.hidden = !selected;
     clearPartner.hidden = !selected;
     if (selected) {
-      get("market-geo-rank").textContent = percent.format(share) + " do valor FOB do recorte · " +
-        rank + "º de " + digits.format(partners.length) + " parceiros";
-      const progress = get("market-geo-share");
-      progress.setAttribute("aria-valuenow", String(Math.round(share * 1000) / 10));
-      progress.setAttribute("aria-valuetext", percent.format(share) + " do valor FOB do recorte");
-      get("market-geo-share-fill").style.setProperty("--market-share", (share * 100) + "%");
-      const history = months.map(month => {
-        const records = grouped.filter(row => row.country === selected.label && row.month === month);
-        return {month, ...summarize(records)};
-      });
-      const peak = Math.max(...history.map(item => item.fob_usd), 1);
-      get("market-geo-history").replaceChildren(...history.map(item => {
-        const row = element("li");
-        const label = element("time", monthName(item.month, monthShort));
-        label.dateTime = item.month;
-        const track = element("span");
-        track.className = "market-geo-history-track";
-        track.setAttribute("aria-hidden", "true");
-        const bar = element("span");
-        bar.style.setProperty("--market-month-share", (item.fob_usd / peak * 100) + "%");
-        track.append(bar);
-        const value = element("strong", item.record_count ? money(item.fob_usd) : "Sem registros");
-        row.setAttribute("aria-label", monthName(item.month) + ": " + value.textContent);
-        row.append(label, track, value);
-        return row;
-      }));
+      get("market-geo-unit-value").textContent = unitValueLabel(reportSlice.unit_value);
+      const {partner_share: comparison} = reportSlice;
+      const rank = get("market-geo-rank");
+      rank.hidden = comparison.fob_usd.status !== "available";
+      rank.textContent = (partners.indexOf(selected) + 1) + "º de " + digits.format(partners.length) + " parceiros em valor FOB";
+      renderPartnerShares(get("market-geo-shares"), comparison);
+      renderPartnerHistory(reportSlice.monthly);
     }
     renderMapFocus(selected);
     get("market-geo-table-caption").textContent = scope;
@@ -476,14 +671,20 @@
   }
 
   const selectedMonths = () => period.value ? [period.value] : snapshot.months;
-  const newsMonths = () => newsPeriod.value ? [newsPeriod.value] : newsView ? scopedNewsMonths : selectedMonths();
+  const newsMonths = () => {
+    if (newsPeriod.value === allCuratedDates) return [];
+    return newsPeriod.value ? [newsPeriod.value] : newsView ? scopedNewsMonths : selectedMonths();
+  };
+  const publicationMonths = () => [...new Set(news.items.map(item => item.published_on.slice(0, 7)))].sort();
+  const publicationScope = months => months.length ? monthSpan(months) : "Todas as datas da curadoria";
   function relatedNews() {
     const months = newsMonths();
     const mineral = newsView ? newsMineral.value : product.value;
     const place = newsView ? newsCountry.value : country.value;
     return news?.items.filter(item => matchesMineral(item, mineral) &&
       (!months.length || months.includes(item.published_on.slice(0, 7))) &&
-      (!place || item.countries.includes(place))) ?? [];
+      (!place || item.countries.includes(place)) &&
+      (!newsPublisher.value || (item.source_id ?? "nrcan") === newsPublisher.value)) ?? [];
   }
 
   function newsCard(item) {
@@ -536,6 +737,7 @@
   }
 
   function renderNews() {
+    if (!newsView && !tradeControls.disabled) renderReportPreview();
     const available = Boolean(news && (newsView || !tradeControls.disabled));
     get("market-news-controls").disabled = newsPeriod.disabled = !available;
     if (!available) {
@@ -548,14 +750,71 @@
     const mineral = newsView ? newsMineral.selectedOptions[0].textContent : product.selectedOptions[0].dataset.mineral;
     const months = newsMonths();
     const place = newsView ? newsCountry.value : country.value;
-    const count = items.length ? items.length + (items.length === 1 ? " publicação" : " publicações") :
-      "Nenhuma notícia da curadoria neste recorte";
+    const outsideCoverage = months.length && !publicationMonths().some(month => months.includes(month));
+    const count = items.length ? countLabel(items.length, "publicação", "publicações") : outsideCoverage ?
+      "Sem cobertura da curadoria neste período" : "Nenhuma notícia da curadoria neste recorte";
     const filters = newsView ? [newsMineral.value && mineral, months.length && monthSpan(months), place].filter(Boolean) :
-      [mineral, monthSpan(months), place || "todos os países"];
+      [mineral, publicationScope(months), place || "todos os países"];
+    if (newsPublisher.value) filters.push(newsPublisher.selectedOptions[0].textContent);
     const scope = [count, ...(filters.length ? filters : ["Mais recentes primeiro"])].join(" · ");
     if (newsNotice.textContent !== scope) newsNotice.textContent = scope;
     newsList.replaceChildren(...items.map(newsCard));
     newsList.hidden = !items.length;
+  }
+
+  function renderIndustrialCase() {
+    const {location, coverage, quality, reviewed_on, source, stages, production, limits} = araxa;
+    const productionLabel = `${digits.format(production.quantity)} ${production.unit} de ${production.product} · ${production.company}, ${production.year}`;
+    const sourceLabel = `${source.publisher} · ${monthName(source.published_month)}`;
+    const productionSourceLabel = `${production.source.publisher} · ${monthName(production.source.published_month)}`;
+    get("market-chain").hidden = product.value !== araxa.related_ncm;
+    get("market-chain-scope").textContent =
+      `${location} · ${coverage} · ${source.publisher}, ${source.published_month.slice(0, 4)}`;
+    get("market-chain-stages").replaceChildren(...stages.map(stage => {
+      const item = element("li");
+      item.append(element("strong", stage.name), element("small", stage.operator), element("p", stage.description));
+      return item;
+    }));
+    get("market-chain-production").textContent = productionLabel;
+    get("market-chain-production-quality").textContent = `${production.basis}. ${production.quality}`;
+    get("market-chain-limits").textContent = limits;
+    get("market-chain-reviewed").textContent = `${quality}. Curadoria revisada em ${calendar.format(new Date(reviewed_on))}.`;
+    const studyLink = get("market-chain-source");
+    studyLink.textContent = `${sourceLabel} · ${source.title}, p. ${source.pages}`;
+    studyLink.href = source.url;
+    const productionLink = get("market-chain-production-source");
+    productionLink.textContent = `${productionSourceLabel} · ${production.source.title}, p. ${production.source.pages}`;
+    productionLink.href = production.source.url;
+    get("market-report-chain-coverage").textContent = `${location} · ${coverage}`;
+    get("market-report-chain-production").textContent = productionLabel;
+    get("market-report-chain-source").textContent =
+      `${sourceLabel}. ${productionSourceLabel}.`;
+  }
+
+  function renderRegionalProduction() {
+    const {year, source, brazil, states, quality, coverage, limits, beneficiated_reconciliation: check} = regionalProduction;
+    const scope = `${source.publisher} · ano-base ${year} · ${states.map(state => state.uf).join(" e ")}`;
+    const difference = `As UFs listadas somam ${digits.format(check.sum_listed_states_t)} t de produto beneficiado. ` +
+      `O total brasileiro publicado é ${digits.format(brazil.beneficiated_t)} t. Diferença de ${digits.format(check.difference_listed_minus_published_t)} t na fonte.`;
+    get("market-regional-production").hidden = product.value !== regionalProduction.related_ncm;
+    get("market-regional-scope").textContent = scope;
+    get("market-regional-caption").textContent = `Massas de minério bruto e de produto beneficiado · ${year}`;
+    get("market-regional-rows").replaceChildren(...[...states, brazil].map(({name, rom_t, beneficiated_t}) => {
+      const row = element("tr");
+      const label = element("th", name);
+      label.scope = "row";
+      row.append(label, element("td", digits.format(rom_t)), element("td", digits.format(beneficiated_t)));
+      return row;
+    }));
+    get("market-regional-difference").textContent = difference;
+    get("market-regional-coverage").textContent = quality + " " + coverage;
+    get("market-regional-limits").textContent = limits;
+    const link = get("market-regional-source");
+    link.href = source.url;
+    link.textContent = `${source.publisher} · ${source.title}, v${source.version} de ${monthName(source.revised_month)}, p. ${source.table_page}`;
+    get("market-report-regional-scope").textContent = scope;
+    get("market-report-regional-brazil").textContent = `Brasil publicado · ${digits.format(brazil.rom_t)} t de minério bruto.`;
+    get("market-report-regional-difference").textContent = difference;
   }
 
   function render() {
@@ -572,23 +831,36 @@
     const scope = scopeBase + " · " + (country.value || "todos os países");
     const partners = summarizePartners(grouped);
     const totals = {...summarize(records), partner_count: new Set(records.map(row => row.country)).size};
-    const monthly = months.map(month => ({month, ...summarize(records.filter(row => row.month === month))}));
+    const monthly = months.map(month => {
+      const monthRecords = records.filter(row => row.month === month);
+      const monthTotals = summarize(monthRecords);
+      return {month, ...monthTotals, unit_value: unitValue(monthRecords, monthTotals)};
+    });
+    const industrialContext = product.value === araxa.related_ncm ? araxa : null;
+    get("market-chain").hidden = industrialContext === null;
+    get("market-report-chain").hidden = industrialContext === null;
+    get("market-regional-production").hidden = industrialContext === null;
+    get("market-report-regional").hidden = industrialContext === null;
     reportSlice = {
       filters: {
         ncm: product.value, product: product.selectedOptions[0].textContent, flow: flow.value,
-        period: period.value || null, country: country.value || null,
+        year: tradeYear.value || null, period: period.value || null, country: country.value || null,
         country_role: flow.value === "import" ? "origin" : "destination",
       },
       months,
       totals,
+      unit_value: unitValue(records, totals),
+      partner_share: country.value ? partnerShare(totals, grouped) : null,
       monthly,
-      records,
+      records: records.map(({month, ncm, country, flow, fob_usd, kg}) => ({month, ncm, country, flow, fob_usd, kg})),
       partner_geography: reportGeography(partners.filter(partner => !country.value || partner.label === country.value)),
+      industrial_context: industrialContext,
+      production_by_state: industrialContext ? regionalProduction : null,
     };
-    const quantity = records.length === 1 ? "1 registro agregado" : digits.format(records.length) + " registros agregados";
+    const quantity = countLabel(records.length, "registro agregado", "registros agregados");
     status.textContent = (records.length ? quantity : "Nenhum registro neste recorte") + " · " + scope;
     results.hidden = records.length === 0;
-    renderGeography(partners, scopeBase, grouped, months);
+    renderGeography(partners, scopeBase);
     renderNews();
     updateRouteLinks();
     if (!records.length) return;
@@ -599,28 +871,26 @@
     renderRanking(partners);
   }
 
-  function downloadReport() {
+  const editionPath = sha => "/edicoes/comex-" + sha + ".json";
+
+  function buildReport() {
     const stories = relatedNews();
-    const report = {
+    return {
       report_type: "stratasignal_comex_slice",
       schema_version: 1,
       dataset_kind: snapshot.dataset_kind,
-      generated_at: new Date().toISOString(),
       source: {
         name: "Comex Stat · SECEX/MDIC",
         url: "https://comexstat.mdic.gov.br/pt/home",
         updated_on: snapshot.updated_on,
         fetched_at: snapshot.fetched_at,
-        snapshot_url: new URL("/edicoes/comex-" + snapshotSha256 + ".json", location.href).href,
-        mutable_snapshot_url: new URL("/comex.json", location.href).href,
+        snapshot_url: snapshotSha256 ? new URL(editionPath(snapshotSha256), location.href).href : null,
+        mutable_snapshot_url: reportSlice.filters.year ? null : new URL("/comex.json", location.href).href,
         snapshot_sha256: snapshotSha256,
         quality: "Estatísticas aduaneiras agregadas sujeitas a revisão pela fonte.",
       },
       units: {fob_usd: "USD FOB correntes", kg: "quilogramas de peso líquido"},
       ...reportSlice,
-      records: reportSlice.records.map(({month, ncm, country, flow, fob_usd, kg}) => ({
-        month, ncm, country, flow, fob_usd, kg,
-      })),
       news_context: {
         status: news ? (stories.length ? "available" : "no_matches") : newsState,
         dataset_kind: "public_curated_news",
@@ -635,28 +905,78 @@
           quality: "Comunicados governamentais com curadoria editorial. Possíveis impactos são hipóteses qualitativas.",
         },
         coverage: news ? {feed_entries: news.feed_entries, curated_entries: news.canadaCount} : null,
+        publication_months: news ? publicationMonths() : null,
         mdic_source: news?.brazilSources.find(source => source.feed_url === mdicFeed) ?? null,
         mdic_archives: news?.brazilSources.filter(source => source.feed_url !== mdicFeed) ?? [],
+        canada_archive: news?.canadaArchive ?? null,
         filters: {
-          ncm: product.value, months: newsMonths(), country: country.value || null,
-          period_mode: newsPeriod.value ? "independent" : "trade_period",
+          ncm: reportSlice.filters.ncm, months: newsMonths(), country: reportSlice.filters.country,
+          ...(newsPublisher.value && {source_id: newsPublisher.value}),
+          period_mode: newsPeriod.value === allCuratedDates ? "all_curated_dates" :
+            newsPeriod.value ? "independent" : "trade_period",
           country_role: "mentioned", month_basis: "published_on", flow_applies: false,
         },
         items: stories,
       },
       limits: [
         "O relatório cobre o comércio exterior brasileiro por produto, fluxo, mês e país ou área parceira.",
+        ...(reportSlice.industrial_context ? [alloyScope] : []),
         "Totais nulos indicam ausência de registros no recorte. Registros com valor zero são mantidos.",
-        "Produção, dados empresariais, instalações e evidências geoespaciais não integram este recorte.",
+        "Os agregados comerciais têm cobertura nacional. Vínculos entre embarques e instalações, valores por empresa e cenas de satélite ficam fora da cobertura.",
         "As coordenadas são referências aproximadas de países parceiros. O mapa não identifica locais de extração, instalação ou rota de transporte.",
         "As notícias dão contexto temático por mineral e não demonstram vínculos com transações ou códigos aduaneiros.",
       ],
     };
+  }
+
+  function renderReportPreview() {
+    const {filters, months, totals, unit_value, partner_share, monthly, source, partner_geography: geography, news_context: context} = buildReport();
+    const role = filters.country_role === "origin" ? "origem comercial" : "destino comercial";
+    const partner = filters.country ? `${filters.country} (${role})` : "Todos os parceiros";
+    get("market-report-scope").textContent = `${filters.product} (NCM ${filters.ncm}) · ` +
+      `${flow.selectedOptions[0].textContent} · ${partner} · ${monthSpan(months)}`;
+    get("market-report-trade").textContent = totals.record_count ?
+      `${money(totals.fob_usd)} FOB · ${digits.format(totals.kg)} kg` : "Sem registros de comércio";
+    const covered = monthly.filter(row => row.record_count > 0).length;
+    get("market-report-unit-value").textContent = unitValueLabel(unit_value);
+    const alloyNote = get("market-report-alloy");
+    alloyNote.hidden = filters.ncm !== araxa.related_ncm;
+    alloyNote.textContent = alloyNote.hidden ? "" : alloyScope;
+    get("market-report-partner-share").hidden = partner_share === null;
+    renderPartnerShares(get("market-report-shares"), partner_share);
+    get("market-report-trade-coverage").textContent =
+      `${countLabel(totals.record_count, "registro", "registros")} · ${covered} de ${monthly.length} meses com registros`;
+    get("market-report-trade-source").textContent =
+      `${source.name} · Atualizado em ${calendar.format(new Date(source.updated_on))}`;
+    get("market-report-map").textContent = countLabel(geography.points.length, "parceiro com ponto", "parceiros com ponto");
+    get("market-report-map-coverage").textContent =
+      countLabel(geography.partners_without_anchor.length, "parceiro sem ponto", "parceiros sem ponto");
+    get("market-report-map-source").textContent = `${geography.source} ${geography.source_version} · ${geography.scale}`;
+    const outsideCoverage = context.filters.months.length && context.publication_months &&
+      !context.publication_months.some(month => context.filters.months.includes(month));
+    get("market-report-news").textContent = {
+      available: countLabel(context.items.length, "publicação", "publicações"),
+      no_matches: outsideCoverage ? "Sem cobertura da curadoria neste período" : "Nenhuma publicação no recorte",
+      loading: "Carregando notícias…",
+      unavailable: "Edição de notícias indisponível",
+    }[context.status];
+    const publisher = context.filters.source_id ? " · " + newsPublisher.selectedOptions[0].textContent : "";
+    get("market-report-news-period").textContent = `Período de publicação · ${publicationScope(context.filters.months)}${publisher}`;
+    const sources = [context.source, context.canada_archive, context.mdic_source, ...context.mdic_archives].filter(entry => entry?.fetched_at);
+    const names = [...new Set(sources.map(entry => entry.name))].join(" e ");
+    const latest = Math.max(...sources.map(entry => Date.parse(entry.fetched_at)));
+    get("market-report-news-source").textContent = sources.length ?
+      `${names} · Última consulta em ${calendar.format(latest)}` : "";
+  }
+
+  function downloadReport() {
+    const report = {...buildReport(), generated_at: new Date().toISOString()};
     const blob = new Blob([JSON.stringify(report, null, 2) + "\n"], {type: "application/json"});
     const url = URL.createObjectURL(blob);
     const link = element("a");
     link.href = url;
-    link.download = "stratasignal-comex-" + report.filters.ncm + "-" + report.filters.flow + ".json";
+    const historicalPeriod = report.filters.year ? "-" + (report.filters.period || report.filters.year) : "";
+    link.download = "stratasignal-comex-" + report.filters.ncm + "-" + report.filters.flow + historicalPeriod + ".json";
     link.hidden = true;
     document.body.append(link);
     link.click();
@@ -687,6 +1007,15 @@
         " publicações do feed. Atualizado pela fonte em " + timestamp.format(new Date(news.feed_updated_at)) +
         " UTC. Consultado em " + timestamp.format(new Date(news.fetched_at)) + " UTC.";
       coverage.hidden = false;
+      const archiveCoverage = get("market-news-canada-archive-coverage");
+      archiveCoverage.hidden = canadaArchiveLink.hidden = !news.canadaArchive;
+      if (news.canadaArchive) {
+        const archive = news.canadaArchive;
+        archiveCoverage.textContent = newsSource + " · Arquivo até março de 2025. Curadoria de " +
+          digits.format(archive.curated_entries) + " entre " + digits.format(archive.feed_entries) +
+          " entradas. Atualização informada pelo feed em " + timestamp.format(new Date(archive.feed_updated_at)) +
+          " UTC. Consultado em " + timestamp.format(new Date(archive.fetched_at)) + " UTC.";
+      }
       for (const source of news.brazilSources) {
         const isSeptember = source.feed_url === mdicFeed;
         const prefix = isSeptember ? "market-news-mdic" : "market-news-mdic-november";
@@ -708,8 +1037,18 @@
       get("market-news-latest").textContent = news.items.length ?
         calendar.format(new Date(news.items[0].published_on)) : "Nenhuma publicada";
       get("market-news-summary").hidden = false;
+      const dates = publicationMonths();
+      const dateCoverage = get("market-news-date-coverage");
+      dateCoverage.textContent = dates.length ? "Datas da curadoria · " + monthSpan(dates) + "." :
+        "A edição atual da curadoria está vazia.";
+      dateCoverage.hidden = false;
       configureNewsPeriod();
-      selectValue(newsPeriod, addressMonths.length === 1 ? addressMonths[0] : "");
+      selectValue(newsPeriod, !newsView && query.get("noticias_mes") === allCuratedDates ? allCuratedDates :
+        addressMonths.length === 1 ? addressMonths[0] : "");
+      const publishers = [[newsSource, "nrcan"]];
+      if (news.brazilSources.length) publishers.push([mdicSource, "mdic"]);
+      options(newsPublisher, "Todas as fontes", publishers);
+      selectValue(newsPublisher, query.get("noticias_fonte"));
       if (newsView) {
         const countries = [...new Set(news.items.flatMap(item => item.countries))].sort((a, b) => a.localeCompare(b, "pt-BR"));
         options(newsCountry, "Todos os países", countries.map(label => [label, label]));
@@ -717,6 +1056,7 @@
         const place = query.get("pais_citado");
         if (place && place.length <= 100 && !countries.includes(place)) newsCountry.add(new Option(place, place));
         selectValue(newsCountry, place);
+        updateRouteLinks();
       }
       if (!tradeControls.disabled) {
         refreshCountries();
@@ -732,64 +1072,100 @@
     renderNews();
   }
 
-  async function load() {
+  async function load(readdress = false) {
+    const restoreFocus = [tradeYear, retry, recent].includes(document.activeElement);
     tradeControls.disabled = true;
     retry.hidden = true;
+    recent.hidden = true;
     results.hidden = true;
     reportPanel.hidden = true;
     geographyContent.hidden = true;
+    get("market-edition").hidden = true;
+    get("market-edition-history").hidden = true;
+    get("market-source-download").hidden = true;
+    get("market-stale").hidden = true;
     geographyStatus.textContent = "Carregando parceiros do comércio…";
     status.textContent = "Carregando dados públicos…";
+    renderNews();
     try {
-      ({data: snapshot, sha256: snapshotSha256} = await readSnapshot("/comex.json", validate));
+      let loaded = requestedYear ? null : await readSnapshot("/comex.json", validate);
+      if (!releaseManifest || (requestedYear && !tradeHistory)) await loadTradeManifest();
+      if (requestedYear) {
+        const expectedHash = /^20\d{2}$/.test(requestedYear) && tradeHistory?.years[requestedYear];
+        if (!expectedHash) throw new Error("Year unavailable");
+        loaded = await readSnapshot(editionPath(expectedHash), validate);
+        const end = tradeHistory.end_month;
+        const length = end.slice(0, 4) === requestedYear ? Number(end.slice(5)) : 12;
+        if (loaded.sha256 !== expectedHash || loaded.data.months.length !== length ||
+            !loaded.data.months.every((value, index) => value === requestedYear + "-" + String(index + 1).padStart(2, "0"))) {
+          throw new Error("Invalid historical edition");
+        }
+      }
+      ({data: snapshot, sha256: snapshotSha256} = loaded);
       get("market-through").textContent = monthName(snapshot.months.at(-1));
       get("market-updated").textContent = calendar.format(new Date(snapshot.updated_on));
       get("market-geo-updated").textContent = "Atualização do Comex Stat em " + get("market-updated").textContent + ".";
       get("market-retrieved").textContent = "Consulta do StrataSignal em " + calendar.format(new Date(snapshot.fetched_at)) + ".";
       const edition = get("market-edition");
+      const sourceDownload = get("market-source-download");
+      sourceDownload.href = requestedYear ? editionPath(snapshotSha256) : "/comex.json";
+      sourceDownload.hidden = false;
       if (snapshotSha256) {
         get("market-edition-id").textContent = "SHA-256 " + snapshotSha256.slice(0, 12) + "…";
-        get("market-edition-download").href = "/edicoes/comex-" + snapshotSha256 + ".json";
+        get("market-edition-download").href = editionPath(snapshotSha256);
         get("market-edition-download").download = "stratasignal-comex-" + snapshotSha256.slice(0, 12) + ".json";
         edition.hidden = false;
-        if (view === "panorama") await loadEditionHistory();
+        if (view === "panorama" && !requestedYear) {
+          try { renderEditionHistory(validateEditionManifest(releaseManifest)); } catch { /* Optional retained editions. */ }
+        }
       } else {
         edition.hidden = true;
         get("market-edition-history").hidden = true;
       }
       get("market-stale").hidden = Date.now() - Date.parse(snapshot.updated_on) <= 45 * 86400000;
-      options(period, "Todo o período", snapshot.months.map(value => [monthName(value), value]));
-      selectValue(period, query.get("mes"));
+      selectValue(tradeYear, requestedYear);
+      options(period, requestedYear ? "Todos os meses publicados" : "Todo o período", snapshot.months.map(value => [monthName(value), value]));
+      selectValue(period, requestedMonth);
       refreshCountries();
       tradeControls.disabled = false;
-      render();
+      if (readdress) applyTradeFilters();
+      else render();
       reportPanel.hidden = false;
+      if (restoreFocus && document.activeElement === document.body) (tradeHistory ? tradeYear : product).focus();
     } catch {
       tradeControls.disabled = true;
       get("market-edition").hidden = true;
       get("market-edition-history").hidden = true;
       get("market-retrieved").textContent = "Carga publicada indisponível.";
-      status.textContent = "Não foi possível carregar o panorama. Tente novamente ou consulte o Comex Stat.";
-      geographyStatus.textContent = "Mapa indisponível enquanto a carga de comércio estiver indisponível.";
-      retry.hidden = false;
+      const missingYear = requestedYear && tradeHistory && !Object.hasOwn(tradeHistory.years, requestedYear);
+      status.textContent = missingYear ? "O ano solicitado ainda está sem edição validada. Volte ao comércio recente." :
+        requestedYear ? "Não foi possível carregar o ano solicitado. Tente novamente ou volte ao comércio recente." :
+          "Não foi possível carregar o panorama. Tente novamente ou consulte o Comex Stat.";
+      geographyStatus.textContent = requestedYear ? status.textContent :
+        "Mapa indisponível enquanto a carga de comércio estiver indisponível.";
+      retry.hidden = Boolean(missingYear);
+      recent.hidden = !requestedYear;
+      if (restoreFocus && document.activeElement === document.body) (missingYear ? recent : retry).focus();
     }
   }
 
   function configureNewsPeriod() {
-    const months = [...new Set([...news.items.map(item => item.published_on.slice(0, 7)), ...addressMonths])]
-      .sort().reverse();
+    const months = [...new Set([...publicationMonths(), ...addressMonths])].sort().reverse();
     const defaultLabel = newsView ? (scopedNewsMonths.length ? monthSpan(scopedNewsMonths) : "Todos os meses") :
       "Mesmo período do comércio";
-    options(newsPeriod, defaultLabel, months.map(month => [monthName(month), month]));
+    const items = months.map(month => [monthName(month), month]);
+    if (!newsView) items.unshift([publicationScope([]), allCuratedDates]);
+    options(newsPeriod, defaultLabel, items);
   }
 
-  const tradeFilters = {ncm: product, fluxo: flow, mes: period, pais: country, noticias_mes: newsPeriod};
+  const tradeFilters = {ncm: product, fluxo: flow, ano: tradeYear, mes: period, pais: country, noticias_mes: newsPeriod};
   function tradeQuery() {
     const params = new URLSearchParams();
     for (const [key, select] of Object.entries(tradeFilters)) {
       const value = newsView ? query.get(key) : select.value;
       if (value && value.length <= 100) params.set(key, value);
     }
+    if (newsPublisher.value) params.set("noticias_fonte", newsPublisher.value);
     return params;
   }
 
@@ -816,42 +1192,59 @@
     render();
   }
 
+  function selectTradeYear(year) {
+    requestedYear = year;
+    requestedMonth = null;
+    pendingCountry = country.value || pendingCountry;
+    return load(true);
+  }
+
   function applyNewsFilters() {
     const params = tradeQuery();
     if (newsMineral.value) params.set("mineral", newsMineral.value);
     if (newsCountry.value) params.set("pais_citado", newsCountry.value);
     for (const month of newsMonths()) params.append("publicado", month);
     history.replaceState(history.state, "", route(location.pathname, params));
+    updateRouteLinks();
     renderNews();
   }
 
   if (newsView) {
     updateRouteLinks();
-    for (const select of [newsMineral, newsCountry, newsPeriod]) select.addEventListener("change", applyNewsFilters);
+    for (const select of [newsMineral, newsCountry, newsPeriod, newsPublisher]) select.addEventListener("change", applyNewsFilters);
     get("market-news-clear").addEventListener("click", () => {
       scopedNewsMonths = [];
       configureNewsPeriod();
-      newsMineral.selectedIndex = newsCountry.selectedIndex = 0;
+      newsMineral.selectedIndex = newsCountry.selectedIndex = newsPublisher.selectedIndex = 0;
       applyNewsFilters();
       newsMineral.focus();
     });
   } else {
+    renderIndustrialCase();
+    renderRegionalProduction();
     for (const select of [product, flow]) select.addEventListener("change", () => {
       pendingCountry = null;
       refreshCountries();
       applyTradeFilters();
     });
-    for (const select of [period, country, newsPeriod]) select.addEventListener("change", () => {
+    for (const select of [period, country, newsPeriod, newsPublisher]) select.addEventListener("change", () => {
       if (select === country) pendingCountry = null;
       applyTradeFilters();
     });
+    tradeYear.addEventListener("change", () => selectTradeYear(tradeYear.value));
     get("market-clear").addEventListener("click", () => {
       pendingCountry = null;
       product.selectedIndex = flow.selectedIndex = period.selectedIndex = country.selectedIndex = newsPeriod.selectedIndex = 0;
+      newsPublisher.selectedIndex = 0;
+      if (requestedYear) {
+        selectTradeYear("").then(() => product.focus());
+        return;
+      }
       refreshCountries();
       applyTradeFilters();
       product.focus();
     });
+    historyMetric.addEventListener("change", () => renderPartnerHistory(reportSlice.monthly));
     focusPartner.addEventListener("click", () => {
       zoomedCountry = zoomedCountry ? null : country.value;
       renderMapFocus({label: country.value, anchor: partnerAnchors.get(country.value)});
@@ -861,7 +1254,8 @@
       country.focus();
     });
     get("market-download").addEventListener("click", downloadReport);
-    retry.addEventListener("click", load);
+    retry.addEventListener("click", () => load(true));
+    recent.addEventListener("click", () => selectTradeYear(""));
     load();
   }
   newsRetry.addEventListener("click", loadNews);
