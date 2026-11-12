@@ -432,6 +432,8 @@
   async function renderTrade() {
     const request = ++tradeRequest;
     const {pais, produto, fluxo} = selection;
+    get("gallium-link").href = `?${new URLSearchParams({pais, produto: "811292", fluxo})}#world-gallium-title`;
+    window.marketGallium?.update(selection, catalog, read);
     const hasComexSlice = pais === "BR" && produto === "250410";
     get("comex").hidden = !hasComexSlice;
     if (hasComexSlice) {
@@ -468,6 +470,12 @@
 
   function downloadReport() {
     if (!catalog || !reportSlice) return;
+    const gallium = selection.produto === "811292"
+      ? window.marketGallium?.slice() ?? {status: "unavailable", source: null, edition: null} : null;
+    if (gallium?.status === "loading") {
+      get("download-status").textContent = "Aguarde a verificação das evidências do gálio e tente baixar novamente.";
+      return;
+    }
     const countryVenues = venues.filter(([country]) => selection.pais === "WORLD" || country === selection.pais);
     const report = {
       report_type: "stratasignal_world_mineral_trade_slice",
@@ -496,6 +504,7 @@
         note: "O cadastro auxilia a descoberta. Não comprova atividade atual, cobertura de ativos ou disponibilidade de cotação.",
       },
       issuer_evidence: issuerSlice(),
+      gallium_evidence: gallium,
       interpretation: {
         observations: "Os valores e pesos anuais acima são agregados publicados no recorte selecionado.",
         inferences: [],
@@ -508,7 +517,8 @@
         "O saldo do produto compara somente os valores anuais dos dois fluxos disponíveis na mesma edição BACI.",
         "Peso parcial soma somente fluxos com quantidade disponível.",
         "As fichas de empresas são contexto documental com período próprio. Fluxos BACI são agregados nacionais.",
-        "Cotações, preços de referência, volumes de produção, capitalização e cadastros abrangentes de instalações ficam fora desta exportação.",
+        "A ficha do gálio tem cobertura industrial e datas próprias. Capacidades anunciadas e agregados aduaneiros mantêm seus escopos.",
+        "Cotações, preços de referência, capitalização e cadastros abrangentes de instalações ficam fora desta exportação.",
       ],
     };
     const blob = new Blob([JSON.stringify(report, null, 2) + "\n"], {type: "application/json"});
@@ -563,8 +573,8 @@
       renderVenueCoverage();
       renderIssuers();
       await renderTrade();
-      if (location.hash === "#world-issuer-title" && document.activeElement === document.body) {
-        get("issuer-title").focus();
+      if (["#world-issuer-title", "#world-gallium-title"].includes(location.hash) && document.activeElement === document.body) {
+        document.querySelector(location.hash).focus();
       }
     } catch {
       catalog = undefined;

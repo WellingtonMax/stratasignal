@@ -800,6 +800,7 @@ test("the map labels missing annual coverage and rejects links to unverified yea
   const {dom, get, calls} = open(null, null, "?ano=2001", () => response(manifest), "mapa");
   t.after(() => dom.window.close());
   await settle(get);
+  await settle(get, "market-news-status");
   assert.match(get("market-year-coverage").textContent, /Aguardam validação as edições de 2001/);
   assert.deepEqual([...get("market-year").options].map(option => option.value), ["", "2002", "2000"]);
   assert.match(get("market-geo-status").textContent, /sem edição validada/);
