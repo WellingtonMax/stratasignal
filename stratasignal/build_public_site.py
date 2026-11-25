@@ -444,12 +444,26 @@ def _write_observatory_ui(output, ui):
         )
         page = re.sub(r"<title>[^<]+</title>", f"<title>StrataSignal · {title}</title>", page, count=1)
         page = re.sub(r'<meta name="description" content="[^"]+">', f'<meta name="description" content="{description}">', page, count=1)
+        if view == "mapa":
+            page = page.replace('content="no-referrer"', 'content="strict-origin-when-cross-origin"')
+            page = page.replace("script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self';",
+                                "script-src 'self' https://api.mapbox.com; "
+                                "style-src 'self' https://api.mapbox.com; style-src-attr 'unsafe-inline'; "
+                                "connect-src 'self' https://api.mapbox.com https://events.mapbox.com "
+                                "https://*.tiles.mapbox.com; img-src 'self' data: blob:; worker-src blob:;")
+            page = page.replace('<script src="/market.js" defer></script>',
+                                '<script src="/mapa/globe.js" defer></script>\n'
+                                '  <script src="/market.js" defer></script>')
         if view == "noticias":
             page = page.replace('aria-labelledby="market-context-title"', 'aria-labelledby="market-news-title"')
         directory = output / view
         directory.mkdir()
         with (directory / "index.html").open("x", encoding="utf-8") as stream:
             stream.write(page)
+    with (output / "mapa" / "globe.js").open("xb") as stream:
+        stream.write((ui / "market-globe.js").read_bytes())
+    with (output / "mapa" / "mapbox-config.json").open("x", encoding="utf-8") as stream:
+        stream.write('{"publicToken":null}\n')
     for name in ("market.js", "market.css", "app.css", "favicon.svg"):
         with (output / name).open("xb") as stream:
             stream.write((ui / name).read_bytes())

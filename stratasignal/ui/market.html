@@ -144,6 +144,14 @@
         <div class="market-geo-layout">
           <figure class="market-geo-figure">
             <div class="market-geo-viewport">
+            <div id="market-globe" class="market-globe" aria-label="Globo interativo do comércio mineral" inert>
+              <div id="market-globe-canvas" class="market-globe-canvas"></div>
+              <div class="market-globe-tools" role="group" aria-label="Visão do globo">
+                <button type="button" id="market-globe-style" aria-pressed="false">Satélite</button>
+                <button type="button" id="market-globe-reset">Visão global</button>
+              </div>
+              <p id="market-globe-status" class="market-globe-status" role="status" hidden></p>
+            </div>
             <svg id="market-geo-world" viewBox="0 200 1024 620" aria-hidden="true" focusable="false">
               <defs><pattern id="market-geo-grid" width="64" height="64" patternUnits="userSpaceOnUse">
                 <path d="M 64 0 H 0 V 64" fill="none" stroke="#2E5279" stroke-width="1"/>
@@ -168,6 +176,7 @@
             <figcaption class="market-geo-caption">
               <span><i class="market-geo-dot" aria-hidden="true"></i> Parceiro com registros</span>
               <span><i class="market-geo-ring" aria-hidden="true"></i> Parceiro selecionado</span>
+              <span id="market-globe-hint" hidden>Arraste para girar. Use a roda para aproximar.</span>
               <span class="market-geo-scroll-hint">Para usar a roda do mouse, clique no mapa primeiro.</span>
             </figcaption>
           </figure>

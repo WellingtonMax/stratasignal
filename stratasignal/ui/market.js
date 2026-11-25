@@ -657,6 +657,10 @@
       renderPartnerHistory(reportSlice.monthly);
     }
     renderMapFocus(selected);
+    window.strataMarketGlobe?.update(mapped.map(({label, anchor, fob_usd, kg, unitValue: unit}) => ({
+      label, anchor, totals: money(fob_usd) + " FOB · " + digits.format(kg) + " kg",
+      unit: unit.value === null ? "Valor por quilo indisponível" : "Valor declarado: " + unitValueLabel(unit),
+    })), selected?.label, togglePartner);
     get("market-geo-table-caption").textContent = scope;
     const focusedLabel = geographyRows.contains(document.activeElement) ? document.activeElement.value : null;
     let nextFocus;
@@ -1274,6 +1278,7 @@
     historyMetric.addEventListener("change", () => renderPartnerHistory(reportSlice.monthly));
     focusPartner.addEventListener("click", () => {
       if (!currentMapPartner?.anchor) return;
+      if (window.strataMarketGlobe?.focus(currentMapPartner.anchor)) return;
       if (zoomedCountry) {
         zoomedCountry = null;
         positionMap(1, 0, 0);
