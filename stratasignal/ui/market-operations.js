@@ -57,6 +57,13 @@
     const query = terms();
     return records.filter(x => (!selector.value || x.kind === selector.value) && matches(x, query));
   };
+  const ownHash = /^#operacao=([a-z0-9-]+)$/;
+  const addressId = () => ownHash.exec(location.hash)?.[1] || "";
+  const setAddress = id => {
+    const url = new URL(location.href);
+    url.hash = id ? "operacao=" + id : "";
+    if (url.href !== location.href) history.replaceState(history.state,"",url);
+  };
   const create = (tag, value) => Object.assign(document.createElement(tag), {textContent:value});
   const link = (label, href) => Object.assign(create("a", label), {href});
   function update() {
@@ -69,6 +76,7 @@
   function renderList() {
     const items = visible();
     if (selected && !items.some(x => x.id === selected)) {
+      if (addressId() === selected) setAddress("");
       selected = "";
       detail.hidden = true;
     }
@@ -85,16 +93,19 @@
       return item;
     }));
   }
-  function open(id, focusMap = false) {
+  function open(id, focusMap = false, alignDetail = false) {
     const record = lookup.get(id);
     if (!active || !record) return;
     selected = id;
+    setAddress(id);
     if (selector.value && selector.value !== record.kind) selector.value = "";
     if (!matches(record, terms())) search.value = "";
     renderList();
     if (focusMap && !enabled) enabled = true;
     for (const button of list.querySelectorAll("button")) button.setAttribute("aria-pressed",String(button.dataset.operation === id));
     dom("name").textContent = record.name;
+    const direct = dom("permalink");
+    direct.href = "/mapa/?ncm=25041000#operacao=" + record.id;
     const fields = [["Localidade",record.city + " · " + record.region + " · " + record.country],
       ["Empresa",record.company],["Etapa",kinds[record.kind]],["Produto",record.material],["Situação",record.status]];
     dom("fields").replaceChildren(...fields.map(([k,v]) => {
@@ -119,18 +130,32 @@
     detail.hidden = false;
     dom("geo").textContent = geography;
     update();
-    if (focusMap) {
-      window.strataMarketGlobe?.focus(record.anchor);
-      dom("name").focus({preventScroll:true});
-    } else {
-      dom("name").focus({preventScroll:true});
-      dom("detail").scrollIntoView?.({block:"nearest"});
-    }
+    if (focusMap) window.strataMarketGlobe?.focus(record.anchor, true);
+    dom("name").focus({preventScroll:true});
+    if (!focusMap || alignDetail) detail.scrollIntoView?.({block:"nearest"});
   }
   toggle.addEventListener("click",() => { enabled = !enabled; update(); });
   const applyFilters = () => { renderList(); update(); };
   selector.addEventListener("change",applyFilters);
   search.addEventListener("input",applyFilters);
+  const openAddress = () => {
+    const id = addressId();
+    if (lookup.has(id) && id !== selected) open(id,true,true);
+  };
+  panel.querySelectorAll("[data-open-operation]").forEach(button => {
+    button.addEventListener("click",() => open(button.dataset.openOperation,true,true));
+  });
+  window.addEventListener("hashchange",openAddress);
   renderList();
-  window.strataMarketOperations = {show(value) { active = value === "25041000"; update(); }};
+  window.strataMarketOperations = {show(value) {
+    active = value === "25041000";
+    if (!active && addressId()) {
+      setAddress("");
+      selected = "";
+      detail.hidden = true;
+      renderList();
+    }
+    update();
+    if (active) openAddress();
+  }};
 })();

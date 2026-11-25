@@ -1299,8 +1299,18 @@
       status.textContent = missingYear ? "O ano solicitado ainda está sem edição validada. Volte ao comércio recente." :
         requestedYear ? "Não foi possível carregar o ano solicitado. Tente novamente ou volte ao comércio recente." :
           "Não foi possível carregar o panorama. Tente novamente ou consulte o Comex Stat.";
-      geographyStatus.textContent = requestedYear ? status.textContent :
-        "Mapa indisponível enquanto a carga de comércio estiver indisponível.";
+      if (!requestedYear && view === "mapa" && product.value === "25041000" && window.strataMarketOperations) {
+        snapshotSha256 = null;
+        renderGeography([], "Comex Stat indisponível");
+        renderDistribution();
+        get("market-geo-amount").textContent = "Dados do comércio indisponíveis. As operações documentadas continuam disponíveis.";
+        get("market-geo-updated").textContent = "";
+        geographyStatus.textContent = "Comex Stat indisponível · pontos de operações com fontes próprias";
+        window.strataMarketOperations.show(product.value);
+      } else {
+        geographyStatus.textContent = requestedYear ? status.textContent :
+          "Mapa indisponível enquanto a carga de comércio estiver indisponível.";
+      }
       retry.hidden = Boolean(missingYear);
       recent.hidden = !requestedYear;
       if (restoreFocus && document.activeElement === document.body) (missingYear ? recent : retry).focus();

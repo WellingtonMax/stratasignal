@@ -184,3 +184,34 @@ test("graphite catalogue searches accents, combines filters and separates unbuil
   a.equal(feed.data.features.length,13);
   a.equal(map().getSource("trade-partners").data.features.length,1);
 });
+
+test("a city permalink focuses the intended pin after the globe becomes ready", async t => {
+  const {w,doc,map}=setup(t,"pk.example.synthetic");
+  w.history.replaceState(null,"","?ncm=25041000&fluxo=export#operacao=itagimirim");
+  w.eval(fs.readFileSync("stratasignal/ui/market-operations.js","utf8"));
+  const get=id=>doc.getElementById("market-operations-"+id);
+  w.strataMarketOperations.show("25041000");
+  a.match(get("name").textContent,/Boa Sorte/);
+  a.equal(w.location.search,"?ncm=25041000&fluxo=export");
+  await flush();
+  const m=map();
+  m.fire("style.load");
+  m.extent={width:720,height:400};
+  m.fire("sourcedata",{sourceId:"public-outline",coord:{},sourceDataType:"content"});
+  m.fire("render");
+  a.equal(JSON.stringify(m.view.center),JSON.stringify([-39.62,-16.09]));
+  doc.querySelector('[data-open-operation="balama"]').click();
+  a.equal(w.location.hash,"#operacao=balama");
+  a.equal(get("links").querySelectorAll("button").length,3);
+  const search=get("search");
+  search.value="Jordânia";
+  search.dispatchEvent(new w.Event("input"));
+  a.equal(get("detail").hidden,true);
+  a.equal(w.location.hash,"");
+  w.history.replaceState(null,"","?ncm=25041000#operacao=unknown");
+  w.dispatchEvent(new w.Event("hashchange"));
+  a.equal(get("detail").hidden,true);
+  w.strataMarketOperations.show("28369100");
+  a.equal(w.location.hash,"");
+  a.equal(doc.getElementById("market-operations").hidden,true);
+});

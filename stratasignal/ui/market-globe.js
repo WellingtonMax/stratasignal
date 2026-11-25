@@ -8,6 +8,7 @@
   const sdk = "https://api.mapbox.com/mapbox-gl-js/v3.35.0/mapbox-gl";
   let rows = new Map(), pick, selected, map, popup, timer, outline;
   let operations = new Map(), operationSelected, pickOperation;
+  let pendingFocus;
   let requested = false, visible = false, layerReady = false, loadError = false, active = "outline";
 
   function notice(text) {
@@ -40,6 +41,7 @@
     root.inert = true;
     get("-hint").hidden = true;
     visible = false;
+    pendingFocus = null;
     if (map) { const old = map; map = null; old.remove(); }
   }
   function outlineStyle() {
@@ -151,6 +153,11 @@
           root.parentElement.classList.add("has-market-globe");
           get("-hint").hidden = false;
           map.resize();
+          if (pendingFocus) {
+            const anchor = pendingFocus;
+            pendingFocus = null;
+            window.strataMarketGlobe.focus(anchor);
+          }
         }
       };
       map.on("render", reveal);
@@ -216,12 +223,16 @@
     operations(points, current, handler) {
       operations = new Map(points.map(item => [item.id, item]));
       operationSelected = current;
+      if (!operations.has(current)) pendingFocus = null;
       pickOperation = handler;
       updateData();
       if (points.length) start();
     },
-    focus(anchor) {
-      if (!visible) return false;
+    focus(anchor, whenReady = false) {
+      if (!visible) {
+        if (whenReady && requested) pendingFocus = anchor;
+        return false;
+      }
       map.jumpTo({center: anchor, zoom: 4.2, pitch: 0, bearing: 0});
       return true;
     },

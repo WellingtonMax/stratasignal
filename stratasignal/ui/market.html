@@ -67,6 +67,7 @@
         <h2>De quais origens o Brasil mais depende para importar grafita?</h2>
         <p>Compare as origens por valor e peso e veja como a concentração muda mês a mês. O dado aduaneiro não identifica sozinho fornecedores, portos ou trajetos.</p>
         <a class="button secondary" href="/?ncm=25041000&amp;fluxo=import#comparar-parceiros">Comparar origens da grafita</a>
+        <a class="button secondary" href="/mapa/?ncm=25041000#operacao=itagimirim">Ver a cadeia no globo</a>
       </article>
       <article class="market-start-case">
         <p class="eyebrow">GÁLIO · CADEIA INDUSTRIAL</p>
@@ -250,6 +251,10 @@
         <section id="market-operations" class="market-operations" aria-labelledby="market-operations-title" hidden>
           <header><p class="eyebrow">CADEIA DA GRAFITA</p><h3 id="market-operations-title">Empresas e operações por cidade</h3>
           <p>Explore minas, plantas de processamento, portos e projetos ainda sem produção. Esta seleção tem fontes próprias e não segue o mês ou o país do comércio. Um ponto no mapa não prova que a empresa forneceu grafita ao Brasil.</p></header>
+          <div class="market-operation-examples" aria-label="Exemplos da cadeia da grafita">
+            <button class="button secondary" type="button" data-open-operation="itagimirim">Itagimirim e Mesa · Fornecedor e planta piloto</button>
+            <button class="button secondary" type="button" data-open-operation="balama">Balama · Mina, portos e processamento</button>
+          </div>
           <div class="market-operations-controls">
             <label>Buscar cidade ou empresa <input type="search" id="market-operations-search" placeholder="Ex.: Jordânia ou Graphcoa" maxlength="80"></label>
             <label>Etapa da cadeia <select id="market-operations-kind"><option value="">Todas</option><option value="mine">Mineração e beneficiamento</option><option value="plant">Processamento industrial</option><option value="port">Portos e logística</option><option value="project">Projeto em desenvolvimento</option></select></label>
@@ -260,6 +265,7 @@
             <article id="market-operations-detail" aria-labelledby="market-operations-name" hidden>
               <h4 id="market-operations-name" tabindex="-1"></h4><dl id="market-operations-fields"></dl>
               <p class="market-news-note" id="market-operations-geo"></p>
+              <a class="market-operation-permalink" id="market-operations-permalink">Link direto deste ponto</a>
               <div id="market-operations-links-wrap" hidden><h5>Ligações documentadas</h5><ul id="market-operations-links"></ul></div>
               <h5>Fontes</h5><ul id="market-operations-sources"></ul>
             </article>

@@ -85,6 +85,7 @@ function open(fetcher, newsFetcher, query = "", manifestFetcher, view = "panoram
     assert.equal(url, "/comex.json");
     return fetcher ? fetcher(attempts) : response(sample);
   };
+  if (view === "mapa") window.eval(fs.readFileSync("stratasignal/ui/market-operations.js", "utf8"));
   window.eval(script);
   const change = (id, value) => {
     const select = get(id);
@@ -961,4 +962,21 @@ test("Panorama compares two partners in the same trade scope, distinguishing no 
   assert.match(get("market-pair-cards").textContent, /ChinaUS\$ 1\.700 FOB/);
   change("market-product", "28369100");
   assert.equal(get("comparar-parceiros").hidden, true);
+});
+
+test("a graphite operation link still opens when trade files are unavailable", async () => {
+  const {dom, get, window} = open(() => ({ok:false}), null, "?ncm=25041000#operacao=itagimirim", undefined, "mapa");
+  await settle(get);
+  assert.equal(get("market-geo-content").hidden,false);
+  assert.equal(get("market-report").hidden,true);
+  assert.equal(get("market-controls").disabled,true);
+  assert.match(get("market-geo-status").textContent,/Comex Stat indisponível/);
+  assert.equal(get("market-geo-pins").children.length,0);
+  assert.equal(get("market-operations-detail").hidden,false);
+  assert.match(get("market-operations-name").textContent,/Boa Sorte/);
+  assert.equal(get("market-operations-permalink").getAttribute("href"),"/mapa/?ncm=25041000#operacao=itagimirim");
+  get("market-operations-links").querySelector("button").click();
+  assert.equal(window.location.hash,"#operacao=mesa");
+  assert.match(get("market-operations-fields").textContent,/Mesa.*Allied Graphite/);
+  dom.window.close();
 });
