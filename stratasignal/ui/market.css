@@ -270,3 +270,15 @@
   #market-globe-hint .market-globe-hint-pointer{display:none}
   #market-globe-hint .market-globe-hint-touch{display:inline}
 }
+
+.market-slice-insight{padding:10px 14px;margin:12px 0;border-left:4px solid var(--green);background:#eef8f5;color:var(--navy);font-size:.9rem}
+.market-pair{margin-top:18px;padding:clamp(14px,3vw,24px);scroll-margin-top:115px}
+.market-pair h3{margin:3px 0 6px}
+#market-pair-scope{margin:0 0 12px;color:var(--muted);font-size:.85rem}
+.market-pair-controls,.market-pair-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:10px 0}
+.market-pair-controls label{display:grid;gap:4px;font-size:.875rem;font-weight:650}
+.market-pair-controls select{min-width:0;min-height:44px;font:inherit}
+.market-pair-cards>div{padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--canvas)}
+.market-pair-cards p{margin:2px 0;color:var(--navy)}
+.market-pair-cards small{color:var(--muted)}
+@media(max-width:440px){.market-pair-controls,.market-pair-cards{grid-template-columns:minmax(0,1fr)}}

@@ -537,6 +537,62 @@
     }));
   }
 
+  let pairInputs, pair = [], pairDeepLinkOpened = false;
+  const pairA = get("market-pair-a"), pairB = get("market-pair-b");
+  function renderPair(partners, grouped, months, scope) {
+    const panel = get("comparar-parceiros");
+    panel.hidden = view !== "panorama" || partners.length < 2;
+    get("market-compare-link").hidden = partners.length < 2 ||
+      Boolean(country.value && !partners.some(item => item.label === country.value));
+    if (panel.hidden) return;
+    const labels = partners.map(item => item.label);
+    const key = JSON.stringify([scope, country.value, labels]);
+    if (pairInputs !== key) {
+      const first = labels.includes(country.value) ? country.value : labels[0];
+      pair = [first, labels.find(label => label !== first)];
+      pairInputs = key;
+    }
+    for (const [slot, select] of [pairA, pairB].entries()) {
+      select.replaceChildren(...labels.map(label => {
+        const option = new Option(label, label);
+        option.disabled = pair[1 - slot] === label;
+        return option;
+      }));
+      select.value = pair[slot];
+    }
+    get("market-pair-scope").textContent = scope + " · Comex Stat";
+    get("market-pair-name-a").textContent = pair[0];
+    get("market-pair-name-b").textContent = pair[1];
+    const allFob = sum(partners, "fob_usd");
+    get("market-pair-cards").replaceChildren(...pair.map(label => {
+      const item = partners.find(partner => partner.label === label);
+      const card = element("div");
+      card.append(element("strong", label), element("p", money(item.fob_usd) + " FOB · " + digits.format(item.kg) + " kg"),
+        element("small", allFob ? percent.format(item.fob_usd / allFob) + " do valor FOB de todos os parceiros" : "Valor FOB total igual a zero"));
+      return card;
+    }));
+    const byMonth = new Map();
+    for (const row of grouped) {
+      if (!pair.includes(row.country)) continue;
+      const k = row.month + "\n" + row.country;
+      byMonth.set(k, (byMonth.get(k) ?? 0) + row.fob_usd);
+    }
+    get("market-pair-months").replaceChildren(...months.map(month => {
+      const tr = element("tr");
+      const th = element("th", monthName(month));
+      th.scope = "row";
+      tr.append(th, ...pair.map(label => {
+        const amount = byMonth.get(month + "\n" + label);
+        return element("td", amount === undefined ? "Sem registros" : money(amount));
+      }));
+      return tr;
+    }));
+    if (!pairDeepLinkOpened && location.hash === "#comparar-parceiros") {
+      pairDeepLinkOpened = true;
+      requestAnimationFrame(() => panel.scrollIntoView?.({block: "start"}));
+    }
+  }
+
   function projectAnchor([lon, lat]) {
     const phi = lat * Math.PI / 180;
     // The packaged Natural Earth outline uses a 1024 × 1024 Web Mercator world.
@@ -872,6 +928,7 @@
 
   function render() {
     const baciLink = get("market-baci-link");
+    baciLink.title = "O BACI é anual e nacional: abre Brasil e preserva o fluxo, mas não o parceiro nem o mês.";
     baciLink.hidden = product.value !== "25041000";
     if (!baciLink.hidden) {
       const query = new URLSearchParams({pais: "BR", produto: "250410", fluxo: flow.value});
@@ -914,6 +971,12 @@
     status.textContent = (records.length ? quantity : "Nenhum registro neste recorte") + " · " + scope;
     results.hidden = records.length === 0;
     renderGeography(partners, scopeBase);
+    renderPair(partners, grouped, months, scopeBase);
+    const leader = partners[0], allFob = sum(partners, "fob_usd");
+    const insight = get("market-slice-insight");
+    insight.hidden = !leader || !allFob || Boolean(country.value);
+    if (!insight.hidden) insight.textContent = leader.label + " concentrou " +
+      percent.format(leader.fob_usd / allFob) + " do valor FOB do recorte. " + scopeBase + ".";
     renderNews();
     updateRouteLinks();
     if (!records.length) return;
@@ -1230,6 +1293,7 @@
     document.querySelector('[data-market-nav="panorama"]').href = panorama;
     document.querySelector('[data-market-nav="mapa"]').href = map;
     get("market-chart-link").href = panorama;
+    get("market-compare-link").href = panorama + "#comparar-parceiros";
     get("market-map-link").href = map;
     if (newsView) return;
     document.querySelector('[data-market-nav="noticias"]').href = route("/noticias/", trade);
@@ -1297,6 +1361,14 @@
       applyTradeFilters();
       product.focus();
     });
+    for (const [slot, select] of [pairA, pairB].entries()) {
+      select.addEventListener("change", () => {
+        if (!select.value || select.value === pair[1 - slot]) return;
+        pair[slot] = select.value;
+        render();
+        select.focus({preventScroll: true});
+      });
+    }
     historyMetric.addEventListener("change", () => renderPartnerHistory(reportSlice.monthly));
     focusPartner.addEventListener("click", () => {
       if (!currentMapPartner?.anchor) return;

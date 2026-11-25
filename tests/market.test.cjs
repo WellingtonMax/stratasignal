@@ -942,3 +942,23 @@ test("the map opens with a scoped partner ranking and preserves keyboard focus w
   get("market-geo-clear").click();
   assert.equal(window.document.activeElement, list.querySelector("button"));
 });
+
+
+test("Panorama compares two partners in the same trade scope, distinguishing no observation from zero", async t => {
+  const snap = {...sample, records:[...sample.records, record("2025-02", "Alemanha", 0, 20)]};
+  const {dom, get, change} = open(() => response(snap), null, "?ncm=25041000&fluxo=import", undefined, "panorama");
+  t.after(() => dom.window.close());
+  await settle(get);
+  assert.equal(get("comparar-parceiros").hidden, false);
+  assert.match(get("market-slice-insight").textContent, /China concentrou 85%/);
+  assert.equal(get("market-pair-a").value, "China");
+  assert.equal(get("market-pair-b").options[0].disabled, true);
+  change("market-pair-b", "Alemanha");
+  assert.equal(get("market-pair-name-b").textContent, "Alemanha");
+  assert.deepEqual([...get("market-pair-months").rows].map(r=>[...r.cells].slice(1).map(c=>c.textContent)), [
+    ["US$ 1.200","Sem registros"], ["Sem registros","US$ 0"], ["US$ 500","Sem registros"],
+  ]);
+  assert.match(get("market-pair-cards").textContent, /ChinaUS\$ 1\.700 FOB/);
+  change("market-product", "28369100");
+  assert.equal(get("comparar-parceiros").hidden, true);
+});

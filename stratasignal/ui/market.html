@@ -111,6 +111,7 @@
           <div><dt>Peso líquido</dt><dd id="market-kg"></dd><small>quilogramas</small></div>
           <div><dt>Países e áreas parceiras</dt><dd id="market-partners"></dd><small>com registros no recorte</small></div>
         </dl>
+        <p id="market-slice-insight" class="market-slice-insight market-panorama-only"></p>
         <div class="market-charts">
           <article class="card market-series" aria-labelledby="market-series-title">
             <p class="eyebrow">SÉRIE MENSAL</p>
@@ -135,6 +136,26 @@
             <ol id="market-ranking" aria-describedby="market-ranking-note"></ol>
           </article>
         </div>
+        <section id="comparar-parceiros" class="card market-pair market-panorama-only" aria-labelledby="market-pair-title" hidden>
+          <p class="eyebrow">COMPARAÇÃO NO MESMO RECORTE</p>
+          <h3 id="market-pair-title">Comparar parceiros</h3>
+          <p id="market-pair-scope"></p>
+          <div class="market-pair-controls">
+            <label for="market-pair-a">Primeiro parceiro <select id="market-pair-a"></select></label>
+            <label for="market-pair-b">Segundo parceiro <select id="market-pair-b"></select></label>
+          </div>
+          <div class="market-pair-cards" id="market-pair-cards" aria-live="polite"></div>
+          <details class="market-table">
+            <summary>Ver histórico mensal dos dois</summary>
+            <div class="table-wrap" role="region" aria-label="Histórico mensal dos parceiros" tabindex="0">
+              <table>
+                <caption>Valor FOB declarado (US$) por mês</caption>
+                <thead><tr><th scope="col">Mês</th><th scope="col" id="market-pair-name-a"></th><th scope="col" id="market-pair-name-b"></th></tr></thead>
+                <tbody id="market-pair-months"></tbody>
+              </table>
+            </div>
+          </details>
+        </section>
       </div>
     </section>
     <section id="mapa" class="market-geo market-map-only" aria-labelledby="market-geo-title" tabindex="-1">
@@ -205,6 +226,7 @@
             <button id="market-geo-focus" type="button" class="button secondary" aria-pressed="false" disabled>Aproximar parceiro</button>
             <button id="market-geo-clear" type="button" class="button secondary" hidden>Ver todos os parceiros</button>
             <a class="button secondary" id="market-chart-link" href="/">Ver gráficos do recorte <span aria-hidden="true">→</span></a>
+            <a class="button secondary" id="market-compare-link" href="/#comparar-parceiros" hidden>Comparar parceiros</a>
             <p id="market-geo-updated" class="market-news-note"></p>
             <p class="market-news-note">Os pontos são referências aproximadas de países, sem escala de volume, rotas de transporte ou localização de instalações. Base e pontos de referência do <a id="market-geo-source" href="https://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-admin-0-countries/">Natural Earth · 1:110m</a>.</p>
           </div>
