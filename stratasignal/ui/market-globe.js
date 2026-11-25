@@ -4,7 +4,7 @@
   const root = get(""), canvas = get("-canvas"), toggle = get("-style"), streets = get("-streets");
   if (!root || !canvas || !toggle) return;
   const styles = {dark: "mapbox://styles/mapbox/dark-v11", satellite: "mapbox://styles/mapbox/satellite-streets-v12"};
-  const view = {center: [-25, 18], zoom: 1.05, pitch: 0, bearing: 0};
+  const globalView = () => ({center: [-25, 18], zoom: root.clientWidth < 520 ? 0.5 : 1.05, pitch: 0, bearing: 0});
   const sdk = "https://api.mapbox.com/mapbox-gl-js/v3.35.0/mapbox-gl";
   let rows = new Map(), pick, selected, map, popup, timer, outline;
   let requested = false, visible = false, layerReady = false, loadError = false, active = "outline";
@@ -99,7 +99,7 @@
       if (!gl?.supported()) { root.dataset.state = "webgl-unavailable"; return; }
       root.dataset.state = "creating";
       map = new gl.Map({container: canvas, accessToken: publicToken, style: outlineStyle(),
-        projection: "globe", ...view, minZoom: 0.5, maxZoom: 5});
+        projection: "globe", ...globalView(), minZoom: 0.5, maxZoom: 5});
       map.addControl(new gl.NavigationControl({showCompass: false}), "top-right");
       popup = new gl.Popup({closeOnClick: false, closeButton: false, offset: 13});
       timer = setTimeout(() => abandon("tile-timeout"), 40000);
@@ -174,7 +174,7 @@
 
   toggle.addEventListener("click", () => changeStyle(active === "satellite" ? "outline" : "satellite"));
   streets.addEventListener("click", () => changeStyle(active === "dark" ? "outline" : "dark"));
-  get("-reset").addEventListener("click", () => { if (visible) map.jumpTo(view); });
+  get("-reset").addEventListener("click", () => { if (visible) map.jumpTo(globalView()); });
   window.strataMarketGlobe = {
     update(points, current, handler) {
       rows = new Map(points.map(item => [item.label, item]));

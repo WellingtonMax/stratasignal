@@ -61,11 +61,11 @@
         </details>
       </aside>
     </section>
-    <section class="market-page-intro market-map-only" aria-labelledby="market-map-title">
+    <section class="market-page-intro market-map-intro market-map-only" aria-labelledby="market-map-title">
       <div>
         <p class="eyebrow"><span class="market-dot" aria-hidden="true"></span> GEOGRAFIA DO COMÉRCIO</p>
         <h1 id="market-map-title">Parceiros do Brasil</h1>
-        <p>Veja os países do recorte. Toque em um ponto do mapa ou escolha um parceiro na lista.</p>
+        <p>Explore de onde o Brasil compra e pra onde vende.</p>
       </div>
     </section>
     <section id="explorar" class="market-trade-only" aria-labelledby="market-explore-title" tabindex="-1">
@@ -177,14 +177,15 @@
             <figcaption class="market-geo-caption">
               <span><i class="market-geo-dot" aria-hidden="true"></i> Parceiro com registros</span>
               <span><i class="market-geo-ring" aria-hidden="true"></i> Parceiro selecionado</span>
-              <span id="market-globe-hint" hidden>Arraste para girar. Use a roda para aproximar.</span>
+              <span id="market-globe-hint" hidden><span class="market-globe-hint-pointer">Arraste para girar. Use a roda para aproximar.</span><span class="market-globe-hint-touch">Arraste para girar e use dois dedos para aproximar.</span></span>
               <span class="market-geo-scroll-hint">Para usar a roda do mouse, clique no mapa primeiro.</span>
             </figcaption>
           </figure>
           <div class="market-geo-notes">
-            <p class="eyebrow">PARCEIRO EM FOCO</p>
-            <h3 id="market-geo-selection"></h3>
+            <p class="eyebrow" id="market-geo-kicker">PARCEIRO EM FOCO</p>
+            <h3 id="market-geo-selection" tabindex="-1"></h3>
             <p id="market-geo-amount"></p>
+            <ol class="market-geo-ranking" id="market-geo-ranking" aria-label="Principais parceiros por valor FOB" hidden></ol>
             <div id="market-geo-context" class="market-geo-context" hidden>
               <p id="market-geo-rank"></p>
               <p class="market-news-note">Participação no total de todos os parceiros para o mesmo produto, fluxo e período.</p>

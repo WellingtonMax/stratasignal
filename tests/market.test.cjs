@@ -392,7 +392,7 @@ test("the public map and accessible partner table share the trade and news filte
   button("Chile").click();
   get("market-geo-clear").click();
   assert.equal(get("market-country").value, "");
-  assert.equal(window.document.activeElement, get("market-country"));
+  assert.equal(window.document.activeElement, get("market-geo-ranking").querySelector("button"));
   dom.window.close();
 });
 
@@ -921,4 +921,24 @@ test("map shows declared partner value on hover and only captures the wheel afte
   get("market-geo-zoom-reset").click();
   assert.equal(get("market-geo-scene").style.transform, "");
   assert.equal(get("market-geo-zoom-reset").disabled, true);
+});
+
+
+test("the map opens with a scoped partner ranking and preserves keyboard focus when opening a partner", async t => {
+  const {dom, window, get} = open(null, null, "?ncm=25041000&fluxo=import", undefined, "mapa");
+  t.after(() => dom.window.close());
+  await settle(get);
+  const list = get("market-geo-ranking");
+  assert.equal(get("market-geo-selection").textContent, "Principais parceiros");
+  assert.equal(list.hidden, false);
+  assert.equal(list.children.length, 2);
+  assert.equal(list.querySelector("img"), null);
+  const china = list.querySelector("button");
+  assert.match(china.getAttribute("aria-label"), /China · 85% · US\$ 1\.700 FOB/);
+  china.click();
+  assert.equal(list.hidden, true);
+  assert.equal(get("market-country").value, "China");
+  assert.equal(window.document.activeElement, get("market-geo-selection"));
+  get("market-geo-clear").click();
+  assert.equal(window.document.activeElement, list.querySelector("button"));
 });

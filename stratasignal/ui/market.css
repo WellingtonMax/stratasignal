@@ -244,3 +244,29 @@
 .market-globe .mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip{border-top-color:#081b33}
 .market-globe .mapboxgl-canvas:focus-visible,.market-globe-tools button:focus-visible{outline:3px solid #f2c94c;outline-offset:-3px}
 #market-globe-hint[hidden],.market-globe-status[hidden]{display:none}
+
+.market-geo-ranking:not([hidden]){display:grid;list-style:none;gap:6px;margin:0 0 12px;padding:0}
+.market-geo-ranking button{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;min-height:48px;padding:6px 10px;border:1px solid var(--line);border-radius:7px;color:var(--ink);background:var(--white);text-align:left;font:inherit;cursor:pointer}
+.market-geo-ranking button:hover{border-color:var(--green);background:#eef8f5}
+.market-geo-ranking button:focus-visible,#market-geo-selection:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.market-geo-ranking span{overflow-wrap:anywhere}
+.market-geo-ranking strong{color:var(--green);font-size:.875rem}
+.market-geo-ranking small{grid-column:1/-1;color:var(--muted);font-size:.75rem}
+@media(max-width:700px){
+  [data-view="mapa"] main{padding-top:12px}
+  [data-view="mapa"] .market-map-intro{margin-bottom:9px}
+  [data-view="mapa"] .market-map-intro .eyebrow{display:none}
+  [data-view="mapa"] .market-map-intro h1{margin:0 0 4px;font-size:clamp(25px,7vw,32px)}
+  [data-view="mapa"] .market-map-intro p:not(.eyebrow){font-size:.875rem;line-height:1.35}
+  [data-view="mapa"] .market-filter-panel:not([open])~#market-year-coverage{display:none}
+  [data-view="mapa"] .market-geo{margin-top:8px}
+  [data-view="mapa"] #market-geo-status{margin:0 0 8px;line-height:1.35}
+  [data-view="mapa"] #market-geo-world{min-height:240px}
+  [data-view="mapa"] .market-geo-scroll-hint{display:none}
+}
+
+#market-globe-hint .market-globe-hint-touch{display:none}
+@media(max-width:700px) and (pointer:coarse){
+  #market-globe-hint .market-globe-hint-pointer{display:none}
+  #market-globe-hint .market-globe-hint-touch{display:inline}
+}

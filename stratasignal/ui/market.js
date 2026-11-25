@@ -639,11 +639,33 @@
     const pins = mapped.filter(partner => partner !== selected).map(partner => mapPin(partner, false));
     if (selected?.anchor) pins.push(mapPin(selected, true));
     get("market-geo-pins").replaceChildren(...pins);
-    get("market-geo-selection").textContent = country.value || "Todos os parceiros";
+    const heading = get("market-geo-selection");
+    const summary = get("market-geo-ranking");
+    const allPartners = !country.value;
+    const totalFob = sum(partners, "fob_usd");
+    get("market-geo-kicker").textContent = allPartners ? "VISÃO DO RECORTE" : "PARCEIRO EM FOCO";
+    heading.textContent = country.value || "Principais parceiros";
     get("market-geo-amount").textContent = selected ?
       money(selected.fob_usd) + " FOB · " + digits.format(selected.kg) + " kg" +
         (selected.anchor ? "" : " · Sem ponto no mapa") :
-      country.value ? "Sem registros neste período." : "Selecione um país para ver o valor e o peso.";
+      allPartners ? (totalFob ? "Participação no valor FOB do recorte." : "Valor FOB total igual a zero.")
+        : "Sem registros neste período.";
+    summary.hidden = !allPartners;
+    summary.replaceChildren(...(allPartners ? partners.slice(0, 4).map(({label, fob_usd}) => {
+      const item = element("li");
+      const button = element("button");
+      button.type = "button";
+      const share = totalFob ? percent.format(fob_usd / totalFob) : "Sem participação calculável";
+      const value = money(fob_usd) + " FOB";
+      button.setAttribute("aria-label", label + " · " + share + " · " + value);
+      button.append(element("span", label), element("strong", share), element("small", value));
+      button.addEventListener("click", () => {
+        togglePartner(label);
+        heading.focus({preventScroll: true});
+      });
+      item.append(button);
+      return item;
+    }) : []));
     const context = get("market-geo-context");
     context.hidden = !selected;
     clearPartner.hidden = !selected;
@@ -1304,7 +1326,8 @@
     }, {passive: false});
     clearPartner.addEventListener("click", () => {
       togglePartner(country.value);
-      country.focus();
+      const first = get("market-geo-ranking").querySelector("button");
+      (first || get("market-geo-selection")).focus({preventScroll: true});
     });
     get("market-download").addEventListener("click", downloadReport);
     retry.addEventListener("click", () => load(true));
