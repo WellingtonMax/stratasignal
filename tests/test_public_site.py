@@ -160,6 +160,17 @@ class PublicSiteTests(unittest.TestCase):
             basemap = output / manifest["partner_map"]["basemap_path"]
             self.assertEqual(manifest["partner_map"]["basemap_sha256"], hashlib.sha256(basemap.read_bytes()).hexdigest())
             self.assertIn('href="/carteira/world-land.svg"', (output / "mapa/index.html").read_text(encoding="utf-8"))
+            map_html = (output / "mapa/index.html").read_text(encoding="utf-8")
+            self.assertIn('src="/mapa/globe.js"', map_html)
+            self.assertIn("worker-src blob:", map_html)
+            self.assertIn("strict-origin-when-cross-origin", map_html)
+            self.assertTrue((output / "mapa/globe.js").is_file())
+            self.assertEqual(json.loads((output / "mapa/mapbox-config.json").read_text()), {"publicToken": None})
+            for entry in ("index.html", "noticias/index.html"):
+                other = (output / entry).read_text(encoding="utf-8")
+                self.assertNotIn("api.mapbox.com", other)
+                self.assertNotIn('src="/mapa/globe.js"', other)
+                self.assertIn('content="no-referrer"', other)
             self.assertEqual(manifest["dataset_kind"], "public_aggregate")
             self.assertEqual(demo["dataset_kind"], "synthetic")
             self.assertEqual(manifest["source_commit"], demo["source_commit"])

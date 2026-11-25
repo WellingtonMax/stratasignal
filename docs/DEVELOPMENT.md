@@ -120,3 +120,19 @@ python -m stratasignal.build_public_site \
 ```
 
 A curadoria também consulta um arquivo Atom fixo do Natural Resources Canada com corte em março de 2025. A publicação exige que o endereço original do comunicado selecionado apareça no arquivo. A atualização informada pelo arquivo, o horário da consulta e o SHA-256 ficam separados do feed corrente no manifesto e em `news_context.canada_archive`. O filtro de fonte agrupa ambos em Natural Resources Canada, e o de mês segue a publicação do comunicado.
+
+### Aceite visual do globo público
+
+A configuração canônica `mapa/mapbox-config.json` sai com `publicToken: null`.
+O publicador configura a chave pública somente para a origem autorizada. Não
+copie a configuração real para o GitHub, registros de teste ou uma nova origem.
+
+Antes de publicar uma mudança no globo, abra a prévia de
+`/mapa/?ncm=25041000&fluxo=import` num navegador com WebGL. Confira visualmente
+que os continentes e pontos foram desenhados antes de a base de reserva sumir.
+Aproximar, girar, abrir o detalhe de um país e restaurar a visão global devem
+funcionar sem perder o recorte. Confira também um estado sem WebGL, em que
+tabela, filtros e mapa de reserva precisam continuar utilizáveis. Se o satélite
+não entregar imagens, confira se o controle retorna ao estilo escuro. Um
+evento de carregamento, um canvas vazio ou um teste com Mapbox simulado não
+comprovam a renderização. Registre a evidência visual e a versão de origem.
