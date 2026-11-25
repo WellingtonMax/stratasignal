@@ -890,3 +890,35 @@ test("the publisher filter travels from News to the map and report without chang
   assert.equal(listing.get("market-news-items").children.length, 2);
   assert.equal(new URL(listing.window.location.href).searchParams.has("noticias_fonte"), false);
 });
+
+test("map shows declared partner value on hover and only captures the wheel after activation", async t => {
+  const {dom, window, get} = open(null, null, "?ncm=25041000&fluxo=import", undefined, "mapa");
+  t.after(() => dom.window.close());
+  await settle(get);
+  const world = get("market-geo-world");
+  const pin = get("market-geo-pins").querySelector(".market-geo-marker");
+  pin.dispatchEvent(new window.Event("pointerenter"));
+  assert.equal(get("market-geo-preview").hidden, false);
+  assert.equal(get("market-geo-preview-name").textContent, "China");
+  assert.match(get("market-geo-preview-values").textContent, /US\$ 1\.700 FOB · 1\.000 kg/);
+  assert.match(get("market-geo-preview-unit").textContent, /US\$ 1,7 FOB\/kg/);
+  pin.dispatchEvent(new window.Event("pointerleave"));
+  assert.equal(get("market-geo-preview").hidden, true);
+  assert.equal(get("market-country").value, "");
+
+  world.getBoundingClientRect = () => ({width: 512, height: 310, left: 0, top: 0});
+  const wheel = () => world.dispatchEvent(new window.WheelEvent("wheel",
+    {deltaY: -60, clientX: 256, clientY: 155, cancelable: true}));
+  assert.equal(wheel(), true);
+  assert.equal(get("market-geo-scene").style.transform, "");
+  world.dispatchEvent(new window.MouseEvent("click", {bubbles: true}));
+  assert.equal(wheel(), false);
+  assert.match(get("market-geo-scene").style.transform, /scale\(1.2\)/);
+  world.dispatchEvent(new window.Event("pointerleave"));
+  assert.equal(wheel(), true);
+  get("market-geo-zoom-in").click();
+  assert.match(get("market-geo-scene").style.transform, /scale\(1.6\)/);
+  get("market-geo-zoom-reset").click();
+  assert.equal(get("market-geo-scene").style.transform, "");
+  assert.equal(get("market-geo-zoom-reset").disabled, true);
+});

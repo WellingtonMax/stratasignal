@@ -170,6 +170,8 @@
   let scopedNewsMonths = newsView && addressMonths.length > 1 ? addressMonths : [];
   let pendingCountry = query.get("pais");
   let zoomedCountry = null;
+  let mapZoom = 1, mapX = 0, mapY = 0, mapWheelActive = false;
+  let currentMapPartner = null;
 
   function validate(data) {
     const codes = new Set(Array.from(product.options, option => option.value));
@@ -504,9 +506,10 @@
       if (!groups.has(row.country)) groups.set(row.country, []);
       groups.get(row.country).push(row);
     }
-    return [...groups].map(([label, rows]) => ({
-      label, ...summarize(rows), anchor: partnerAnchors.get(label),
-    })).sort((a, b) => b.fob_usd - a.fob_usd || a.label.localeCompare(b.label, "pt-BR"));
+    return [...groups].map(([label, rows]) => {
+      const totals = summarize(rows);
+      return {label, ...totals, anchor: partnerAnchors.get(label), unitValue: unitValue(rows, totals)};
+    }).sort((a, b) => b.fob_usd - a.fob_usd || a.label.localeCompare(b.label, "pt-BR"));
   }
 
   function togglePartner(label) {
@@ -540,7 +543,10 @@
     return [1024 * (lon + 180) / 360, 512 * (1 - Math.log(Math.tan(Math.PI / 4 + phi / 2)) / Math.PI)];
   }
 
-  function mapPin({label, anchor}, selected) {
+  const mapWorld = get("market-geo-world");
+  const mapPreview = get("market-geo-preview");
+
+  function mapPin({label, anchor, fob_usd, kg, unitValue: declaredUnitValue}, selected) {
     const [x, y] = projectAnchor(anchor);
     const marker = document.createElementNS(svgNamespace, "g");
     marker.setAttribute("class", "market-geo-marker" + (selected ? " selected" : ""));
@@ -556,25 +562,45 @@
       circle.setAttribute("class", className);
       marker.append(circle);
     }
+    marker.addEventListener("pointerenter", () => {
+      get("market-geo-preview-name").textContent = label;
+      get("market-geo-preview-values").textContent = money(fob_usd) + " FOB · " + digits.format(kg) + " kg";
+      get("market-geo-preview-unit").textContent =
+        declaredUnitValue.value !== null ? "Valor declarado por quilo: " + unitValueLabel(declaredUnitValue)
+          : "Valor por quilo indisponível";
+      mapPreview.hidden = false;
+    });
+    marker.addEventListener("pointerleave", () => { mapPreview.hidden = true; });
     marker.addEventListener("click", () => togglePartner(label));
     return marker;
   }
 
+  function positionMap(zoom, x, y) {
+    mapZoom = zoom;
+    mapX = Math.max(1024 * (1 - zoom), Math.min(0, x));
+    mapY = Math.max(820 * (1 - zoom), Math.min(200 * (1 - zoom), y));
+    get("market-geo-scene").style.transform = zoom === 1 ? ""
+      : `translate(${mapX}px, ${mapY}px) scale(${zoom})`;
+    get("market-geo-zoom-in").disabled = zoom >= 3;
+    get("market-geo-zoom-out").disabled = zoom <= 1;
+    get("market-geo-zoom-reset").disabled = zoom <= 1;
+  }
+
+  function changeMapZoom(delta, x = 512, y = 510) {
+    zoomedCountry = null;
+    focusPartner.setAttribute("aria-pressed", "false");
+    const next = Math.max(1, Math.min(3, Math.round((mapZoom + delta) * 10) / 10));
+    positionMap(next, x - (x - mapX) * next / mapZoom, y - (y - mapY) * next / mapZoom);
+  }
+
   function renderMapFocus(selected) {
-    const scene = get("market-geo-scene");
-    if (!selected?.anchor || zoomedCountry !== selected.label) zoomedCountry = null;
+    currentMapPartner = selected ?? null;
+    if (zoomedCountry && (!selected?.anchor || zoomedCountry !== selected.label)) {
+      zoomedCountry = null;
+      positionMap(1, 0, 0);
+    }
     focusPartner.disabled = !selected?.anchor;
     focusPartner.setAttribute("aria-pressed", String(Boolean(zoomedCountry)));
-    if (!zoomedCountry) {
-      scene.style.transform = "";
-      return;
-    }
-    const [x, y] = projectAnchor(selected.anchor);
-    const zoom = 1.8;
-    // Clamp the pan to the visible bounds of the packaged map.
-    const dx = Math.max(1024 * (1 - zoom), Math.min(0, 512 - zoom * x));
-    const dy = Math.max(820 * (1 - zoom), Math.min(200 * (1 - zoom), 510 - zoom * y));
-    scene.style.transform = `translate(${dx}px, ${dy}px) scale(${zoom})`;
   }
 
   function renderPartnerHistory(history) {
@@ -603,6 +629,7 @@
   }
 
   function renderGeography(partners, scope) {
+    mapPreview.hidden = true;
     geographyContent.hidden = !partners.length;
     const mapped = partners.filter(partner => partner.anchor);
     geographyStatus.textContent = (partners.length ?
@@ -1246,9 +1273,30 @@
     });
     historyMetric.addEventListener("change", () => renderPartnerHistory(reportSlice.monthly));
     focusPartner.addEventListener("click", () => {
-      zoomedCountry = zoomedCountry ? null : country.value;
-      renderMapFocus({label: country.value, anchor: partnerAnchors.get(country.value)});
+      if (!currentMapPartner?.anchor) return;
+      if (zoomedCountry) {
+        zoomedCountry = null;
+        positionMap(1, 0, 0);
+      } else {
+        zoomedCountry = currentMapPartner.label;
+        const [x, y] = projectAnchor(currentMapPartner.anchor);
+        positionMap(1.8, 512 - 1.8 * x, 510 - 1.8 * y);
+      }
+      renderMapFocus(currentMapPartner);
     });
+    get("market-geo-zoom-in").addEventListener("click", () => changeMapZoom(0.4));
+    get("market-geo-zoom-out").addEventListener("click", () => changeMapZoom(-0.4));
+    get("market-geo-zoom-reset").addEventListener("click", () => changeMapZoom(-3));
+    mapWorld.addEventListener("click", () => { mapWheelActive = true; });
+    mapWorld.addEventListener("pointerleave", () => { mapWheelActive = false; mapPreview.hidden = true; });
+    mapWorld.addEventListener("wheel", event => {
+      if (!mapWheelActive || !event.deltaY || event.ctrlKey || event.metaKey) return;
+      const rect = mapWorld.getBoundingClientRect();
+      if (!rect.width || !rect.height || (event.deltaY < 0 ? mapZoom >= 3 : mapZoom <= 1)) return;
+      event.preventDefault();
+      changeMapZoom(event.deltaY < 0 ? 0.2 : -0.2,
+        1024 * (event.clientX - rect.left) / rect.width, 200 + 620 * (event.clientY - rect.top) / rect.height);
+    }, {passive: false});
     clearPartner.addEventListener("click", () => {
       togglePartner(country.value);
       country.focus();

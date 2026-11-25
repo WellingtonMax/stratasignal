@@ -143,6 +143,7 @@
       <div id="market-geo-content" class="card market-geo-content" hidden>
         <div class="market-geo-layout">
           <figure class="market-geo-figure">
+            <div class="market-geo-viewport">
             <svg id="market-geo-world" viewBox="0 200 1024 620" aria-hidden="true" focusable="false">
               <defs><pattern id="market-geo-grid" width="64" height="64" patternUnits="userSpaceOnUse">
                 <path d="M 64 0 H 0 V 64" fill="none" stroke="#2E5279" stroke-width="1"/>
@@ -153,9 +154,21 @@
                 <g id="market-geo-pins"></g>
               </g>
             </svg>
+            <div class="market-geo-zoom" role="group" aria-label="Zoom do mapa">
+              <button type="button" id="market-geo-zoom-in" aria-label="Aproximar mapa">+</button>
+              <button type="button" id="market-geo-zoom-out" aria-label="Afastar mapa" disabled>−</button>
+              <button type="button" id="market-geo-zoom-reset" aria-label="Restaurar visão geral" disabled>1×</button>
+            </div>
+            <div class="market-geo-preview" id="market-geo-preview" aria-hidden="true" hidden>
+              <strong id="market-geo-preview-name"></strong>
+              <span id="market-geo-preview-values"></span>
+              <small id="market-geo-preview-unit"></small>
+            </div>
+            </div>
             <figcaption class="market-geo-caption">
               <span><i class="market-geo-dot" aria-hidden="true"></i> Parceiro com registros</span>
               <span><i class="market-geo-ring" aria-hidden="true"></i> Parceiro selecionado</span>
+              <span class="market-geo-scroll-hint">Para usar a roda do mouse, clique no mapa primeiro.</span>
             </figcaption>
           </figure>
           <div class="market-geo-notes">
