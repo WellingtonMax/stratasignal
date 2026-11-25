@@ -151,3 +151,17 @@ edição principal, para cada mês, fluxo e país. A tela também valida o
 hash dos dois arquivos. Uma unidade da Receita Federal (URF) não é
 necessariamente um porto físico, nem um trajeto ou embarque. A
 apresentação não faz junção com dados portuários ou empresariais.
+
+#### Distribuição pública da grafita
+
+O resumo Comex verifica as células da edição original e publica somente o modal
+nacional predominante em cada fluxo, quando representa pelo menos 90% do peso
+líquido, reúne registros positivos em pelo menos três meses e soma pelo menos
+uma tonelada. A edição pública não contém células por país, mês ou unidade
+aduaneira, nem a quantidade exata por modal.
+
+O quadro portuário da ANM (ano-base 2019) é independente da edição Comex. A
+medida é a quantidade de grafita movimentada por município, não carga em
+trânsito, terminais, pares origem–destino ou rotas. Os três municípios de maior
+volume são exibidos e os demais são reunidos em uma linha. A fonte original
+está ligada diretamente no painel.

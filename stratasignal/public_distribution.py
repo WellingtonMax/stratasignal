@@ -52,7 +52,26 @@ def write_distribution(output, snapshot, snapshot_sha, *, source=SOURCE):
     dataset = json.loads(source.read_text(encoding="utf-8"))
     if not eligible(snapshot, dataset):
         return None
-    edition = {**dataset, "trade_sha256": snapshot_sha}
+    # No public cross-tabs by country, month or customs unit. Publish only a
+    # national, multi-month signal for the predominant mode by net weight.
+    modes = {}
+    for flow in sorted(FLOWS):
+        totals = defaultdict(int)
+        coverage = defaultdict(set)
+        for row in dataset["records"]:
+            if row["flow"] == flow:
+                mode = row["mode"]
+                totals[mode] += row["kg"]
+                if row["kg"] > 0:
+                    coverage[mode].add(row["month"])
+        if not sum(totals.values()):
+            continue
+        main = max(totals, key=lambda name: totals[name])
+        if len(coverage[main]) >= 3 and totals[main] >= 1000 and totals[main] * 10 >= sum(totals.values()) * 9:
+            modes[flow] = {"leading_mode": main, "share": "at-least-90-percent"}
+    edition = {"dataset_kind": "graphite_transport_overview", "ncm": PRODUCT,
+               "months": dataset["months"], "documentation": dataset["documentation"],
+               "trade_sha256": snapshot_sha, "modes": modes}
     payload = (json.dumps(edition, ensure_ascii=False, indent=2, allow_nan=False) + "\n").encode("utf-8")
     sha = hashlib.sha256(payload).hexdigest()
     relative = f"edicoes/grafita-vias-{sha}.json"

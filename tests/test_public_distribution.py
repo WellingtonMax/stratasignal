@@ -32,7 +32,16 @@ class DistributionTests(unittest.TestCase):
             info = write_distribution(root, self.snapshot, "b" * 64)
             output = (root / info["path"]).read_bytes()
             self.assertEqual(hashlib.sha256(output).hexdigest(), info["sha256"])
-            self.assertEqual(json.loads(output)["trade_sha256"], "b" * 64)
+            edition = json.loads(output)
+            self.assertEqual(edition["trade_sha256"], "b" * 64)
+            self.assertEqual(edition["dataset_kind"], "graphite_transport_overview")
+            self.assertEqual(set(edition), {"dataset_kind", "trade_sha256", "ncm", "months", "documentation", "modes"})
+            self.assertEqual(edition["modes"], {
+                flow: {"leading_mode": "MARITIMA", "share": "at-least-90-percent"}
+                for flow in ("export", "import")
+            })
+            for disallowed in ("records", "country", "customs_unit", "fob_usd", "145690"):
+                self.assertNotIn(disallowed, output.decode())
             self.snapshot["records"][0]["kg"] += 1
             self.assertIsNone(write_distribution(root, self.snapshot, "b" * 64))
 

@@ -690,55 +690,37 @@
 
   function renderDistribution() {
     const info = releaseManifest?.graphite_distribution;
-    const valid = info && info.trade_sha256 === snapshotSha256 && info?.trade_sha256 === releaseManifest?.trade_snapshot?.sha256 &&
+    const valid = info && info.trade_sha256 === snapshotSha256 && info.trade_sha256 === releaseManifest?.trade_snapshot?.sha256 &&
       typeof info.sha256 === "string" && /^[0-9a-f]{64}$/.test(info.sha256) && info.path === "edicoes/grafita-vias-" + info.sha256 + ".json";
-    distribution.hidden = view !== "mapa" || product.value !== "25041000" || !valid;
+    const isGraphiteMap = view === "mapa" && product.value === "25041000";
+    get("market-port-history").hidden = !isGraphiteMap;
+    distribution.hidden = !isGraphiteMap || !valid;
     if (distribution.hidden || !distribution.open) return;
-    const panel = get("market-distribution-body"), state = get("market-distribution-status");
+    const state = get("market-distribution-status");
     if (distributionEdition?.sha !== info.sha256) {
-      panel.hidden = true;
-      state.textContent = unavailableDistribution === info.sha256 ? "Detalhamento indisponível nesta sessão." : "Carregando distribuição…";
+      state.textContent = unavailableDistribution === info.sha256 ? "Resumo indisponível nesta sessão." : "Carregando distribuição…";
       if (distributionRequest === info.sha256 || unavailableDistribution === info.sha256) return;
       distributionRequest = info.sha256;
       readSnapshot("/" + info.path, data => data).then(({data, sha256}) => {
-        if (sha256 !== info.sha256 || data?.dataset_kind !== "graphite_transport_aggregate" || data.ncm !== "25041000" ||
-            data.trade_sha256 !== info.trade_sha256 || !Array.isArray(data.records) || data.records.length > 500 ||
-            !data.records.every(row => Object.hasOwn(transportNames, row.mode) && typeof row.customs_unit === "string" &&
-              typeof row.country === "string" && Number.isSafeInteger(row.fob_usd) && row.fob_usd >= 0 &&
-              Number.isSafeInteger(row.kg) && row.kg >= 0)) throw new Error("Invalid distribution edition");
-        distributionEdition = {sha: sha256, records: data.records};
+        if (sha256 !== info.sha256 || data?.dataset_kind !== "graphite_transport_overview" || data.ncm !== "25041000" ||
+            data.trade_sha256 !== info.trade_sha256 || !Array.isArray(data.months) || data.months.length < 3 ||
+            !data.months.every(month => typeof month === "string" && /^\d{4}-\d{2}$/.test(month)) ||
+            !data.modes || !Object.entries(data.modes).every(([flow, mode]) => ["import", "export"].includes(flow) &&
+              mode && Object.hasOwn(transportNames, mode.leading_mode) && mode.share === "at-least-90-percent")) {
+          throw new Error("Invalid distribution edition");
+        }
+        distributionEdition = {sha: sha256, months: data.months, modes: data.modes};
       }).catch(() => { unavailableDistribution = info.sha256; }).finally(() => {
         distributionRequest = null;
         renderDistribution();
       });
       return;
     }
-    const months = selectedMonths();
-    const rows = distributionEdition.records.filter(row => months.includes(row.month) && row.flow === flow.value &&
-      (!country.value || row.country === country.value));
-    panel.hidden = !rows.length;
-    state.textContent = rows.length ? flow.selectedOptions[0].textContent + " · " + monthSpan(months) +
-      (country.value ? " · " + country.value : "") : "Nenhum registro no recorte.";
-    const makeGroup = (title, key, names = {}) => {
-      const section = element("section");
-      section.append(element("h3", title));
-      const groups = new Map();
-      for (const row of rows) {
-        const entry = groups.get(row[key]) || [0, 0];
-        entry[0] += row.fob_usd;
-        entry[1] += row.kg;
-        groups.set(row[key], entry);
-      }
-      const list = element("ul");
-      list.append(...[...groups.entries()].sort((a,b) => b[1][0] - a[1][0] || a[0].localeCompare(b[0], "pt-BR")).map(([name, [fob, kg]]) => {
-        const item = element("li");
-        item.append(element("strong", names[name] || name), element("span", money(fob) + " FOB · " + digits.format(kg) + " kg"));
-        return item;
-      }));
-      section.append(list);
-      return section;
-    };
-    if (rows.length) panel.replaceChildren(makeGroup("Modal declarado", "mode", transportNames), makeGroup("Unidade aduaneira (URF)", "customs_unit"));
+    const overview = distributionEdition.modes[flow.value];
+    state.textContent = overview
+      ? flow.selectedOptions[0].textContent + " · Brasil · " + monthSpan(distributionEdition.months) +
+        ". Via " + transportNames[overview.leading_mode].toLocaleLowerCase("pt-BR") + ": pelo menos 90% do peso líquido declarado."
+      : "Nenhum modal atingiu o limiar de publicação deste resumo.";
   }
   distribution.addEventListener("toggle", renderDistribution);
 
