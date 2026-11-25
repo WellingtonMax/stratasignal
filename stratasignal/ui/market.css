@@ -282,3 +282,10 @@
 .market-pair-cards p{margin:2px 0;color:var(--navy)}
 .market-pair-cards small{color:var(--muted)}
 @media(max-width:440px){.market-pair-controls,.market-pair-cards{grid-template-columns:minmax(0,1fr)}}
+
+.market-start-cases{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:-10px 0 26px}
+.market-start-case{padding:clamp(14px,2.2vw,22px);border:1px solid var(--line);border-radius:10px;background:var(--white)}
+.market-start-case h2{font-size:clamp(17px,2.1vw,23px);margin:3px 0 6px}
+.market-start-case>p:not(.eyebrow){margin:0 0 10px;color:var(--muted);font-size:.9rem}
+.market-start-case .button{min-height:44px}
+@media(max-width:700px){.market-start-cases{grid-template-columns:minmax(0,1fr)}}

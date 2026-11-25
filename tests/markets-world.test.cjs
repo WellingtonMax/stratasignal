@@ -388,11 +388,12 @@ test("gallium stages and the report share the checked edition while trade filter
   await settledGallium(get);
   assert.equal(get("gallium-panel").hidden, false);
   assert.equal(window.document.activeElement, get("gallium-title"));
-  assert.match(get("gallium-status").textContent, /8 evidências/);
+  assert.match(get("gallium-status").textContent, /9 evidências/);
+  assert.match(get("gallium-stages").textContent, /Obras iniciadas.*Wagerup/s);
   assert.equal(get("gallium-concentration").textContent, "99%");
   assert.match(get("gallium-concentration-scope").textContent, /baixa pureza em 2025/);
   assert.equal(get("gallium-stages").querySelectorAll("h3").length, 5);
-  assert.equal(get("gallium-stages").querySelectorAll("details").length, 8);
+  assert.equal(get("gallium-stages").querySelectorAll("details").length, 9);
   assert.equal(get("gallium-stages").querySelector("img"), null);
   assert.match(get("gallium-stages").textContent, /<img src=x/);
   assert.match(get("gallium-stages").textContent, /escala de pesquisa/);
