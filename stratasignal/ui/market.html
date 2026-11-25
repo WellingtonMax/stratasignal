@@ -213,7 +213,7 @@
             <figcaption class="market-geo-caption">
               <span><i class="market-geo-dot" aria-hidden="true"></i> Parceiro com registros</span>
               <span><i class="market-geo-ring" aria-hidden="true"></i> Parceiro selecionado</span>
-              <span id="market-operations-legend" hidden><i class="market-operation-dot" aria-hidden="true"></i> Mina <i class="market-operation-dot plant" aria-hidden="true"></i> Planta <i class="market-operation-dot port" aria-hidden="true"></i> Porto</span>
+              <span id="market-operations-legend" hidden><i class="market-operation-dot" aria-hidden="true"></i> Mina <i class="market-operation-dot plant" aria-hidden="true"></i> Planta <i class="market-operation-dot port" aria-hidden="true"></i> Porto <i class="market-operation-dot project" aria-hidden="true"></i> Projeto</span>
               <span id="market-globe-hint" hidden><span class="market-globe-hint-pointer">Arraste para girar. Use a roda para aproximar.</span><span class="market-globe-hint-touch">Arraste para girar e use dois dedos para aproximar.</span></span>
               <span class="market-geo-scroll-hint">Para usar a roda do mouse, clique no mapa primeiro.</span>
             </figcaption>
@@ -249,9 +249,12 @@
         </div>
         <section id="market-operations" class="market-operations" aria-labelledby="market-operations-title" hidden>
           <header><p class="eyebrow">CADEIA DA GRAFITA</p><h3 id="market-operations-title">Empresas e operações por cidade</h3>
-          <p>Explore minas, plantas de processamento e portos. Esta seleção tem fontes próprias e não segue o mês ou o país do comércio. Um ponto no mapa não prova que a empresa forneceu grafita ao Brasil.</p></header>
-          <label for="market-operations-kind">Etapa da cadeia</label>
-          <select id="market-operations-kind"><option value="">Todas</option><option value="mine">Mineração e beneficiamento</option><option value="plant">Processamento industrial</option><option value="port">Portos e logística</option></select>
+          <p>Explore minas, plantas de processamento, portos e projetos ainda sem produção. Esta seleção tem fontes próprias e não segue o mês ou o país do comércio. Um ponto no mapa não prova que a empresa forneceu grafita ao Brasil.</p></header>
+          <div class="market-operations-controls">
+            <label>Buscar cidade ou empresa <input type="search" id="market-operations-search" placeholder="Ex.: Jordânia ou Graphcoa" maxlength="80"></label>
+            <label>Etapa da cadeia <select id="market-operations-kind"><option value="">Todas</option><option value="mine">Mineração e beneficiamento</option><option value="plant">Processamento industrial</option><option value="port">Portos e logística</option><option value="project">Projeto em desenvolvimento</option></select></label>
+          </div>
+          <p class="market-news-note" id="market-operations-result" role="status"></p>
           <div class="market-operations-layout">
             <ul id="market-operations-list" aria-label="Operações por cidade"></ul>
             <article id="market-operations-detail" aria-labelledby="market-operations-name" hidden>

@@ -125,7 +125,7 @@
         }, layout: {"circle-sort-key": ["case", chosen, 1, 0]}});
         map.addSource("mineral-operations", {type:"geojson", data:operationData()});
         map.addLayer({id:"mineral-operations", source:"mineral-operations", type:"circle", paint:{
-          "circle-color": ["match", ["get","kind"], "mine","#65eed0", "plant","#d7b1ff", "#ffc670"],
+          "circle-color": ["match", ["get","kind"], "mine","#65eed0", "plant","#d7b1ff", "project", "#f49bb8", "#ffc670"],
           "circle-radius": ["case", chosen, 11, 8],
           "circle-stroke-width": ["case", chosen, 3, 2],
           "circle-stroke-color": ["case", chosen, "#fff7dc", "#081b33"],
