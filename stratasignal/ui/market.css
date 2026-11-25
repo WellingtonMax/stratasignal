@@ -126,6 +126,15 @@
 .market-geo-layout{display:grid;grid-template-columns:minmax(0,2.7fr) minmax(220px,1fr);align-items:start;gap:16px 20px}
 .market-geo-figure{margin:0}
 .market-geo-figure svg{display:block;width:100%;height:auto;overflow:hidden;border-radius:9px;background:#102b4a}
+.market-geo-viewport{position:relative}
+.market-geo-zoom{position:absolute;right:10px;top:10px;display:grid;gap:4px}
+.market-geo-zoom button{width:44px;min-height:44px;border:1px solid #a4b9cc;border-radius:7px;background:#f7fafc;color:#081b33;font:700 16px/1 system-ui;cursor:pointer}
+.market-geo-zoom button:disabled{background:#d9e4ef;color:#4b637b;cursor:default}
+.market-geo-zoom button:focus-visible{outline:3px solid #f2c94c;outline-offset:2px}
+.market-geo-preview{position:absolute;left:10px;bottom:10px;max-width:calc(100% - 76px);padding:9px 12px;border:1px solid #a4b9cc;border-radius:8px;background:#081b33;color:#f7fafc;pointer-events:none;font-size:.875rem;line-height:1.4}
+.market-geo-preview:not([hidden]){display:grid;gap:2px}
+.market-geo-preview small{color:#c7ddf3;font-size:.81rem}
+@media(hover:none){.market-geo-scroll-hint{display:none!important}}
 #market-geo-scene{transform-origin:0 0;transition:transform .32s cubic-bezier(.2,.65,.3,1)}
 .market-geo-marker{cursor:pointer}
 .market-geo-marker circle{vector-effect:non-scaling-stroke}
