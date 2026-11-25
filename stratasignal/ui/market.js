@@ -684,6 +684,64 @@
     }));
   }
 
+  let distributionEdition, distributionRequest, unavailableDistribution;
+  const distribution = get("market-distribution");
+  const transportNames = {MARITIMA: "Marítima", AEREA: "Aérea", RODOVIARIA: "Rodoviária", "VICINAL FRONTEIRICO": "Vicinal fronteiriça"};
+
+  function renderDistribution() {
+    const info = releaseManifest?.graphite_distribution;
+    const valid = info && info.trade_sha256 === snapshotSha256 && info?.trade_sha256 === releaseManifest?.trade_snapshot?.sha256 &&
+      typeof info.sha256 === "string" && /^[0-9a-f]{64}$/.test(info.sha256) && info.path === "edicoes/grafita-vias-" + info.sha256 + ".json";
+    distribution.hidden = view !== "mapa" || product.value !== "25041000" || !valid;
+    if (distribution.hidden || !distribution.open) return;
+    const panel = get("market-distribution-body"), state = get("market-distribution-status");
+    if (distributionEdition?.sha !== info.sha256) {
+      panel.hidden = true;
+      state.textContent = unavailableDistribution === info.sha256 ? "Detalhamento indisponível nesta sessão." : "Carregando distribuição…";
+      if (distributionRequest === info.sha256 || unavailableDistribution === info.sha256) return;
+      distributionRequest = info.sha256;
+      readSnapshot("/" + info.path, data => data).then(({data, sha256}) => {
+        if (sha256 !== info.sha256 || data?.dataset_kind !== "graphite_transport_aggregate" || data.ncm !== "25041000" ||
+            data.trade_sha256 !== info.trade_sha256 || !Array.isArray(data.records) || data.records.length > 500 ||
+            !data.records.every(row => Object.hasOwn(transportNames, row.mode) && typeof row.customs_unit === "string" &&
+              typeof row.country === "string" && Number.isSafeInteger(row.fob_usd) && row.fob_usd >= 0 &&
+              Number.isSafeInteger(row.kg) && row.kg >= 0)) throw new Error("Invalid distribution edition");
+        distributionEdition = {sha: sha256, records: data.records};
+      }).catch(() => { unavailableDistribution = info.sha256; }).finally(() => {
+        distributionRequest = null;
+        renderDistribution();
+      });
+      return;
+    }
+    const months = selectedMonths();
+    const rows = distributionEdition.records.filter(row => months.includes(row.month) && row.flow === flow.value &&
+      (!country.value || row.country === country.value));
+    panel.hidden = !rows.length;
+    state.textContent = rows.length ? flow.selectedOptions[0].textContent + " · " + monthSpan(months) +
+      (country.value ? " · " + country.value : "") : "Nenhum registro no recorte.";
+    const makeGroup = (title, key, names = {}) => {
+      const section = element("section");
+      section.append(element("h3", title));
+      const groups = new Map();
+      for (const row of rows) {
+        const entry = groups.get(row[key]) || [0, 0];
+        entry[0] += row.fob_usd;
+        entry[1] += row.kg;
+        groups.set(row[key], entry);
+      }
+      const list = element("ul");
+      list.append(...[...groups.entries()].sort((a,b) => b[1][0] - a[1][0] || a[0].localeCompare(b[0], "pt-BR")).map(([name, [fob, kg]]) => {
+        const item = element("li");
+        item.append(element("strong", names[name] || name), element("span", money(fob) + " FOB · " + digits.format(kg) + " kg"));
+        return item;
+      }));
+      section.append(list);
+      return section;
+    };
+    if (rows.length) panel.replaceChildren(makeGroup("Modal declarado", "mode", transportNames), makeGroup("Unidade aduaneira (URF)", "customs_unit"));
+  }
+  distribution.addEventListener("toggle", renderDistribution);
+
   function renderGeography(partners, scope) {
     mapPreview.hidden = true;
     geographyContent.hidden = !partners.length;
@@ -971,6 +1029,7 @@
     status.textContent = (records.length ? quantity : "Nenhum registro neste recorte") + " · " + scope;
     results.hidden = records.length === 0;
     renderGeography(partners, scopeBase);
+    renderDistribution();
     renderPair(partners, grouped, months, scopeBase);
     const leader = partners[0], allFob = sum(partners, "fob_usd");
     const insight = get("market-slice-insight");

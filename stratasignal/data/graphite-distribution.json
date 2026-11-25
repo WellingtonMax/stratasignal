@@ -1,0 +1,945 @@
+{
+  "dataset_kind": "graphite_transport_aggregate",
+  "ncm": "25041000",
+  "months": [
+    "2026-08",
+    "2026-09",
+    "2026-10"
+  ],
+  "api": "https://api-comexstat.mdic.gov.br/general?language=pt",
+  "documentation": "https://www.gov.br/mdic/pt-br/assuntos/comercio-exterior/estatisticas/base-de-dados-bruta",
+  "queried_on": "2026-11-25",
+  "source_sha256": {
+    "import": "f24e78baeaff43dd7b4151b183c4affc67176b74463ab3099bd24e1f3f99d621",
+    "export": "a90462cc29cda01e2f5882916e7161d5f70b14a99d436ee1c9392e9c07281007"
+  },
+  "records": [
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Alemanha",
+      "mode": "MARITIMA",
+      "customs_unit": "0517800 - ALF - SALVADOR",
+      "fob_usd": 24068,
+      "kg": 21000
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Alemanha",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 275093,
+      "kg": 97600
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Argentina",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 9813,
+      "kg": 4520
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Argentina",
+      "mode": "RODOVIARIA",
+      "customs_unit": "0917500 - ALF - FOZ DO IGUAÇU",
+      "fob_usd": 11400,
+      "kg": 2400
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Argentina",
+      "mode": "RODOVIARIA",
+      "customs_unit": "1017500 - ALF - URUGUAIANA",
+      "fob_usd": 4476,
+      "kg": 2520
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Argentina",
+      "mode": "RODOVIARIA",
+      "customs_unit": "1017503 - IRF - SÃO BORJA",
+      "fob_usd": 1742,
+      "kg": 261
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Argentina",
+      "mode": "RODOVIARIA",
+      "customs_unit": "1017504 - IRF PORTO MAUA",
+      "fob_usd": 16177,
+      "kg": 2422
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Bélgica",
+      "mode": "MARITIMA",
+      "customs_unit": "0517800 - ALF - SALVADOR",
+      "fob_usd": 43864,
+      "kg": 39500
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Bélgica",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 671351,
+      "kg": 291440
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "China",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 8827,
+      "kg": 1600
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Estados Unidos",
+      "mode": "AEREA",
+      "customs_unit": "0817600 - AEROPORTO INTERNACIONAL DE SAO PAULO/GUARULHOS",
+      "fob_usd": 3160,
+      "kg": 2000
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Estados Unidos",
+      "mode": "MARITIMA",
+      "customs_unit": "0517800 - ALF - SALVADOR",
+      "fob_usd": 178415,
+      "kg": 119000
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Estados Unidos",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 773892,
+      "kg": 297073
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Estados Unidos",
+      "mode": "MARITIMA",
+      "customs_unit": "0917800 - PORTO DE PARANAGUA",
+      "fob_usd": 2820,
+      "kg": 600
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Estados Unidos",
+      "mode": "RODOVIARIA",
+      "customs_unit": "1017701 - IRF - CHUÍ",
+      "fob_usd": 1615,
+      "kg": 262
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "França",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 49152,
+      "kg": 16000
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Indonésia",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 84635,
+      "kg": 28800
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Japão",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 149180,
+      "kg": 21600
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "México",
+      "mode": "AEREA",
+      "customs_unit": "0817600 - AEROPORTO INTERNACIONAL DE SAO PAULO/GUARULHOS",
+      "fob_usd": 17307,
+      "kg": 12600
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "México",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 83956,
+      "kg": 48840
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Paraguai",
+      "mode": "RODOVIARIA",
+      "customs_unit": "0147800 - ALF - PONTA PORÃ",
+      "fob_usd": 123,
+      "kg": 14
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Paraguai",
+      "mode": "RODOVIARIA",
+      "customs_unit": "0917500 - ALF - FOZ DO IGUAÇU",
+      "fob_usd": 162536,
+      "kg": 52052
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Paraguai",
+      "mode": "VICINAL FRONTEIRICO",
+      "customs_unit": "0917500 - ALF - FOZ DO IGUAÇU",
+      "fob_usd": 102,
+      "kg": 7
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Peru",
+      "mode": "MARITIMA",
+      "customs_unit": "0917800 - PORTO DE PARANAGUA",
+      "fob_usd": 1008,
+      "kg": 108
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Polônia",
+      "mode": "MARITIMA",
+      "customs_unit": "0517800 - ALF - SALVADOR",
+      "fob_usd": 24068,
+      "kg": 21000
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Polônia",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 52467,
+      "kg": 18144
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "República Dominicana",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 30932,
+      "kg": 22800
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Rússia",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 360,
+      "kg": 19
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Tailândia",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 56257,
+      "kg": 20898
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Uruguai",
+      "mode": "RODOVIARIA",
+      "customs_unit": "1017701 - IRF - CHUÍ",
+      "fob_usd": 1717,
+      "kg": 323
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Venezuela",
+      "mode": "RODOVIARIA",
+      "customs_unit": "0260151 - PACARAIMA",
+      "fob_usd": 23712,
+      "kg": 12480
+    },
+    {
+      "month": "2026-08",
+      "flow": "export",
+      "country": "Índia",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 5625,
+      "kg": 4200
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "Alemanha",
+      "mode": "MARITIMA",
+      "customs_unit": "0517800 - ALF - SALVADOR",
+      "fob_usd": 24068,
+      "kg": 21000
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "Alemanha",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 248230,
+      "kg": 107800
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "Angola",
+      "mode": "MARITIMA",
+      "customs_unit": "0917800 - PORTO DE PARANAGUA",
+      "fob_usd": 271,
+      "kg": 100
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "Argentina",
+      "mode": "RODOVIARIA",
+      "customs_unit": "1017504 - IRF PORTO MAUA",
+      "fob_usd": 17545,
+      "kg": 2626
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "Bolívia",
+      "mode": "RODOVIARIA",
+      "customs_unit": "0147600 - ALF - CORUMBÁ",
+      "fob_usd": 1950,
+      "kg": 1000
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "Bélgica",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 931137,
+      "kg": 402640
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "Chile",
+      "mode": "RODOVIARIA",
+      "customs_unit": "1017500 - ALF - URUGUAIANA",
+      "fob_usd": 1114,
+      "kg": 108
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "Colômbia",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 18400,
+      "kg": 16000
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "Colômbia",
+      "mode": "MARITIMA",
+      "customs_unit": "0917800 - PORTO DE PARANAGUA",
+      "fob_usd": 571,
+      "kg": 71
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "Congo, República Democrática",
+      "mode": "MARITIMA",
+      "customs_unit": "0917800 - PORTO DE PARANAGUA",
+      "fob_usd": 1650,
+      "kg": 500
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "Equador",
+      "mode": "MARITIMA",
+      "customs_unit": "0917800 - PORTO DE PARANAGUA",
+      "fob_usd": 5160,
+      "kg": 1200
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "Estados Unidos",
+      "mode": "AEREA",
+      "customs_unit": "0817600 - AEROPORTO INTERNACIONAL DE SAO PAULO/GUARULHOS",
+      "fob_usd": 30153,
+      "kg": 16800
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "Estados Unidos",
+      "mode": "MARITIMA",
+      "customs_unit": "0317900 - ALF - FORTALEZA",
+      "fob_usd": 117741,
+      "kg": 84000
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "Estados Unidos",
+      "mode": "MARITIMA",
+      "customs_unit": "0517800 - ALF - SALVADOR",
+      "fob_usd": 90877,
+      "kg": 79000
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "Estados Unidos",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 907347,
+      "kg": 345725
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "Estados Unidos",
+      "mode": "MARITIMA",
+      "customs_unit": "0917800 - PORTO DE PARANAGUA",
+      "fob_usd": 7740,
+      "kg": 1800
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "França",
+      "mode": "AEREA",
+      "customs_unit": "0817600 - AEROPORTO INTERNACIONAL DE SAO PAULO/GUARULHOS",
+      "fob_usd": 12484,
+      "kg": 4000
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "México",
+      "mode": "MARITIMA",
+      "customs_unit": "0517800 - ALF - SALVADOR",
+      "fob_usd": 24949,
+      "kg": 17500
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "Paraguai",
+      "mode": "RODOVIARIA",
+      "customs_unit": "0147800 - ALF - PONTA PORÃ",
+      "fob_usd": 124,
+      "kg": 14
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "Paraguai",
+      "mode": "RODOVIARIA",
+      "customs_unit": "0917500 - ALF - FOZ DO IGUAÇU",
+      "fob_usd": 108152,
+      "kg": 81200
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "Países Baixos (Holanda)",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 108576,
+      "kg": 46400
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "Peru",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 1714,
+      "kg": 300
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "Tailândia",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 54872,
+      "kg": 19926
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "Uruguai",
+      "mode": "RODOVIARIA",
+      "customs_unit": "1017701 - IRF - CHUÍ",
+      "fob_usd": 17,
+      "kg": 3
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "África do Sul",
+      "mode": "MARITIMA",
+      "customs_unit": "0917800 - PORTO DE PARANAGUA",
+      "fob_usd": 27456,
+      "kg": 18000
+    },
+    {
+      "month": "2026-09",
+      "flow": "export",
+      "country": "Índia",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 14760,
+      "kg": 8880
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "Alemanha",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 359665,
+      "kg": 173000
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "Argentina",
+      "mode": "RODOVIARIA",
+      "customs_unit": "0917500 - ALF - FOZ DO IGUAÇU",
+      "fob_usd": 14250,
+      "kg": 3000
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "Argentina",
+      "mode": "RODOVIARIA",
+      "customs_unit": "1017503 - IRF - SÃO BORJA",
+      "fob_usd": 9623,
+      "kg": 1441
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "Bolívia",
+      "mode": "RODOVIARIA",
+      "customs_unit": "0147600 - ALF - CORUMBÁ",
+      "fob_usd": 78896,
+      "kg": 61580
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "Bélgica",
+      "mode": "MARITIMA",
+      "customs_unit": "0517800 - ALF - SALVADOR",
+      "fob_usd": 52801,
+      "kg": 39500
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "Bélgica",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 663242,
+      "kg": 277280
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "Chile",
+      "mode": "RODOVIARIA",
+      "customs_unit": "1017500 - ALF - URUGUAIANA",
+      "fob_usd": 4900,
+      "kg": 683
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "Coreia do Sul",
+      "mode": "AEREA",
+      "customs_unit": "0817600 - AEROPORTO INTERNACIONAL DE SAO PAULO/GUARULHOS",
+      "fob_usd": 414,
+      "kg": 414
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "Equador",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 2277,
+      "kg": 1260
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "Estados Unidos",
+      "mode": "AEREA",
+      "customs_unit": "0817600 - AEROPORTO INTERNACIONAL DE SAO PAULO/GUARULHOS",
+      "fob_usd": 11469,
+      "kg": 11469
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "Estados Unidos",
+      "mode": "MARITIMA",
+      "customs_unit": "0317900 - ALF - FORTALEZA",
+      "fob_usd": 36720,
+      "kg": 36000
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "Estados Unidos",
+      "mode": "MARITIMA",
+      "customs_unit": "0517800 - ALF - SALVADOR",
+      "fob_usd": 68400,
+      "kg": 60000
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "Estados Unidos",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 719458,
+      "kg": 248600
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "Estados Unidos",
+      "mode": "MARITIMA",
+      "customs_unit": "0917800 - PORTO DE PARANAGUA",
+      "fob_usd": 30960,
+      "kg": 7200
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "França",
+      "mode": "AEREA",
+      "customs_unit": "0817600 - AEROPORTO INTERNACIONAL DE SAO PAULO/GUARULHOS",
+      "fob_usd": 37692,
+      "kg": 12000
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "França",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 29538,
+      "kg": 9600
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "Indonésia",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 7085,
+      "kg": 768
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "México",
+      "mode": "AEREA",
+      "customs_unit": "0817600 - AEROPORTO INTERNACIONAL DE SAO PAULO/GUARULHOS",
+      "fob_usd": 4480,
+      "kg": 2800
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "México",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 5302,
+      "kg": 2100
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "Paraguai",
+      "mode": "RODOVIARIA",
+      "customs_unit": "0917500 - ALF - FOZ DO IGUAÇU",
+      "fob_usd": 51564,
+      "kg": 10900
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "Países Baixos (Holanda)",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 54288,
+      "kg": 23200
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "Polônia",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 52467,
+      "kg": 18144
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "Tailândia",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 55149,
+      "kg": 20120
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "Uruguai",
+      "mode": "RODOVIARIA",
+      "customs_unit": "1017701 - IRF - CHUÍ",
+      "fob_usd": 2051,
+      "kg": 379
+    },
+    {
+      "month": "2026-10",
+      "flow": "export",
+      "country": "Venezuela",
+      "mode": "RODOVIARIA",
+      "customs_unit": "0260151 - PACARAIMA",
+      "fob_usd": 43472,
+      "kg": 22880
+    },
+    {
+      "month": "2026-08",
+      "flow": "import",
+      "country": "Alemanha",
+      "mode": "AEREA",
+      "customs_unit": "0617700 - ALF - BELO HORIZONTE",
+      "fob_usd": 54,
+      "kg": 1
+    },
+    {
+      "month": "2026-08",
+      "flow": "import",
+      "country": "Alemanha",
+      "mode": "MARITIMA",
+      "customs_unit": "0727600 - PORTO DE VITORIA",
+      "fob_usd": 6578,
+      "kg": 1240
+    },
+    {
+      "month": "2026-08",
+      "flow": "import",
+      "country": "Alemanha",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 12804,
+      "kg": 2900
+    },
+    {
+      "month": "2026-08",
+      "flow": "import",
+      "country": "Estados Unidos",
+      "mode": "AEREA",
+      "customs_unit": "0717700 - AEROPORTO INTERNACIONAL DO RIO DE JANEIRO",
+      "fob_usd": 10,
+      "kg": 1
+    },
+    {
+      "month": "2026-08",
+      "flow": "import",
+      "country": "Japão",
+      "mode": "AEREA",
+      "customs_unit": "0817900 - SAO PAULO",
+      "fob_usd": 140,
+      "kg": 0
+    },
+    {
+      "month": "2026-08",
+      "flow": "import",
+      "country": "Japão",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 596,
+      "kg": 75
+    },
+    {
+      "month": "2026-08",
+      "flow": "import",
+      "country": "Reino Unido",
+      "mode": "AEREA",
+      "customs_unit": "0817600 - AEROPORTO INTERNACIONAL DE SAO PAULO/GUARULHOS",
+      "fob_usd": 26,
+      "kg": 0
+    },
+    {
+      "month": "2026-08",
+      "flow": "import",
+      "country": "Sérvia",
+      "mode": "AEREA",
+      "customs_unit": "0917900 - ALF - CURITIBA",
+      "fob_usd": 24000,
+      "kg": 16
+    },
+    {
+      "month": "2026-09",
+      "flow": "import",
+      "country": "Alemanha",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 752,
+      "kg": 60
+    },
+    {
+      "month": "2026-09",
+      "flow": "import",
+      "country": "China",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 87041,
+      "kg": 64075
+    },
+    {
+      "month": "2026-09",
+      "flow": "import",
+      "country": "Estados Unidos",
+      "mode": "AEREA",
+      "customs_unit": "0817600 - AEROPORTO INTERNACIONAL DE SAO PAULO/GUARULHOS",
+      "fob_usd": 2729,
+      "kg": 91
+    },
+    {
+      "month": "2026-09",
+      "flow": "import",
+      "country": "Estados Unidos",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 5082,
+      "kg": 2000
+    },
+    {
+      "month": "2026-09",
+      "flow": "import",
+      "country": "França",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 120,
+      "kg": 25
+    },
+    {
+      "month": "2026-09",
+      "flow": "import",
+      "country": "Reino Unido",
+      "mode": "AEREA",
+      "customs_unit": "0817700 - AEROPORTO INTERNACIONAL DE VIRACOPOS",
+      "fob_usd": 92,
+      "kg": 3
+    },
+    {
+      "month": "2026-10",
+      "flow": "import",
+      "country": "Alemanha",
+      "mode": "MARITIMA",
+      "customs_unit": "0727600 - PORTO DE VITORIA",
+      "fob_usd": 13116,
+      "kg": 2480
+    },
+    {
+      "month": "2026-10",
+      "flow": "import",
+      "country": "Alemanha",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 18806,
+      "kg": 6750
+    },
+    {
+      "month": "2026-10",
+      "flow": "import",
+      "country": "Bélgica",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 428,
+      "kg": 40
+    },
+    {
+      "month": "2026-10",
+      "flow": "import",
+      "country": "China",
+      "mode": "MARITIMA",
+      "customs_unit": "0817800 - PORTO DE SANTOS",
+      "fob_usd": 58617,
+      "kg": 60045
+    },
+    {
+      "month": "2026-10",
+      "flow": "import",
+      "country": "Estados Unidos",
+      "mode": "AEREA",
+      "customs_unit": "0717700 - AEROPORTO INTERNACIONAL DO RIO DE JANEIRO",
+      "fob_usd": 41,
+      "kg": 0
+    },
+    {
+      "month": "2026-10",
+      "flow": "import",
+      "country": "Noruega",
+      "mode": "MARITIMA",
+      "customs_unit": "0927800 - ITAJAI",
+      "fob_usd": 6997,
+      "kg": 6000
+    }
+  ]
+}

@@ -13,7 +13,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from . import __version__
-from . import public_gallium, public_markets, public_markets_world, public_news
+from . import public_distribution, public_gallium, public_markets, public_markets_world, public_news
 from .build_demo import build_demo
 from .market import month
 from .schema import InputError, day, rows, text_value, unique_object
@@ -539,6 +539,9 @@ def build_public_site(directory, source_commit=None, *, enable_ml=True, retained
                 "anchor_source": "Natural Earth · Admin 0 – Countries 5.1.1",
             },
         }
+        distribution = public_distribution.write_distribution(output, snapshot, manifest["trade_snapshot"]["sha256"])
+        if distribution is not None:
+            manifest["graphite_distribution"] = distribution
         if trade_history_from is not None:
             manifest["trade_history"] = _write_trade_history(output, snapshot, trade_history_from)
         with (output / "source-manifest.json").open("x", encoding="utf-8", newline="\n") as stream:

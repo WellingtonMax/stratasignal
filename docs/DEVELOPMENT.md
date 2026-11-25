@@ -136,3 +136,18 @@ tabela, filtros e mapa de reserva precisam continuar utilizáveis. Se o satélit
 não entregar imagens, confira se o controle retorna ao estilo escuro. Um
 evento de carregamento, um canvas vazio ou um teste com Mapbox simulado não
 comprovam a renderização. Registre a evidência visual e a versão de origem.
+
+### Distribuição observada da grafita
+
+O recorte de agosto a outubro de 2026 (NCM 25041000) é uma edição
+documentada de dados agregados do Comex Stat. As duas consultas usam
+`/general?language=pt`, `monthDetail: true`, o mesmo intervalo e NCM,
+`details: ["country", "ncm", "via", "urf"]` e as métricas
+`metricFOB` e `metricKG`. Os hashes das respostas originais e a data
+da consulta acompanham a edição publicada.
+
+O build só publica a distribuição se a soma de FOB e kg for igual à
+edição principal, para cada mês, fluxo e país. A tela também valida o
+hash dos dois arquivos. Uma unidade da Receita Federal (URF) não é
+necessariamente um porto físico, nem um trajeto ou embarque. A
+apresentação não faz junção com dados portuários ou empresariais.
