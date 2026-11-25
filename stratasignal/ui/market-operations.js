@@ -13,6 +13,10 @@
   const syrahPlant = "https://www.syrahresources.com.au/our-business/vidalia-active-anode-material-facility";
   const syrahQuarter = "https://company-announcements.afr.com/asx/syr/6788725f-d31a-11f1-a069-b6b1a9c70e34.pdf";
   const btr = "https://www.btrchina.com/en/Negativebusiness2/index.aspx";
+  const graphcoa = "https://graphcoa.com/area-a-boa-sorte";
+  const allied = "https://alliedgraphite.com/our-operations/";
+  const alliedRelease = "https://alliedgraphite.com/allied-graphite-announces-vertical-furnace-partnerships-with-harper-and-onejoon/";
+  const usitc = "https://www.usitc.gov/publications/701_731/pub5719.pdf";
   const declared = "Operação cadastrada pela empresa";
   const national = "Nacional de Grafite";
   const syrah = "Syrah Resources";
@@ -20,6 +24,8 @@
     {id:"itapecerica", city:"Itapecerica", region:"Minas Gerais", country:"Brasil", anchor:[-45.13,-20.47], company:national, kind:"mine", name:"Unidade de Itapecerica", material:"Grafita natural cristalina", status:declared, sources:[["Unidades",minas],["Certificado DNV (2024)",cert]]},
     {id:"pedra-azul", city:"Pedra Azul", region:"Minas Gerais", country:"Brasil", anchor:[-41.30,-16.01], company:national, kind:"mine", name:"Unidade de Pedra Azul", material:"Grafita natural em flocos", status:declared, sources:[["Unidades",minas],["Origem do Graflake",brazilProduct],["Certificado DNV (2024)",cert]]},
     {id:"salto-da-divisa", city:"Salto da Divisa", region:"Minas Gerais", country:"Brasil", anchor:[-39.94,-16.01], company:national, kind:"mine", name:"Unidade de Salto da Divisa", material:"Grafita natural em flocos", status:declared, sources:[["Unidades",minas],["Origem do Graflake",brazilProduct],["Certificado DNV (2024)",cert]]},
+    {id:"itagimirim", city:"Itagimirim", region:"Bahia", country:"Brasil", anchor:[-39.62,-16.09], company:"Graphcoa", kind:"mine", name:"Mina Boa Sorte e planta demonstrativa", material:"Concentrado de grafita natural em flocos", status:"Planta demonstrativa no distrito de União Baiana, segundo a Graphcoa", sources:[["Mina Boa Sorte e planta demonstrativa",graphcoa],["Relação de fornecimento divulgada pela Allied",allied]]},
+    {id:"mesa", city:"Mesa", region:"Arizona", country:"Estados Unidos", anchor:[-111.82,33.42], company:"Allied Graphite (antiga Urbix)", kind:"plant", name:"Laboratório e unidade piloto de Mesa", material:"Processamento piloto de grafita para material de ânodo", status:"Laboratório e operação piloto; não é uma planta comercial", sources:[["Operações da Allied Graphite",allied],["Comunicado da Allied (março de 2026)",alliedRelease],["USITC: acordo de desenvolvimento e insumo (PDF)",usitc]]},
     {id:"balama", city:"Balama", region:"Cabo Delgado", country:"Moçambique", anchor:[38.57,-13.35], company:syrah, kind:"mine", name:"Operação de Balama", material:"Concentrado de grafita natural", status:"Produção reportada no 3º trimestre de 2026", sources:[["Operação",syrahMine],["Informe trimestral da Syrah (PDF)",syrahQuarter]]},
     {id:"nacala", city:"Nacala", region:"Nampula", country:"Moçambique", anchor:[40.68,-14.54], company:"Syrah Resources (usuária do porto)", kind:"port", name:"Porto de Nacala", material:"Grafita natural em contêineres", status:"Canal de escoamento divulgado pela Syrah", sources:[["Logística da Syrah",logistics],["Histórico da operação",syrahMine]]},
     {id:"pemba", city:"Pemba", region:"Cabo Delgado", country:"Moçambique", anchor:[40.52,-12.97], company:"Syrah Resources (usuária do porto)", kind:"port", name:"Porto de Pemba", material:"Grafita natural em carga geral não conteinerizada", status:"Canal de escoamento divulgado pela Syrah", sources:[["Logística da Syrah",logistics],["Histórico da operação",syrahMine]]},
@@ -27,6 +33,7 @@
     {id:"jixi", city:"Jixi", region:"Heilongjiang", country:"China", anchor:[130.97,45.30], company:"BTR New Material Group", kind:"plant", name:"Unidade Jixi BTR", material:"Grafita esférica e grafita de alta pureza", status:declared, sources:[["Unidades industriais da BTR",btr]]},
   ];
   const relations = [
+    {a:"itagimirim", b:"mesa", text:"Relação de fornecimento divulgada: a Allied informa que a Graphcoa é sua fornecedora de concentrado de grafita natural em flocos. A ligação é entre empresas; não confirma embarque para Mesa, rota nem volume comercial.", url:allied},
     {a:"balama", b:"nacala", text:"Escoamento portuário em contêineres informado pela Syrah; primeiro embarque divulgado em 2017.", url:logistics},
     {a:"balama", b:"pemba", text:"Escoamento portuário em carga geral informado pela Syrah; atividade divulgada desde 2022.", url:logistics},
     {a:"balama", b:"vidalia", text:"Integração industrial divulgada pela Syrah: grafita de Balama é insumo da cadeia de ânodos de Vidalia. A fonte não comprova um itinerário marítimo.", url:syrahPlant},
