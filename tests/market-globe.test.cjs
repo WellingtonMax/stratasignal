@@ -34,6 +34,8 @@ function setup(t, token, supported = true) {
     getCanvas() { return this.canvas; }
     jumpTo(view) { this.view=view; }
     setStyle(style) { this.style=style; this.sources={}; }
+    getZoom() { return 1; }
+    setMaxZoom(value) { this.maxZoom=value; }
     resize() {}
     remove() { this.removed=true; }
   }
@@ -44,7 +46,8 @@ function setup(t, token, supported = true) {
     setDOMContent(card){this.card=card;return this;}
     addTo(g){g.card=this.card;return this;}
   }
-  w.fetch=async () => ({ok:true,json:async()=>({publicToken:token})});
+  w.fetch=async url => ({ok:true,json:async()=>url.endsWith("world-outline.json")
+    ? {type:"FeatureCollection",features:[]} : {publicToken:token}});
   w.mapboxgl={supported:()=>supported,Map:MockMap,Popup,NavigationControl:class {}};
   w.eval(js); t.after(()=>w.close());
   return {w,doc,map:()=>globe};
@@ -58,6 +61,7 @@ test("uses globe projection, waits for a basemap tile, synchronizes partners and
   await flush();
   const m=map(), root=doc.getElementById("market-globe");
   a.equal(m.opts.projection,"globe");
+  a.equal(m.opts.style.sources["public-outline"].type,"geojson");
   m.fire("style.load"); m.fire("render");
   a.equal(root.parentElement.classList.contains("has-market-globe"),false);
   m.fire("sourcedata",{sourceId:"composite",coord:{},sourceDataType:"content"});
@@ -80,8 +84,8 @@ test("uses globe projection, waits for a basemap tile, synchronizes partners and
   doc.getElementById("market-globe-style").click();
   a.match(m.style,/satellite-streets/);
   m.fire("error",{error:{status:429}});
-  a.match(m.style,/dark-v11/);
-  a.match(doc.getElementById("market-globe-status").textContent,/Satélite indisponível/);
+  a.equal(m.style.sources["public-outline"].type,"geojson");
+  a.match(doc.getElementById("market-globe-status").textContent,/visão global continua/);
   m.fire("webglcontextlost",{});
   a.equal(root.parentElement.classList.contains("has-market-globe"),false);
   a.equal(m.removed,true);

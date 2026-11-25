@@ -165,6 +165,13 @@ class PublicSiteTests(unittest.TestCase):
             self.assertIn("worker-src blob:", map_html)
             self.assertIn("strict-origin-when-cross-origin", map_html)
             self.assertTrue((output / "mapa/globe.js").is_file())
+            outline = json.loads((output / "mapa/world-outline.json").read_text())
+            self.assertEqual(outline["type"], "FeatureCollection")
+            self.assertEqual(len(outline["features"]), 128)
+            for feature in outline["features"]:
+                ring, = feature["geometry"]["coordinates"]
+                self.assertEqual(ring[0], ring[-1])
+                self.assertTrue(all(-180 <= x <= 180 and -86 <= y <= 86 for x, y in ring))
             self.assertEqual(json.loads((output / "mapa/mapbox-config.json").read_text()), {"publicToken": None})
             for entry in ("index.html", "noticias/index.html"):
                 other = (output / entry).read_text(encoding="utf-8")

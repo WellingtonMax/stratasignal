@@ -1,13 +1,13 @@
 (() => {
   "use strict";
   const get = id => document.getElementById("market-globe" + id);
-  const root = get(""), canvas = get("-canvas"), toggle = get("-style");
+  const root = get(""), canvas = get("-canvas"), toggle = get("-style"), streets = get("-streets");
   if (!root || !canvas || !toggle) return;
   const styles = {dark: "mapbox://styles/mapbox/dark-v11", satellite: "mapbox://styles/mapbox/satellite-streets-v12"};
-  const view = {center: [-37, 19], zoom: 1.22, pitch: 0, bearing: 0};
+  const view = {center: [-25, 18], zoom: 1.05, pitch: 0, bearing: 0};
   const sdk = "https://api.mapbox.com/mapbox-gl-js/v3.35.0/mapbox-gl";
-  let rows = new Map(), pick, selected, map, popup, timer;
-  let requested = false, visible = false, layerReady = false, loadError = false, active = "dark";
+  let rows = new Map(), pick, selected, map, popup, timer, outline;
+  let requested = false, visible = false, layerReady = false, loadError = false, active = "outline";
 
   function notice(text) {
     get("-status").textContent = text;
@@ -34,6 +34,20 @@
     visible = false;
     if (map) { const old = map; map = null; old.remove(); }
   }
+  function outlineStyle() {
+    return {version: 8, name: "StrataSignal · Visão global", sources: {
+      "public-outline": {type: "geojson", data: outline, attribution:
+        '<a href="https://www.naturalearthdata.com/about/terms-of-use/">Natural Earth</a>'},
+    }, layers: [
+      {id: "oceans", type: "background", paint: {"background-color": "#173454"}},
+      {id: "land", type: "fill", source: "public-outline", paint: {
+        "fill-color": "#2f626c", "fill-outline-color": "#86a8a7"}},
+    ]};
+  }
+  function setControls(disabled) {
+    toggle.disabled = disabled;
+    streets.disabled = disabled;
+  }
   function changeStyle(name, message = "") {
     if (!map) return;
     clearTimeout(timer);
@@ -41,14 +55,17 @@
     layerReady = false;
     loadError = false;
     clearPopup();
-    toggle.disabled = true;
-    toggle.textContent = name === "satellite" ? "Mapa escuro" : "Satélite";
+    setControls(true);
+    toggle.textContent = name === "satellite" ? "Sair do satélite" : "Satélite";
+    streets.setAttribute("aria-pressed", String(name === "dark"));
+    map.setMaxZoom(name === "outline" ? 5 : 18);
+    if (name === "outline" && map.getZoom() > 5) map.jumpTo({zoom: 5});
     toggle.setAttribute("aria-pressed", String(name === "satellite"));
     notice(message);
-    map.setStyle(styles[name]);
+    map.setStyle(name === "outline" ? outlineStyle() : styles[name]);
     timer = setTimeout(() => {
-      if (active === "satellite") changeStyle("dark", "Satélite indisponível. Voltando ao mapa escuro.");
-      else abandon();
+      if (active !== "outline") changeStyle("outline", "A camada detalhada não carregou. A visão global continua disponível.");
+      else abandon("outline-timeout");
     }, 18000);
   }
   function loadAssets() {
@@ -74,12 +91,15 @@
       if (!response.ok) return;
       const {publicToken} = await response.json();
       if (typeof publicToken !== "string" || !/^pk\.[\w-]+\.[\w-]+$/.test(publicToken)) return;
+      const outlineResponse = await fetch("/mapa/world-outline.json", {credentials: "same-origin"});
+      if (!outlineResponse.ok) { root.dataset.state = "outline-unavailable"; return; }
+      outline = await outlineResponse.json();
       await loadAssets();
       const gl = window.mapboxgl;
       if (!gl?.supported()) { root.dataset.state = "webgl-unavailable"; return; }
       root.dataset.state = "creating";
-      map = new gl.Map({container: canvas, accessToken: publicToken, style: styles.dark,
-        projection: "globe", ...view, minZoom: 0.5, maxZoom: 18});
+      map = new gl.Map({container: canvas, accessToken: publicToken, style: outlineStyle(),
+        projection: "globe", ...view, minZoom: 0.5, maxZoom: 5});
       map.addControl(new gl.NavigationControl({showCompass: false}), "top-right");
       popup = new gl.Popup({closeOnClick: false, closeButton: false, offset: 13});
       timer = setTimeout(() => abandon("tile-timeout"), 40000);
@@ -108,7 +128,7 @@
             Math.abs(extent.width - mount.width) > 2 || Math.abs(extent.height - mount.height) > 2 ||
             !surface.width || !surface.height) return;
         clearTimeout(timer);
-        toggle.disabled = false;
+        setControls(false);
         if (!visible) {
           visible = true;
           root.dataset.state = "ready";
@@ -143,7 +163,7 @@
         const code = Number(event?.error?.status ?? event?.error?.statusCode);
         if (![401, 403, 429].includes(code)) return;
         loadError = true;
-        if (active === "satellite") changeStyle("dark", "Satélite indisponível. Voltando ao mapa escuro.");
+        if (active !== "outline") changeStyle("outline", "A camada detalhada está indisponível. A visão global continua disponível.");
         else if (!visible && code !== 429) abandon("access-denied");
       });
       map.on("webglcontextlost", abandon);
@@ -152,7 +172,8 @@
     }
   }
 
-  toggle.addEventListener("click", () => changeStyle(active === "dark" ? "satellite" : "dark"));
+  toggle.addEventListener("click", () => changeStyle(active === "satellite" ? "outline" : "satellite"));
+  streets.addEventListener("click", () => changeStyle(active === "dark" ? "outline" : "dark"));
   get("-reset").addEventListener("click", () => { if (visible) map.jumpTo(view); });
   window.strataMarketGlobe = {
     update(points, current, handler) {
