@@ -230,10 +230,11 @@
 @media(prefers-reduced-motion:reduce){#market-geo-scene,.market-geo-share span,.market-geo-history-track span{transition:none}.market-geo-halo,.market-geo-marker.selected .market-geo-pin{animation:none}}
 
 .market-globe{position:absolute;inset:0;visibility:hidden;overflow:hidden;border-radius:9px;background:#081424}
-.market-globe-canvas{position:absolute;inset:0}
+/* Keep the host sized even when Mapbox adds its own .mapboxgl-map positioning. */
+#market-globe-canvas{position:absolute;inset:0;width:100%;height:100%}
 .has-market-globe .market-globe{visibility:visible;z-index:1}
 .has-market-globe #market-geo-world{visibility:hidden}
-.has-market-globe .market-geo-zoom,.has-market-globe .market-geo-scroll-hint{display:none}
+.has-market-globe .market-geo-zoom,.has-market-globe + .market-geo-caption .market-geo-scroll-hint{display:none}
 .market-globe-tools{position:absolute;left:10px;top:10px;display:flex;gap:5px;flex-wrap:wrap;max-width:calc(100% - 64px)}
 .market-globe-tools button{min-height:44px;padding:0 10px;border:1px solid #a4b9cc;border-radius:7px;background:#081b33;color:#f7fafc;font:600 .875rem system-ui;cursor:pointer}
 .market-globe-tools button[aria-pressed=true]{border-color:#f2c94c}

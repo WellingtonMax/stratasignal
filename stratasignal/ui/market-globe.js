@@ -100,7 +100,13 @@
         if (event.sourceId && event.sourceId !== "trade-partners" && event.coord && event.sourceDataType === "content") layerReady = true;
       });
       const reveal = () => {
-        if (!map?.getSource("trade-partners") || !layerReady) return;
+        if (!map?.getSource("trade-partners") || !layerReady || (visible && !toggle.disabled)) return;
+        const mount = canvas.getBoundingClientRect();
+        const surface = map.getCanvas();
+        const extent = surface.getBoundingClientRect();
+        if (mount.width < 64 || mount.height < 64 ||
+            Math.abs(extent.width - mount.width) > 2 || Math.abs(extent.height - mount.height) > 2 ||
+            !surface.width || !surface.height) return;
         clearTimeout(timer);
         toggle.disabled = false;
         if (!visible) {

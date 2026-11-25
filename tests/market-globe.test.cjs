@@ -12,7 +12,17 @@ function setup(t, token, supported = true) {
   const dom = new JSDOM(html, {runScripts:"outside-only", url:"https://example.invalid/mapa/"});
   const w = dom.window; const doc = w.document;
   class MockMap {
-    constructor(opts) { globe=this; this.opts=opts; this.handlers={}; this.sources={}; }
+    constructor(opts) {
+      globe=this; this.opts=opts; this.handlers={}; this.sources={};
+      this.canvas=doc.createElement("canvas");
+      this.mount=opts.container;
+      this.extent={width:0,height:0};
+      this.mount.getBoundingClientRect=()=>({width:720,height:400});
+      this.canvas.getBoundingClientRect=()=>this.extent;
+      this.canvas.width=720;
+      this.canvas.height=400;
+      this.mount.append(this.canvas);
+    }
     addControl() {}
     on(type,...v) { this.handlers[type]=v.at(-1); }
     fire(type,event={}) { this.handlers[type]?.(event); }
@@ -21,7 +31,7 @@ function setup(t, token, supported = true) {
     addSource(id,details) { this.sources[id]={data:details.data,setData(data){this.data=data;}}; }
     getSource(id) { return this.sources[id]; }
     addLayer(layer) { this.layer=layer; }
-    getCanvas() { return doc.getElementById("market-globe-canvas"); }
+    getCanvas() { return this.canvas; }
     jumpTo(view) { this.view=view; }
     setStyle(style) { this.style=style; this.sources={}; }
     resize() {}
@@ -51,6 +61,12 @@ test("uses globe projection, waits for a basemap tile, synchronizes partners and
   m.fire("style.load"); m.fire("render");
   a.equal(root.parentElement.classList.contains("has-market-globe"),false);
   m.fire("sourcedata",{sourceId:"composite",coord:{},sourceDataType:"content"});
+  m.fire("render");
+  a.equal(root.parentElement.classList.contains("has-market-globe"),false);
+  m.extent={width:400,height:300};
+  m.fire("render");
+  a.equal(root.parentElement.classList.contains("has-market-globe"),false);
+  m.extent={width:720,height:400};
   m.fire("render");
   a.equal(root.parentElement.classList.contains("has-market-globe"),true);
   const feature=m.getSource("trade-partners").data.features[0];
