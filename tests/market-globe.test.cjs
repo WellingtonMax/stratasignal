@@ -24,8 +24,8 @@ function setup(t, token, supported = true) {
       this.mount.append(this.canvas);
     }
     addControl() {}
-    on(type,...v) { this.handlers[type]=v.at(-1); }
-    fire(type,event={}) { this.handlers[type]?.(event); }
+    on(type,...v) { this.handlers[type+(v.length === 2 ? ":" + v[0] : "")]=v.at(-1); }
+    fire(type,event={}) { (this.handlers[type] || this.handlers[type+":trade-partners"])?.(event); }
     setProjection(value) { this.projection=value; }
     setFog() {}
     addSource(id,details) { this.sources[id]={data:details.data,setData(data){this.data=data;}}; }
@@ -99,4 +99,39 @@ test("missing token or WebGL keeps the existing map and avoids constructing Mapb
     a.equal(map(),undefined);
     a.equal(doc.querySelector(".has-market-globe"),null);
   }
+});
+
+test("operation markers are separate from country trade markers and open documented points", async t => {
+  const {w,doc,map}=setup(t,"pk.example.synthetic");
+  w.eval(fs.readFileSync("stratasignal/ui/market-operations.js","utf8"));
+  const get=id=>doc.getElementById("market-operations-"+id);
+  w.strataMarketGlobe.update(demo, null, () => {});
+  w.strataMarketOperations.show("25041000");
+  await flush();
+  const m=map();
+  m.fire("style.load");
+  const feed=m.getSource("mineral-operations");
+  a.equal(feed.data.features.length,8);
+  a.equal(m.getSource("trade-partners").data.features.length,1);
+  const balama=feed.data.features.find(f=>f.properties.id==="balama");
+  m.fire("mousemove:mineral-operations",{features:[balama]});
+  a.match(m.card.textContent,/Balama · Syrah/);
+  m.fire("click:mineral-operations",{features:[balama]});
+  a.match(get("fields").textContent,/Moçambique.*Syrah Resources.*Mineração.*Concentrado de grafita.*2026/);
+  a.equal(get("links").querySelectorAll("button").length,3);
+  [...get("links").querySelectorAll("button")].find(b=>b.textContent.includes("Nacala")).click();
+  a.match(get("name").textContent,/Porto de Nacala/);
+  a.match(get("fields").textContent,/usuária do porto/);
+  a.equal(get("sources").querySelectorAll("a[href^='https://']").length,2);
+  get("kind").value="plant";
+  get("kind").dispatchEvent(new w.Event("change"));
+  a.equal(feed.data.features.length,2);
+  get("toggle").click();
+  a.equal(feed.data.features.length,0);
+  get("toggle").click();
+  m.fire("style.load");
+  a.equal(m.getSource("mineral-operations").data.features.length,2);
+  w.strataMarketOperations.show("28369100");
+  a.equal(doc.getElementById("market-operations").hidden,true);
+  a.equal(m.getSource("mineral-operations").data.features.length,0);
 });

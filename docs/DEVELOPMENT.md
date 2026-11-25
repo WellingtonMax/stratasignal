@@ -165,3 +165,14 @@ medida é a quantidade de grafita movimentada por município, não carga em
 trânsito, terminais, pares origem–destino ou rotas. Os três municípios de maior
 volume são exibidos e os demais são reunidos em uma linha. A fonte original
 está ligada diretamente no painel.
+
+#### Camada de operações documentadas da grafita
+
+A camada mostra localidades aproximadas ligadas a empresas e operações, com
+etapa, produto, situação de referência e fontes. Não participa dos totais
+aduaneiros e não identifica fornecedores de importações brasileiras. As ligações
+de escoamento e integração industrial divulgadas pela Syrah não são trajetos
+de embarques. Sem WebGL, a mesma seleção fica disponível na lista por cidade.
+O catálogo v1 é pequeno e curado em `stratasignal/ui/market-operations.js`;
+mantenha fontes por registro e por vínculo e não publique dados operacionais
+individuais. O manifesto registra o hash do módulo usado pelo mapa.

@@ -77,9 +77,9 @@
     </section>
     <section class="market-page-intro market-map-intro market-map-only" aria-labelledby="market-map-title">
       <div>
-        <p class="eyebrow"><span class="market-dot" aria-hidden="true"></span> GEOGRAFIA DO COMÉRCIO</p>
-        <h1 id="market-map-title">Parceiros do Brasil</h1>
-        <p>Explore de onde o Brasil compra e pra onde vende.</p>
+        <p class="eyebrow"><span class="market-dot" aria-hidden="true"></span> INTELIGÊNCIA MINERAL</p>
+        <h1 id="market-map-title">Mapa da cadeia mineral</h1>
+        <p>Explore comércio, empresas e cidades da cadeia da grafita.</p>
       </div>
     </section>
     <section id="explorar" class="market-trade-only" aria-labelledby="market-explore-title" tabindex="-1">
@@ -173,7 +173,7 @@
       </div>
     </section>
     <section id="mapa" class="market-geo market-map-only" aria-labelledby="market-geo-title" tabindex="-1">
-      <h2 id="market-geo-title" class="market-visually-hidden">Mapa dos parceiros do Brasil</h2>
+      <h2 id="market-geo-title" class="market-visually-hidden">Mapa do comércio e das operações minerais</h2>
       <p id="market-geo-status" class="market-status" role="status">Carregando parceiros do comércio…</p>
       <div id="market-geo-content" class="card market-geo-content" hidden>
         <div class="market-geo-layout">
@@ -185,6 +185,7 @@
                 <button type="button" id="market-globe-streets" aria-pressed="false">Ruas</button>
                 <button type="button" id="market-globe-style" aria-pressed="false">Satélite</button>
                 <button type="button" id="market-globe-reset">Visão global</button>
+                <button type="button" id="market-operations-toggle" aria-pressed="false" hidden>Operações</button>
               </div>
               <p id="market-globe-status" class="market-globe-status" role="status" hidden></p>
             </div>
@@ -212,6 +213,7 @@
             <figcaption class="market-geo-caption">
               <span><i class="market-geo-dot" aria-hidden="true"></i> Parceiro com registros</span>
               <span><i class="market-geo-ring" aria-hidden="true"></i> Parceiro selecionado</span>
+              <span id="market-operations-legend" hidden><i class="market-operation-dot" aria-hidden="true"></i> Mina <i class="market-operation-dot plant" aria-hidden="true"></i> Planta <i class="market-operation-dot port" aria-hidden="true"></i> Porto</span>
               <span id="market-globe-hint" hidden><span class="market-globe-hint-pointer">Arraste para girar. Use a roda para aproximar.</span><span class="market-globe-hint-touch">Arraste para girar e use dois dedos para aproximar.</span></span>
               <span class="market-geo-scroll-hint">Para usar a roda do mouse, clique no mapa primeiro.</span>
             </figcaption>
@@ -242,9 +244,24 @@
             <a class="button secondary" id="market-chart-link" href="/">Ver gráficos do recorte <span aria-hidden="true">→</span></a>
             <a class="button secondary" id="market-compare-link" href="/#comparar-parceiros" hidden>Comparar parceiros</a>
             <p id="market-geo-updated" class="market-news-note"></p>
-            <p class="market-news-note">Os pontos são referências aproximadas de países, sem escala de volume, rotas de transporte ou localização de instalações. Base e pontos de referência do <a id="market-geo-source" href="https://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-admin-0-countries/">Natural Earth · 1:110m</a>.</p>
+            <p class="market-news-note">Os pontos de comércio são referências aproximadas dos países, sem escala de volume. Os pontos de operações representam localidades documentadas, sem coordenadas de instalações ou rotas de embarque. Base e pontos de referência do <a id="market-geo-source" href="https://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-admin-0-countries/">Natural Earth · 1:110m</a>.</p>
           </div>
         </div>
+        <section id="market-operations" class="market-operations" aria-labelledby="market-operations-title" hidden>
+          <header><p class="eyebrow">CADEIA DA GRAFITA</p><h3 id="market-operations-title">Empresas e operações por cidade</h3>
+          <p>Explore minas, plantas de processamento e portos. Esta seleção tem fontes próprias e não segue o mês ou o país do comércio. Um ponto no mapa não prova que a empresa forneceu grafita ao Brasil.</p></header>
+          <label for="market-operations-kind">Etapa da cadeia</label>
+          <select id="market-operations-kind"><option value="">Todas</option><option value="mine">Mineração e beneficiamento</option><option value="plant">Processamento industrial</option><option value="port">Portos e logística</option></select>
+          <div class="market-operations-layout">
+            <ul id="market-operations-list" aria-label="Operações por cidade"></ul>
+            <article id="market-operations-detail" aria-labelledby="market-operations-name" hidden>
+              <h4 id="market-operations-name" tabindex="-1"></h4><dl id="market-operations-fields"></dl>
+              <p class="market-news-note" id="market-operations-geo"></p>
+              <div id="market-operations-links-wrap" hidden><h5>Ligações documentadas</h5><ul id="market-operations-links"></ul></div>
+              <h5>Fontes</h5><ul id="market-operations-sources"></ul>
+            </article>
+          </div>
+        </section>
         <details id="market-distribution" class="market-table market-geo-table market-distribution" hidden>
           <summary>Distribuição observada: modal predominante</summary>
           <p class="market-news-note">Visão nacional do período completo da edição Comex Stat. O resumo segue a seleção de importação ou exportação, não os filtros de país ou mês. O modal declarado não identifica o porto ou a rota. <a href="https://www.gov.br/mdic/pt-br/assuntos/comercio-exterior/estatisticas/perguntas-frequentes-faq">Consultar metodologia do Comex Stat</a>.</p>
@@ -442,7 +459,7 @@
             </dd>
           </div>
         </dl>
-        <p class="market-report-limits">O comércio reúne agregados aduaneiros sujeitos a revisão. O mapa usa pontos aproximados de países. Possíveis impactos nas notícias são hipóteses.</p>
+        <p class="market-report-limits">O comércio reúne agregados aduaneiros sujeitos a revisão. O mapa usa pontos aproximados de países e, na camada de grafita, de cidades ou localidades. Possíveis impactos nas notícias são hipóteses.</p>
         <p class="market-report-limits"><strong>Fora do recorte</strong> · Origem por embarque, trajetos logísticos e imagens de satélite.</p>
       </details>
       <div class="market-report-actions">

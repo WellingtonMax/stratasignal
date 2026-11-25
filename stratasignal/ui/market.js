@@ -726,7 +726,7 @@
 
   function renderGeography(partners, scope) {
     mapPreview.hidden = true;
-    geographyContent.hidden = !partners.length;
+    geographyContent.hidden = !partners.length && !(view === "mapa" && product.value === "25041000");
     const mapped = partners.filter(partner => partner.anchor);
     geographyStatus.textContent = (partners.length ?
       digits.format(mapped.length) + " de " + digits.format(partners.length) + " parceiros no mapa" :
@@ -1011,6 +1011,7 @@
     status.textContent = (records.length ? quantity : "Nenhum registro neste recorte") + " · " + scope;
     results.hidden = records.length === 0;
     renderGeography(partners, scopeBase);
+    window.strataMarketOperations?.show(product.value);
     renderDistribution();
     renderPair(partners, grouped, months, scopeBase);
     const leader = partners[0], allFob = sum(partners, "fob_usd");

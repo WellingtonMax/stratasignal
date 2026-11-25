@@ -7,6 +7,7 @@
   const globalView = () => ({center: [-25, 18], zoom: root.clientWidth < 520 ? 0.5 : 1.05, pitch: 0, bearing: 0});
   const sdk = "https://api.mapbox.com/mapbox-gl-js/v3.35.0/mapbox-gl";
   let rows = new Map(), pick, selected, map, popup, timer, outline;
+  let operations = new Map(), operationSelected, pickOperation;
   let requested = false, visible = false, layerReady = false, loadError = false, active = "outline";
 
   function notice(text) {
@@ -18,8 +19,15 @@
       type: "Feature", geometry: {type: "Point", coordinates: anchor}, properties: {label, selected: label === selected},
     }))};
   }
+  function operationData() {
+    return {type: "FeatureCollection", features: [...operations.values()].map(item => ({
+      type: "Feature", geometry: {type: "Point", coordinates: item.anchor},
+      properties: {id: item.id, kind: item.kind, selected: item.id === operationSelected},
+    }))};
+  }
   function updateData() {
     map?.getSource("trade-partners")?.setData(data());
+    map?.getSource("mineral-operations")?.setData(operationData());
   }
   function clearPopup() {
     popup?.remove();
@@ -115,6 +123,13 @@
           "circle-stroke-color": "#081b33", "circle-stroke-width": 2,
           "circle-radius": ["case", chosen, 8, 6],
         }, layout: {"circle-sort-key": ["case", chosen, 1, 0]}});
+        map.addSource("mineral-operations", {type:"geojson", data:operationData()});
+        map.addLayer({id:"mineral-operations", source:"mineral-operations", type:"circle", paint:{
+          "circle-color": ["match", ["get","kind"], "mine","#65eed0", "plant","#d7b1ff", "#ffc670"],
+          "circle-radius": ["case", chosen, 11, 8],
+          "circle-stroke-width": ["case", chosen, 3, 2],
+          "circle-stroke-color": ["case", chosen, "#fff7dc", "#081b33"],
+        }, layout:{"circle-sort-key": ["case",chosen,1,0]}});
       });
       map.on("sourcedata", event => {
         if (event.sourceId && event.sourceId !== "trade-partners" && event.coord && event.sourceDataType === "content") layerReady = true;
@@ -145,7 +160,7 @@
       });
       map.on("mousemove", "trade-partners", event => {
         const item = rows.get(event.features?.[0]?.properties.label);
-        if (!item) return;
+        if (!item || map.queryRenderedFeatures?.(event.point, {layers:["mineral-operations"]})?.length) return;
         if (popup.isOpen() && popup.getLngLat().lng === item.anchor[0] && popup.getLngLat().lat === item.anchor[1]) return;
         const card = document.createElement("div"), title = document.createElement("strong");
         title.textContent = item.label;
@@ -157,7 +172,21 @@
       map.on("movestart", clearPopup);
       map.on("click", "trade-partners", event => {
         const label = event.features?.[0]?.properties.label;
-        if (rows.has(label)) pick(label);
+        if (!map.queryRenderedFeatures?.(event.point, {layers:["mineral-operations"]})?.length && rows.has(label)) pick(label);
+      });
+      map.on("mousemove", "mineral-operations", event => {
+        const item = operations.get(event.features?.[0]?.properties.id);
+        if (!item) return;
+        const card = document.createElement("div"), title = document.createElement("strong");
+        title.textContent = item.city + " · " + item.company;
+        card.append(title, document.createTextNode(item.name));
+        popup.setLngLat(item.anchor).setDOMContent(card).addTo(map);
+        map.getCanvas().style.cursor = "pointer";
+      });
+      map.on("mouseleave", "mineral-operations", clearPopup);
+      map.on("click", "mineral-operations", event => {
+        const id = event.features?.[0]?.properties.id;
+        if (operations.has(id)) pickOperation(id);
       });
       map.on("error", event => {
         const code = Number(event?.error?.status ?? event?.error?.statusCode);
@@ -181,6 +210,13 @@
       selected = current;
       pick = handler;
       clearPopup();
+      updateData();
+      if (points.length) start();
+    },
+    operations(points, current, handler) {
+      operations = new Map(points.map(item => [item.id, item]));
+      operationSelected = current;
+      pickOperation = handler;
       updateData();
       if (points.length) start();
     },

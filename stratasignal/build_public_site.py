@@ -466,8 +466,8 @@ def _write_observatory_ui(output, ui):
     with (output / "index.html").open("x", encoding="utf-8") as stream:
         stream.write(template)
     for view, title, description in (
-        ("mapa", "Parceiros comerciais do Brasil",
-         "Explore os parceiros do Brasil no comércio de grafita natural, carbonatos de lítio e ferronióbio."),
+        ("mapa", "Mapa da inteligência mineral",
+         "Explore parceiros comerciais do Brasil e operações documentadas da cadeia da grafita."),
         ("noticias", "Notícias da cadeia mineral",
          "Leia a curadoria de comunicados oficiais sobre grafita, lítio e políticas minerais."),
     ):
@@ -486,6 +486,7 @@ def _write_observatory_ui(output, ui):
                                 "https://*.tiles.mapbox.com; img-src 'self' data: blob:; worker-src blob:;")
             page = page.replace('<script src="/market.js" defer></script>',
                                 '<script src="/mapa/globe.js" defer></script>\n'
+                                '  <script src="/mapa/operations.js" defer></script>\n'
                                 '  <script src="/market.js" defer></script>')
         if view == "noticias":
             page = page.replace('aria-labelledby="market-context-title"', 'aria-labelledby="market-news-title"')
@@ -495,6 +496,8 @@ def _write_observatory_ui(output, ui):
             stream.write(page)
     with (output / "mapa" / "globe.js").open("xb") as stream:
         stream.write((ui / "market-globe.js").read_bytes())
+    with (output / "mapa" / "operations.js").open("xb") as stream:
+        stream.write((ui / "market-operations.js").read_bytes())
     _write_globe_outline(ui / "world-land.svg", output / "mapa" / "world-outline.json")
     with (output / "mapa" / "mapbox-config.json").open("x", encoding="utf-8") as stream:
         stream.write('{"publicToken":null}\n')
@@ -533,6 +536,9 @@ def build_public_site(directory, source_commit=None, *, enable_ml=True, retained
             "news_snapshot": _news_manifest(news, news_bytes),
             "markets_snapshot": _write_markets(output, ui),
             "synthetic_workbench": "carteira/source-manifest.json",
+            "graphite_operations": {"path": "mapa/operations.js",
+                                    "sha256": hashlib.sha256((output / "mapa/operations.js").read_bytes()).hexdigest(),
+                                    "scope": "documented-operations-not-trade-suppliers"},
             "partner_map": {
                 "basemap_path": "carteira/world-land.svg",
                 "basemap_sha256": hashlib.sha256((output / "carteira/world-land.svg").read_bytes()).hexdigest(),
