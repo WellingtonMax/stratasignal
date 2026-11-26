@@ -1029,7 +1029,7 @@ test("fullscreen country dots show current-scope totals without leaving or clear
   assert.equal(wrapper.open,true);
   // The globe receives the same callback that a fallback dot uses.
   let pick;
-  window.strataMarketGlobe = {update: (_rows,_current,handler) => {pick=handler;}};
+  window.strataMarketGlobe = {operations: () => {}, update: (_rows,_current,handler) => {pick=handler;}};
   change("market-flow","export");
   pick("Japão",get("market-globe-reset"));
   assert.equal(card.open,true);
