@@ -208,12 +208,14 @@
   focus?.addEventListener("click",() => {
     const record = lookup.get(selected);
     const globe = document.getElementById("market-globe");
-    if (!record || globe?.dataset.state !== "ready") {
-      if (focus) focus.textContent = "Globo 3D indisponível";
+    if (!record || !globe) return;
+    // A visible globe remains usable while the next basemap is loading.
+    if (!window.strataMarketGlobe?.focus(record.anchor)) {
+      focus.textContent = "Globo 3D indisponível";
       return;
     }
     if (!enabled) { enabled = true; update(); }
-    window.strataMarketGlobe?.focus(record.anchor,true);
+    focus.textContent = "Centrar no globo";
     globe.scrollIntoView?.({block:"center"});
   });
   toggle.addEventListener("click",() => { enabled = !enabled; update(); });

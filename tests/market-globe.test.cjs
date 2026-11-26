@@ -261,3 +261,36 @@ test("legend, docket and operation markers use the same four pictograms and keep
   a.equal(get("detail").hidden,true);
   a.equal(doc.activeElement.dataset.operation,"jordania");
 });
+
+
+test("operation recenter remains usable during and after every basemap switch", async t => {
+  const {w,doc,map}=setup(t,"pk.example.synthetic");
+  w.eval(fs.readFileSync("stratasignal/ui/market-operations.js","utf8"));
+  w.strataMarketOperations.show("25041000");
+  const get=id=>doc.getElementById(id);
+  const root=get("market-globe"), focus=get("market-operations-focus");
+  get("market-operations-list").querySelector("[data-operation=balama]").click();
+  focus.click();
+  a.match(focus.textContent,/indisponível/);
+  await flush();
+  const m=map();
+  m.extent={width:720,height:400};
+  const reveal=()=>{
+    m.fire("style.load");
+    m.fire("sourcedata",{sourceId:"composite",coord:{},sourceDataType:"content"});
+    m.fire("render");
+    a.equal(root.dataset.state,"ready");
+  };
+  reveal();
+  focus.click();
+  a.equal(focus.textContent,"Centrar no globo");
+  for (const control of ["market-globe-style","market-globe-streets","market-globe-streets"]) {
+    get(control).click();
+    m.view=null;
+    focus.click();
+    a.equal(focus.textContent,"Centrar no globo");
+    a.deepEqual(Array.from(m.view.center),[38.57,-13.35]);
+    reveal();
+    a.equal(w.location.hash,"#operacao=balama");
+  }
+});

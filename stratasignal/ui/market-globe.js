@@ -192,9 +192,9 @@
             !surface.width || !surface.height) return;
         clearTimeout(timer);
         setControls(false);
+        root.dataset.state = "ready";
         if (!visible) {
           visible = true;
-          root.dataset.state = "ready";
           root.inert = false;
           root.parentElement.classList.add("has-market-globe");
           get("-hint").hidden = false;
