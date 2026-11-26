@@ -184,8 +184,10 @@
     dom("geo").textContent = geography;
     update();
     if (focusMap) window.strataMarketGlobe?.focus(record.anchor, true);
-    dom("name").focus({preventScroll:true});
-    if (!focusMap || alignDetail) detail.scrollIntoView?.({block:"nearest"});
+    if (!window.strataMarketGlobe?.isFullscreen?.()) {
+      dom("name").focus({preventScroll:true});
+      if (!focusMap || alignDetail) detail.scrollIntoView?.({block:"nearest"});
+    }
   }
   close?.addEventListener("click",() => {
     const previous = selected;

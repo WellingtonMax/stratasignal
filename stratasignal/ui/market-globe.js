@@ -31,6 +31,55 @@
   let pendingFocus, hoveredOperation;
   let requested = false, visible = false, layerReady = false, loadError = false, active = "outline";
 
+  const full = getFullscreen();
+  function getFullscreen() {
+    const dialog = document.getElementById("market-map-fullscreen");
+    const enter = document.getElementById("market-map-expand"), leave = document.getElementById("market-map-collapse");
+    const stage = document.getElementById("market-map-fullscreen-stage");
+    const selection = document.getElementById("market-map-fullscreen-selection");
+    const operation = document.getElementById("market-map-fullscreen-operation");
+    const figure = root.closest(".market-geo-figure");
+    if (!figure || !dialog || typeof dialog.showModal !== "function") return null;
+    const home = figure.parentNode;
+    const next = figure.nextSibling;
+    const resize = () => window.requestAnimationFrame(() => map?.resize());
+    let restore;
+    const returnFigure = () => {
+      if (figure.parentNode === stage) home.insertBefore(figure,next);
+      document.documentElement.classList.remove("market-map-dialog-open");
+      resize();
+    };
+    function close(target) {
+      restore = target;
+      dialog.close();
+      returnFigure();
+      (restore ?? enter).focus({preventScroll:!target});
+      restore = null;
+    }
+    enter.hidden = false;
+    enter.addEventListener("click", () => {
+      if (dialog.open) return;
+      stage.append(figure);
+      try { dialog.showModal(); }
+      catch { returnFigure(); enter.focus(); return; }
+      document.documentElement.classList.add("market-map-dialog-open");
+      leave.focus();
+      resize();
+    });
+    leave.addEventListener("click", () => close());
+    dialog.addEventListener("cancel", event => { event.preventDefault(); close(); });
+    dialog.addEventListener("close", () => { if (!dialog.open && figure.parentNode === stage) { returnFigure(); enter.focus(); } });
+    operation.addEventListener("click", () => {
+      const heading = document.getElementById("market-operations-name");
+      close(heading);
+      heading?.scrollIntoView?.({block:"center"});
+    });
+    return {open:() => dialog.open, select(current) {
+      selection.hidden = !current;
+      operation.textContent = current ? "Ver ficha: " + current.city : "";
+    }};
+  }
+
   function notice(text) {
     get("-status").textContent = text;
     get("-status").hidden = !text;
@@ -265,6 +314,7 @@
   streets.addEventListener("click", () => changeStyle(active === "dark" ? "outline" : "dark"));
   get("-reset").addEventListener("click", () => { if (visible) map.jumpTo(globalView()); });
   window.strataMarketGlobe = {
+    isFullscreen: () => Boolean(full?.open()),
     update(points, current, handler) {
       rows = new Map(points.map(item => [item.label, item]));
       selected = current;
@@ -276,6 +326,7 @@
     operations(points, current, handler) {
       operations = new Map(points.map(item => [item.id, item]));
       operationSelected = current;
+      full?.select(operations.get(current));
       if (!operations.has(current)) pendingFocus = null;
       pickOperation = handler;
       updateData();

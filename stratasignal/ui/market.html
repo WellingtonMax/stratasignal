@@ -179,6 +179,12 @@
       <div id="market-geo-content" class="card market-geo-content" hidden>
         <div class="market-geo-layout">
           <figure class="market-geo-figure">
+            <div class="market-map-expand">
+              <button id="market-map-expand" type="button" aria-haspopup="dialog" aria-controls="market-map-fullscreen" hidden>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5"/></svg>
+                Tela cheia
+              </button>
+            </div>
             <div class="market-geo-viewport">
             <div id="market-globe" class="market-globe" aria-label="Globo interativo do comércio mineral" inert>
               <div id="market-globe-canvas" class="market-globe-canvas"></div>
@@ -219,6 +225,19 @@
               <span class="market-geo-scroll-hint">Para usar a roda do mouse, clique no mapa primeiro.</span>
             </figcaption>
           </figure>
+          <dialog id="market-map-fullscreen" class="market-map-fullscreen" aria-labelledby="market-map-fullscreen-title">
+            <div class="market-map-fullscreen-bar">
+              <h3 id="market-map-fullscreen-title">Mapa de minerais</h3>
+              <button id="market-map-collapse" type="button" autofocus>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h5V4m11 5h-5V4M9 20v-5H4m11 5v-5h5"/></svg>
+                Sair da tela cheia
+              </button>
+            </div>
+            <div id="market-map-fullscreen-stage"></div>
+            <div class="market-map-fullscreen-selection" id="market-map-fullscreen-selection" hidden>
+              <button id="market-map-fullscreen-operation" type="button"></button>
+            </div>
+          </dialog>
           <div class="market-geo-notes">
             <p class="eyebrow" id="market-geo-kicker">PARCEIRO EM FOCO</p>
             <h3 id="market-geo-selection" tabindex="-1"></h3>

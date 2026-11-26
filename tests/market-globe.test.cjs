@@ -7,10 +7,14 @@ const js = fs.readFileSync("stratasignal/ui/market-globe.js","utf8");
 const html = fs.readFileSync("stratasignal/ui/market.html","utf8");
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
-function setup(t, token, supported = true) {
+function setup(t, token, supported = true, modal = false) {
   let globe;
-  const dom = new JSDOM(html, {runScripts:"outside-only", url:"https://example.invalid/mapa/"});
+  const dom = new JSDOM(html, {runScripts:"outside-only", pretendToBeVisual:true, url:"https://example.invalid/mapa/"});
   const w = dom.window; const doc = w.document;
+  if (modal) {
+    w.HTMLDialogElement.prototype.showModal = function () { this.setAttribute("open",""); };
+    w.HTMLDialogElement.prototype.close = function () { this.removeAttribute("open"); };
+  }
   class MockMap {
     constructor(opts) {
       globe=this; this.opts=opts; this.handlers={}; this.sources={}; this.layers={}; this.images={};
@@ -38,7 +42,7 @@ function setup(t, token, supported = true) {
     setStyle(style) { this.style=style; this.sources={}; }
     getZoom() { return 1; }
     setMaxZoom(value) { this.maxZoom=value; }
-    resize() {}
+    resize() { this.resizeCount = (this.resizeCount ?? 0) + 1; }
     remove() { this.removed=true; }
   }
   class Popup {
@@ -293,4 +297,48 @@ test("operation recenter remains usable during and after every basemap switch", 
     reveal();
     a.equal(w.location.hash,"#operacao=balama");
   }
+});
+
+test("viewport fullscreen preserves the map node and returns with the selected operation", async t => {
+  const {w,doc,map}=setup(t,"pk.example.synthetic",true,true);
+  w.eval(fs.readFileSync("stratasignal/ui/market-operations.js","utf8"));
+  w.strataMarketOperations.show("25041000");
+  await flush();
+  const get=id=>doc.getElementById(id);
+  const enter=get("market-map-expand"), dialog=get("market-map-fullscreen");
+  const stage=get("market-map-fullscreen-stage"), figure=get("market-globe").closest("figure");
+  const home=figure.parentNode, canvas=map().getCanvas();
+  a.equal(enter.hidden,false);
+  enter.click();
+  a.equal(dialog.open,true);
+  a.equal(figure.parentNode,stage);
+  a.equal(doc.activeElement.id,"market-map-collapse");
+  a.equal(doc.documentElement.classList.contains("market-map-dialog-open"),true);
+  doc.querySelector("[data-operation=balama]").click();
+  a.equal(doc.activeElement.id,"market-map-collapse");
+  a.equal(get("market-map-fullscreen-operation").textContent,"Ver ficha: Balama");
+  get("market-map-fullscreen-operation").click();
+  a.equal(dialog.open,false);
+  a.equal(figure.parentNode,home);
+  a.equal(map().getCanvas(),canvas);
+  a.equal(doc.activeElement.id,"market-operations-name");
+  a.equal(w.location.hash,"#operacao=balama");
+  enter.click();
+  dialog.dispatchEvent(new w.Event("cancel",{cancelable:true}));
+  a.equal(figure.parentNode,home);
+  a.equal(doc.activeElement,enter);
+  a.equal(doc.documentElement.classList.contains("market-map-dialog-open"),false);
+  await new Promise(resolve=>w.requestAnimationFrame(resolve));
+  a.ok(map().resizeCount>=2);
+});
+
+test("fullscreen can use the 2D map when WebGL is unavailable", async t => {
+  const {w,doc,map}=setup(t,"pk.example.synthetic",false,true);
+  w.strataMarketGlobe.update(demo,null,()=>{});
+  await flush();
+  a.equal(map(),undefined);
+  doc.getElementById("market-map-expand").click();
+  a.ok(doc.querySelector("#market-map-fullscreen[open] #market-geo-world"));
+  doc.getElementById("market-map-collapse").click();
+  a.equal(doc.getElementById("market-map-fullscreen").open,false);
 });
