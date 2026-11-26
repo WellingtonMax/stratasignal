@@ -167,6 +167,8 @@ class PublicSiteTests(unittest.TestCase):
             self.assertTrue((output / "mapa/globe.js").is_file())
             self.assertIn('href="/panorama-globe.svg"', (output / "index.html").read_text(encoding="utf-8"))
             self.assertIn("Globo ortográfico", (output / "panorama-globe.svg").read_text(encoding="utf-8"))
+            for category in ("minerals", "logistics"):
+                self.assertIn("<svg", (output / f"news-cover-{category}.svg").read_text(encoding="utf-8"))
             outline = json.loads((output / "mapa/world-outline.json").read_text())
             self.assertEqual(outline["type"], "FeatureCollection")
             self.assertEqual(len(outline["features"]), 128)

@@ -996,6 +996,48 @@
     return card;
   }
 
+  function renderHomeNews() {
+    if (view !== "panorama") return;
+    const list = get("market-home-news-items");
+    // Give the second headline a different angle when the edition allows it.
+    const items = newsState === "available" ? news.items : [];
+    const [first, next] = items;
+    list.closest("section").hidden = !first;
+    if (!first) {
+      list.replaceChildren();
+      return;
+    }
+    const second = items.find(item => item.topic !== first.topic) || next;
+    list.replaceChildren(...[first, second].filter(Boolean).map(item => {
+      const card = element("li");
+      const cover = element("div");
+      cover.className = "market-home-news-cover";
+      const img = element("img");
+      img.src = item.topic === "Logística" ? "/news-cover-logistics.svg" : "/news-cover-minerals.svg";
+      img.alt = "";
+      img.width = 720;
+      img.height = 300;
+      img.loading = "lazy";
+      img.decoding = "async";
+      const illustration = element("span", "Ilustração");
+      cover.append(img, illustration);
+      const copy = element("div");
+      copy.className = "market-home-news-copy";
+      const meta = element("p");
+      meta.className = "market-news-meta";
+      const date = element("time", calendar.format(new Date(item.published_on)));
+      date.dateTime = item.published_on;
+      meta.append(item.source_id === "mdic" ? "MDIC" : newsSource, " · ", date);
+      const title = element("h3");
+      const link = element("a", item.title);
+      link.href = item.url;
+      title.append(link);
+      copy.append(meta,title);
+      card.append(cover,copy);
+      return card;
+    }));
+  }
+
   function renderNews() {
     if (!newsView && !tradeControls.disabled) renderReportPreview();
     const available = Boolean(news && (newsView || !tradeControls.disabled));
@@ -1267,10 +1309,12 @@
   async function loadNews() {
     newsRetry.hidden = true;
     newsState = "loading";
+    renderHomeNews();
     renderNews();
     try {
       ({data: news, sha256: newsSha256} = await readSnapshot("/news.json", validateNews));
       newsState = "available";
+      renderHomeNews();
       const coverage = get("market-news-coverage");
       coverage.textContent = newsSource + " · Curadoria de " + digits.format(news.canadaCount) + " entre " + digits.format(news.feed_entries) +
         " publicações do feed. Atualizado pela fonte em " + timestamp.format(new Date(news.feed_updated_at)) +
@@ -1334,6 +1378,7 @@
       }
     } catch {
       newsState = "unavailable";
+      renderHomeNews();
       get("market-news-edition").textContent = "Edição publicada indisponível.";
       get("market-news-summary").hidden = true;
       newsRetry.hidden = false;

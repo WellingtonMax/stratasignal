@@ -1067,3 +1067,37 @@ test("the Panorama cover does not claim a percentage when the trade data cannot 
   assert.equal(get("market-home-partners").hidden,true);
   assert.equal(get("market-home-pins").children.length,0);
 });
+
+test("Panorama highlights two different news topics independently of the trade filters", async () => {
+  const recent = {...newsItem, published_on: "2025-03-09", topic: "Política mineral", title: "Política de minerais",
+    url: newsItem.url.replace("example", "policy")};
+  const repeated = {...recent, published_on: "2025-03-08", title: "Outro artigo de política",
+    url: newsItem.url.replace("example", "policy-2")};
+  const {dom, get, calls, change} = open(undefined, () => response({...newsSample,feed_entries:3,items:[newsItem,repeated,recent]}));
+  await settle(get,"market-news-status");
+  await settle(get);
+  const list = get("market-home-news-items");
+  assert.equal(list.closest("section").hidden, false);
+  assert.deepEqual([...list.querySelectorAll("h3 a")].map(a => [a.textContent,a.href]), [[recent.title,recent.url],[newsItem.title,newsItem.url]]);
+  assert.deepEqual([...list.querySelectorAll("img")].map(i => [i.getAttribute("src"),i.getAttribute("alt")]),
+    [["/news-cover-minerals.svg",""],["/news-cover-logistics.svg",""]]);
+  assert.equal(list.closest("section").querySelector(".market-home-news-heading a").getAttribute("href"),"/noticias/");
+  assert.deepEqual([...list.querySelectorAll("time")].map(t => t.dateTime),[recent.published_on,newsItem.published_on]);
+  const card = list.firstElementChild;
+  change("market-product","28369100");
+  assert.equal(list.firstElementChild,card);
+  assert.equal(calls.filter(call => call.url === "/news.json").length,1);
+  dom.window.close();
+});
+
+test("news highlights stay hidden outside Panorama or if no curated items load", async () => {
+  for (const [view,items] of [["mapa",[newsItem]],["noticias",[newsItem]],["panorama",[]]]) {
+    const {dom,get} = open(undefined, () => response({...newsSample,items}),"",undefined,view);
+    await settle(get,"market-news-status");
+    if (view !== "noticias") await settle(get);
+    const list = get("market-home-news-items");
+    assert.equal(list.closest("section").hidden,true);
+    assert.equal(list.children.length,0);
+    dom.window.close();
+  }
+});
