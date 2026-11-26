@@ -1101,3 +1101,23 @@ test("news highlights stay hidden outside Panorama or if no curated items load",
     dom.window.close();
   }
 });
+
+test("schematic port links also draw and zoom in the 2D map when the globe is unavailable", async () => {
+  const {dom,window,get,change}=open(undefined,undefined,"",undefined,"mapa");
+  await settle(get);
+  const panel=get("market-logistics");
+  const svg=get("market-geo-logistics");
+  assert.equal(panel.hidden,false);
+  assert.equal(svg.children.length,0);
+  panel.open=true;
+  panel.dispatchEvent(new window.Event("toggle"));
+  assert.equal(svg.children.length,2);
+  panel.querySelector("button").click();
+  assert.equal(svg.querySelectorAll(".selected").length,1);
+  assert.match(get("market-geo-scene").style.transform,/scale\(3\)/);
+  assert.match(panel.querySelector("p").textContent,/Não mostra a estrada/);
+  change("market-product","28369100");
+  assert.equal(panel.hidden,true);
+  assert.equal(svg.children.length,0);
+  dom.window.close();
+});

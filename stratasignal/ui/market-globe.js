@@ -28,7 +28,7 @@
   const sdk = "https://api.mapbox.com/mapbox-gl-js/v3.35.0/mapbox-gl";
   let rows = new Map(), pick, selected, map, popup, timer, outline;
   let operations = new Map(), operationSelected, pickOperation;
-  let pendingFocus, hoveredOperation;
+  let logistics = [], pendingFocus, hoveredOperation;
   let requested = false, visible = false, layerReady = false, loadError = false, active = "outline";
 
   const full = getFullscreen();
@@ -103,9 +103,16 @@
       properties: {id: item.id, kind: item.kind, selected: item.id === operationSelected},
     }))};
   }
+  function logisticsData() {
+    return {type:"FeatureCollection", features:logistics.map(route => ({
+      type:"Feature", geometry:{type:"LineString",coordinates:route.anchors},
+      properties:{selected:route.selected},
+    }))};
+  }
   function updateData() {
     map?.getSource("trade-partners")?.setData(data());
     map?.getSource("mineral-operations")?.setData(operationData());
+    map?.getSource("mineral-logistics")?.setData(logisticsData());
   }
   function clearPopup() {
     hoveredOperation = null;
@@ -196,6 +203,11 @@
         root.dataset.state = "style-loaded";
         map.setProjection("globe");
         map.setFog({color: "#adc8e2", "high-color": "#325380", "space-color": "#081424", "star-intensity": 0.12});
+        map.addSource("mineral-logistics", {type:"geojson", data:logisticsData()});
+        map.addLayer({id:"mineral-logistics", source:"mineral-logistics", type:"line",
+          layout:{"line-cap":"round","line-join":"round"},
+          paint:{"line-color":["case",["boolean",["get","selected"],false],"#fff5c9","#f6b65f"],
+            "line-width":3.5,"line-dasharray":[1.25,1.5]}});
         map.addSource("trade-partners", {type: "geojson", data: data()});
         const chosen = ["boolean", ["get", "selected"], false];
         map.addLayer({id: "trade-partners", source: "trade-partners", type: "circle", paint: {
@@ -237,7 +249,7 @@
         }
       });
       map.on("sourcedata", event => {
-        if (event.sourceId && event.sourceId !== "trade-partners" && event.coord && event.sourceDataType === "content") layerReady = true;
+        if (event.sourceId && !["trade-partners", "mineral-operations", "mineral-logistics"].includes(event.sourceId) && event.coord && event.sourceDataType === "content") layerReady = true;
       });
       const reveal = () => {
         if (!map?.getSource("trade-partners") || !layerReady || (visible && !toggle.disabled)) return;
@@ -343,6 +355,10 @@
       pickOperation = handler;
       updateData();
       if (points.length) start();
+    },
+    logistics(routes) {
+      logistics = routes;
+      map?.getSource("mineral-logistics")?.setData(logisticsData());
     },
     focus(anchor, whenReady = false) {
       if (!visible) {

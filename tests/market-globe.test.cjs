@@ -405,3 +405,39 @@ test("fullscreen picker uses the original article and respects filter and websit
   a.equal(picker.parentElement.hidden,true);
   a.equal(get("market-map-fullscreen").open,true);
 });
+
+test("only documented port routes draw as schematic lines on Mapbox and survive a style reload", async t => {
+  const {w,doc,map}=setup(t,"pk.example.synthetic");
+  w.eval(fs.readFileSync("stratasignal/ui/market-operations.js","utf8"));
+  w.strataMarketOperations.show("25041000");
+  await flush();
+  const m=map();
+  m.fire("style.load");
+  const panel=doc.getElementById("market-logistics");
+  const features=()=>m.getSource("mineral-logistics").data.features;
+  a.equal(panel.hidden,false);
+  a.equal(features().length,0);
+  panel.open=true;
+  panel.dispatchEvent(new w.Event("toggle"));
+  a.equal(features().length,2);
+  a.deepEqual(JSON.parse(JSON.stringify(features().map(f=>f.geometry))),[
+    {type:"LineString",coordinates:[[38.57,-13.35],[40.68,-14.54]]},
+    {type:"LineString",coordinates:[[38.57,-13.35],[40.52,-12.97]]},
+  ]);
+  a.equal(m.layers["mineral-logistics"].type,"line");
+  a.ok(m.layers["mineral-logistics"].paint["line-dasharray"]);
+  const choices=[...panel.querySelectorAll("button")];
+  a.equal(choices[1].textContent,"Balama → Pemba");
+  choices[1].click();
+  a.equal(features()[1].properties.selected,true);
+  a.match(doc.getElementById("market-logistics-context").textContent,/carga geral/);
+  a.match(doc.getElementById("market-logistics-source").href,/syrahresources\.com\.au/);
+  m.setStyle({});
+  m.fire("style.load");
+  a.equal(features()[1].properties.selected,true);
+  panel.open=false;
+  panel.dispatchEvent(new w.Event("toggle"));
+  a.equal(features().length,0);
+  w.strataMarketOperations.show("28369100");
+  a.equal(panel.hidden,true);
+});

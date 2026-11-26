@@ -492,3 +492,22 @@
   .market-home-news-grid{grid-template-columns:minmax(0,1fr)}
   .market-home-news-heading{align-items:start;margin-bottom:8px}
 }
+
+/* Documented port pairs are indicative connectors, not road or sailing tracks. */
+.market-logistics{flex-basis:100%;min-width:0}
+.market-logistics[hidden],#market-logistics-context[hidden]{display:none}
+.market-logistics summary{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 10px;border:1px solid #876239;border-radius:7px;color:#704215;background:#fff8ed;cursor:pointer;font-weight:700}
+.market-logistics summary::after{content:"+";margin-left:2px}
+.market-logistics[open] summary::after{content:"−"}
+.market-logistics summary i{width:19px;border-top:2px dashed #a86a28}
+.market-logistics p{margin:6px 0}
+.market-logistics a{display:inline-flex;align-items:center;min-height:44px}
+#market-logistics-choices{display:flex;flex-wrap:wrap;gap:6px}
+#market-logistics-choices button{min-height:44px;padding:5px 9px;border:1px solid #876239;border-radius:7px;color:#704215;background:#fff8ed;cursor:pointer;font:inherit;font-weight:650}
+.market-logistics :is(a,button,summary):focus-visible{outline:2px solid #aa6b2a;outline-offset:2px}
+.market-map-fullscreen .market-logistics :is(button,summary){color:#ffe8bf;background:#15263c;border-color:#b48148}
+.market-map-fullscreen .market-logistics a{color:#ffdfad}
+.market-map-fullscreen .market-logistics summary i{border-color:#f6b65f}
+.market-logistics-line{fill:none;stroke:#f6b65f;stroke-width:2.7;stroke-dasharray:3 3;stroke-linecap:round;vector-effect:non-scaling-stroke;pointer-events:none}
+.market-logistics-line.selected{stroke:#fff5c9;stroke-width:3.5}
+@media(max-width:640px){.market-map-fullscreen .market-geo-caption:has(.market-logistics[open]){max-height:35dvh}}

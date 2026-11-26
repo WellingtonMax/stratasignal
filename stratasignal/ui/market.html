@@ -191,6 +191,7 @@
               <rect x="0" y="200" width="1024" height="620" fill="url(#market-geo-grid)"/>
               <g id="market-geo-scene">
                 <image href="/carteira/world-land.svg" width="1024" height="1024"/>
+                <g id="market-geo-logistics"></g>
                 <g id="market-geo-pins"></g>
               </g>
             </svg>
@@ -209,6 +210,13 @@
               <span class="market-map-partner-legend"><i class="market-geo-dot" aria-hidden="true"></i> País parceiro · Comex Stat</span>
               <span><i class="market-geo-ring" aria-hidden="true"></i> Parceiro selecionado</span>
               <span id="market-operations-legend" aria-label="Símbolos das operações" hidden></span>
+              <details id="market-logistics" class="market-logistics" hidden>
+                <summary><i aria-hidden="true"></i> Rotas documentadas</summary>
+                <p>Linha tracejada liga a mina ao porto de escoamento. Não mostra a estrada ou o trajeto exato nem identifica quem transportou.</p>
+                <div id="market-logistics-choices" role="group" aria-label="Aproximar uma rota"></div>
+                <p id="market-logistics-context" aria-live="polite" hidden></p>
+                <a id="market-logistics-source">Fonte: logística da Syrah Resources ↗</a>
+              </details>
               <span id="market-globe-hint" hidden><span class="market-globe-hint-pointer">Arraste para girar. Use a roda para aproximar.</span><span class="market-globe-hint-touch">Arraste para girar e use dois dedos para aproximar.</span></span>
               <span class="market-geo-scroll-hint">Para usar a roda do mouse, clique no mapa primeiro.</span>
             </figcaption>

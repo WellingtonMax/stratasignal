@@ -711,6 +711,21 @@
     heading.focus({preventScroll:true});
   }
 
+  if (view === "mapa") {
+    window.addEventListener("strata-market-logistics", event => {
+      get("market-geo-logistics")?.replaceChildren(...event.detail.map(route => {
+        const path = document.createElementNS(svgNamespace,"path");
+        path.setAttribute("d",route.anchors.map((anchor,i) => (i ? "L" : "M") + projectAnchor(anchor).join(" ")).join(" "));
+        path.setAttribute("class",route.selected ? "market-logistics-line selected" : "market-logistics-line");
+        return path;
+      }));
+    });
+    window.addEventListener("strata-market-logistics-focus", event => {
+      const [x,y] = projectAnchor(event.detail);
+      zoomedCountry = null;
+      positionMap(3,512-3*x,510-3*y);
+    });
+  }
   function mapPin({label, anchor, fob_usd, kg, unitValue: declaredUnitValue}, selected) {
     const [x, y] = projectAnchor(anchor);
     const marker = document.createElementNS(svgNamespace, "g");

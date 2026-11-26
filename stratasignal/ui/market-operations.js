@@ -65,6 +65,26 @@
   const lookup = new Map(records.map(x => [x.id,x]));
   let active = false, enabled = true, selected = "";
   const selector = dom("kind"), list = dom("list"), toggle = dom("toggle"), legend = dom("legend");
+  const routesPanel = document.getElementById("market-logistics");
+  const routesChoices = document.getElementById("market-logistics-choices");
+  const routeContext = document.getElementById("market-logistics-context");
+  const routeSource = document.getElementById("market-logistics-source");
+  const portRoutes = relations.filter(edge => edge.kind === "Escoamento documentado")
+    .map(edge => ({...edge, anchors:[lookup.get(edge.a).anchor,lookup.get(edge.b).anchor],
+      label:lookup.get(edge.a).city + " → " + lookup.get(edge.b).city}));
+  let selectedRoute;
+  function updateRoutes() {
+    if (!routesPanel) return;
+    routesPanel.hidden = !active || !portRoutes.length;
+    if (!active) { routesPanel.open = false; selectedRoute = null; }
+    const routes = active && routesPanel.open ? portRoutes.map(route => ({
+      anchors:route.anchors, selected:route === selectedRoute,
+    })) : [];
+    routeContext.hidden = !selectedRoute;
+    routeContext.textContent = selectedRoute?.text ?? "";
+    window.strataMarketGlobe?.logistics?.(routes);
+    window.dispatchEvent(new CustomEvent("strata-market-logistics",{detail:routes}));
+  }
   const search = dom("search"), result = dom("result"), detail = dom("detail");
   const overlay = document.getElementById("market-operation-dialog");
   const detailHome = detail.parentNode, detailNext = detail.nextSibling;
@@ -123,6 +143,27 @@
   const create = (tag, value) => Object.assign(document.createElement(tag), {textContent:value});
   const link = (label, href) => Object.assign(create("a", label), {href});
   const symbol = kind => graphics?.icon(kind) ?? create("span","");
+  if (routesPanel) {
+    routeSource.href = logistics;
+    routesChoices.append(...portRoutes.map(route => {
+      const button = create("button",route.label);
+      button.type = "button";
+      button.addEventListener("click", () => {
+        selectedRoute = route;
+        updateRoutes();
+        const [from,to] = route.anchors;
+        const center = from.map((n,i) => (n + to[i]) / 2);
+        if (!window.strataMarketGlobe?.focus(center)) {
+          window.dispatchEvent(new CustomEvent("strata-market-logistics-focus",{detail:center}));
+        }
+      });
+      return button;
+    }));
+    routesPanel.addEventListener("toggle",() => {
+      if (!routesPanel.open) selectedRoute = null;
+      updateRoutes();
+    });
+  }
   const close = dom("close"), focus = dom("focus"), trade = dom("trade");
   let tradeCountries = new Set();
   const tradePartner = document.getElementById("market-country");
@@ -296,6 +337,7 @@
   window.strataMarketOperations = {closeOverlay, show(value, partnerLabels = []) {
     tradeCountries = new Set(partnerLabels);
     active = value === "25041000";
+    updateRoutes();
     if (!active && addressId()) {
       setAddress("");
       selected = "";
