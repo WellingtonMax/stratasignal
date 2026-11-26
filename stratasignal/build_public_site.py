@@ -501,7 +501,7 @@ def _write_observatory_ui(output, ui):
     _write_globe_outline(ui / "world-land.svg", output / "mapa" / "world-outline.json")
     with (output / "mapa" / "mapbox-config.json").open("x", encoding="utf-8") as stream:
         stream.write('{"publicToken":null}\n')
-    for name in ("market.js", "market.css", "app.css", "favicon.svg"):
+    for name in ("market.js", "market.css", "app.css", "favicon.svg", "panorama-globe.svg"):
         with (output / name).open("xb") as stream:
             stream.write((ui / name).read_bytes())
 

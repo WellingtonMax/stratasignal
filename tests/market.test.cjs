@@ -1039,3 +1039,31 @@ test("fullscreen country dots show current-scope totals without leaving or clear
   assert.equal(card.open,false);
   assert.equal(wrapper.open,true);
 });
+
+test("the Panorama cover grounds its graphite story, links and globe in the published edition", async t => {
+  const {dom,get,change} = open();
+  t.after(() => dom.window.close());
+  await settle(get);
+  await settle(get,"market-news-status");
+  assert.match(get("market-home-result").textContent,/China respondeu por 85% do valor declarado/);
+  assert.match(get("market-home-scope").textContent,/Importações.*janeiro de 2025 a março de 2025.*Comex Stat/);
+  assert.ok(get("market-home-pins").querySelector(".is-leading"));
+  assert.ok(get("market-edition-history").closest("#fonte"));
+  const origin = get("market-home-partners").querySelector("a");
+  assert.equal(new URL(origin.href).searchParams.get("pais"),"China");
+  change("market-product","28369100");
+  change("market-flow","export");
+  assert.match(get("market-home-result").textContent,/China respondeu por 85%/);
+  assert.equal(new URL(get("market-map-link").href).searchParams.get("ncm"),"25041000");
+  assert.equal(new URL(get("market-map-link").href).searchParams.get("fluxo"),"import");
+});
+
+test("the Panorama cover does not claim a percentage when the trade data cannot load", async t => {
+  const {dom,get} = open(() => ({ok:false}));
+  t.after(() => dom.window.close());
+  await settle(get);
+  await settle(get,"market-news-status");
+  assert.match(get("market-home-result").textContent,/não carregou/);
+  assert.equal(get("market-home-partners").hidden,true);
+  assert.equal(get("market-home-pins").children.length,0);
+});

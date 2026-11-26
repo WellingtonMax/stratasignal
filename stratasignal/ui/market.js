@@ -512,6 +512,60 @@
     }).sort((a, b) => b.fob_usd - a.fob_usd || a.label.localeCompare(b.label, "pt-BR"));
   }
 
+  function renderPanoramaCover(edition) {
+    if (view !== "panorama" || !get("market-home-result")) return;
+    const result = get("market-home-result"), scope = get("market-home-scope");
+    const pins = get("market-home-pins"), links = get("market-home-partners");
+    const params = new URLSearchParams({ncm:"25041000", fluxo:"import"});
+    if (requestedYear && edition) params.set("ano",requestedYear);
+    const mapUrl = "/mapa/?" + params;
+    get("market-map-link").href = mapUrl;
+    const partners = edition ? summarizePartners(edition.records.filter(row => row.ncm === "25041000" && row.flow === "import")) : [];
+    const total = sum(partners,"fob_usd");
+    const top = partners[0];
+    scope.textContent = "Grafita natural em pó ou escamas · Importações" +
+      (edition ? " · " + monthSpan(edition.months) : "") + " · Comex Stat";
+    if (top && total) {
+      result.replaceChildren(document.createTextNode(top.label + " respondeu por "),
+        element("strong",percent.format(top.fob_usd / total)),document.createTextNode(" do valor declarado."));
+    } else {
+      result.textContent = edition ? "Sem valor declarado neste recorte." : "O recorte do comércio não carregou.";
+    }
+    links.hidden = !partners.length;
+    links.replaceChildren(...partners.slice(0,3).map(({label,fob_usd}) => {
+      const li = element("li");
+      const a = element("a",label);
+      const filtered = new URLSearchParams(params);
+      filtered.set("pais",label);
+      a.href = "/mapa/?" + filtered;
+      if (total) a.append(element("span",percent.format(fob_usd / total)));
+      li.append(a);
+      return li;
+    }));
+    // Orthographic projection matching panorama-globe.svg's centering and radius.
+    const rad = Math.PI / 180, lat0 = 18 * rad;
+    pins.replaceChildren(...partners.flatMap(({label,anchor}) => {
+      if (!anchor) return [];
+      const [lon,lat] = anchor, l = (lon - 22) * rad, p = lat * rad;
+      const depth = Math.sin(lat0) * Math.sin(p) + Math.cos(lat0) * Math.cos(p) * Math.cos(l);
+      if (depth < .015) return [];
+      const x = 260 + 214 * Math.cos(p) * Math.sin(l);
+      const y = 239 - 214 * (Math.cos(lat0) * Math.sin(p) - Math.sin(lat0) * Math.cos(p) * Math.cos(l));
+      const dot = document.createElementNS(svgNamespace,"circle");
+      dot.setAttribute("cx",x.toFixed(2));
+      dot.setAttribute("cy",y.toFixed(2));
+      dot.setAttribute("r",label === top?.label ? "7" : "5");
+      dot.setAttribute("class",label === top?.label ? "market-home-pin is-leading" : "market-home-pin");
+      if (label !== top?.label) return [dot];
+      const ring = document.createElementNS(svgNamespace,"circle");
+      ring.setAttribute("cx",x.toFixed(2));
+      ring.setAttribute("cy",y.toFixed(2));
+      ring.setAttribute("r","13");
+      ring.setAttribute("class","market-home-pin-ring");
+      return [ring,dot];
+    }));
+  }
+
   function togglePartner(label) {
     pendingCountry = null;
     country.value = country.value === label ? "" : label;
@@ -1317,6 +1371,7 @@
         }
       }
       ({data: snapshot, sha256: snapshotSha256} = loaded);
+      renderPanoramaCover(snapshot);
       get("market-through").textContent = monthName(snapshot.months.at(-1));
       get("market-updated").textContent = calendar.format(new Date(snapshot.updated_on));
       get("market-geo-updated").textContent = "Atualização do Comex Stat em " + get("market-updated").textContent + ".";
@@ -1352,6 +1407,7 @@
       get("market-edition").hidden = true;
       get("market-edition-history").hidden = true;
       get("market-retrieved").textContent = "Carga publicada indisponível.";
+      renderPanoramaCover(null);
       const missingYear = requestedYear && tradeHistory && !Object.hasOwn(tradeHistory.years, requestedYear);
       status.textContent = missingYear ? "O ano solicitado ainda está sem edição validada. Volte ao comércio recente." :
         requestedYear ? "Não foi possível carregar o ano solicitado. Tente novamente ou volte ao comércio recente." :
@@ -1403,7 +1459,7 @@
     document.querySelector('[data-market-nav="mapa"]').href = map;
     get("market-chart-link").href = panorama;
     get("market-compare-link").href = panorama + "#comparar-parceiros";
-    get("market-map-link").href = map;
+    if (view !== "panorama") get("market-map-link").href = map;
     if (newsView) return;
     document.querySelector('[data-market-nav="noticias"]').href = route("/noticias/", trade);
     const newsContext = new URLSearchParams(trade);

@@ -165,6 +165,8 @@ class PublicSiteTests(unittest.TestCase):
             self.assertIn("worker-src blob:", map_html)
             self.assertIn("strict-origin-when-cross-origin", map_html)
             self.assertTrue((output / "mapa/globe.js").is_file())
+            self.assertIn('href="/panorama-globe.svg"', (output / "index.html").read_text(encoding="utf-8"))
+            self.assertIn("Globo ortográfico", (output / "panorama-globe.svg").read_text(encoding="utf-8"))
             outline = json.loads((output / "mapa/world-outline.json").read_text())
             self.assertEqual(outline["type"], "FeatureCollection")
             self.assertEqual(len(outline["features"]), 128)

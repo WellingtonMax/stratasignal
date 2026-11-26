@@ -420,3 +420,53 @@
 #market-partner-totals>div:last-child{grid-column:1/-1}
 #market-partner-totals dt{color:var(--muted);font-size:.85rem}
 #market-partner-totals dd{margin:4px 0 0;font-weight:700}
+
+/* First visit: a trade story and its map, before the analysis controls. */
+.market-hero.market-panorama-only{
+  grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:clamp(16px,3vw,40px);
+  padding:clamp(22px,4.3vw,58px);margin-bottom:0;
+  background:radial-gradient(ellipse at 74% 47%,#173b55 0%,transparent 58%),linear-gradient(118deg,#0b182a,#0e243b);
+  border:1px solid #2a465f;border-radius:20px;
+}
+.market-hero .market-hero-copy>p.market-home-intro{max-width:39ch;font-size:clamp(1rem,1.4vw,1.12rem);margin-bottom:20px}
+.market-hero h1{max-width:13ch;font-size:clamp(2.5rem,5.1vw,4.6rem);line-height:.99;margin-bottom:16px;text-wrap:balance}
+.market-home-answer{margin:0 0 22px;padding:0 0 0 14px;border-left:2px solid #83e6cd}
+#market-home-result{color:#edf7ff;font-size:1.06rem;line-height:1.44;margin:0}
+#market-home-result strong{color:#adebd9;font-size:1.46em}
+.market-home-scope{font-size:.88rem;color:#b8d0e5;margin:4px 0 0;line-height:1.42}
+.market-hero .button.primary{background:#b5f0dd;color:#0b2e29;border-color:#b5f0dd}
+.market-hero .button.primary:hover{background:#d7fff2}
+.market-home-globe{margin:0;min-width:0;position:relative}
+.market-home-globe svg{display:block;width:100%;max-height:440px}
+.market-home-globe figcaption{display:flex;flex-wrap:wrap;gap:3px 16px;justify-content:center;color:#c8dce9;font-size:.84rem}
+.market-home-globe figcaption span{display:inline-flex;gap:6px;align-items:center}
+.market-home-globe figcaption a{color:#deefff}
+.market-home-globe .market-geo-dot{border:1px solid #b4dfff}
+.market-home-pin{fill:#a4d1ff;stroke:#0d2138;stroke-width:1.8}
+.market-home-pin.is-leading{fill:#e6faf4;stroke:#a5f5dc;stroke-width:1.7}
+.market-home-pin-ring{fill:#a5f5dc30;stroke:#a5f5dca0;stroke-width:1.4}
+#market-home-partners:not([hidden]){display:flex;flex-wrap:wrap;justify-content:center;gap:6px;list-style:none;margin:12px 0 0;padding:0}
+#market-home-partners a{display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:6px 9px;border:1px solid #46617a;border-radius:7px;color:#e7f1ff;text-decoration:none;font-size:.88rem;font-weight:650}
+#market-home-partners a:hover{background:#23455e}
+#market-home-partners a span{font-size:.83rem;color:#afd9ce}
+.market-hero a:focus-visible{outline:2px solid #f2d475;outline-offset:3px}
+.market-home-paths{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin:18px 0 46px;border:1px solid var(--line);border-radius:12px;background:var(--white)}
+.market-home-paths>div{padding:clamp(14px,2.5vw,28px)}
+.market-home-paths>div+div{border-left:1px solid var(--line)}
+.market-home-paths .eyebrow{margin:0 0 5px;color:#3a6978}
+.market-home-paths h2{font-size:clamp(1.12rem,2vw,1.42rem);line-height:1.24;margin:0}
+.market-home-paths a{display:inline-flex;align-items:center;min-height:44px;font-weight:650;font-size:.92rem}
+.market-home-hint{font-size:1rem;color:var(--muted);margin:5px 0 0}
+.market-method .market-release{margin-top:18px}
+.market-method .market-release .eyebrow{color:#bcd2ee}
+.market-method .market-release p:not(.eyebrow){color:#c9d9ed}
+@media(max-width:740px){
+  .market-hero.market-panorama-only{grid-template-columns:minmax(0,1fr)}
+  .market-hero h1{font-size:clamp(2.45rem,8vw,3.6rem);max-width:14ch}
+  .market-home-globe{max-width:450px;width:100%;justify-self:center}
+  .market-home-globe svg{max-height:320px}
+}
+@media(max-width:480px){
+  .market-home-paths{grid-template-columns:minmax(0,1fr);margin-bottom:32px}
+  .market-home-paths>div+div{border-left:0;border-top:1px solid var(--line)}
+}

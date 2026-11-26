@@ -32,49 +32,30 @@
   <main id="main" tabindex="-1">
     <section class="market-hero market-panorama-only" aria-labelledby="market-title">
       <div class="market-hero-copy">
-        <p class="eyebrow"><span class="market-dot" aria-hidden="true"></span> OBSERVATÓRIO PÚBLICO · BRASIL</p>
-        <h1 id="market-title">Comércio mineral do Brasil</h1>
-        <p>Compare importações e exportações de grafita natural, carbonatos de lítio e ferronióbio por mês e país parceiro.</p>
+        <p class="eyebrow"><span class="market-dot" aria-hidden="true"></span> STRATASIGNAL · INTELIGÊNCIA MINERAL</p>
+        <h1 id="market-title">De onde o Brasil importa grafita?</h1>
+        <p class="market-home-intro">Explore o comércio de minerais e descubra onde ficam as operações da cadeia produtiva.</p>
+        <div class="market-home-answer" id="market-home-answer" aria-live="polite">
+          <p id="market-home-result">Carregando o recorte do Comex Stat…</p>
+          <p id="market-home-scope" class="market-home-scope">Grafita natural em pó ou escamas · Importações</p>
+        </div>
         <div class="market-hero-actions">
-          <a class="button primary" href="#explorar">Comparar fluxos <span aria-hidden="true">↓</span></a>
-          <a class="button market-atlas-link" id="market-map-link" href="/mapa/">Explorar no mapa <span aria-hidden="true">→</span></a>
+          <a class="button primary" id="market-map-link" href="/mapa/?ncm=25041000&amp;fluxo=import">Explorar mapa completo</a>
+          <a class="button market-atlas-link" href="#explorar">Analisar dados</a>
         </div>
       </div>
-      <aside class="market-release" aria-labelledby="market-source-title">
-        <p class="eyebrow">FONTE OFICIAL</p>
-        <h2 id="market-source-title">Comex Stat</h2>
-        <p>Secretaria de Comércio Exterior · MDIC</p>
-        <dl>
-          <div><dt>Último mês incluído</dt><dd id="market-through">—</dd></div>
-          <div><dt>Atualização na fonte</dt><dd id="market-updated">—</dd></div>
-        </dl>
-        <p id="market-retrieved">Consultando a carga publicada…</p>
-        <p id="market-edition" class="market-edition" hidden>
-          <strong>Edição verificável</strong>
-          <span id="market-edition-id"></span>
-          <a id="market-edition-download" href="">Baixar JSON congelado ↓</a>
-        </p>
-        <details id="market-edition-history" class="market-edition-history" hidden>
-          <summary>Histórico de edições <span id="market-edition-count"></span></summary>
-          <p>Compare as capturas publicadas. Arquivos diferentes são sinais para revisão, não prova de erro na fonte.</p>
-          <ol id="market-edition-list"></ol>
-        </details>
-      </aside>
+      <figure class="market-home-globe">
+        <svg viewBox="0 0 520 478" aria-hidden="true" focusable="false">
+          <image href="/panorama-globe.svg" width="520" height="478"/>
+          <g id="market-home-pins"></g>
+        </svg>
+        <figcaption><span><i class="market-geo-dot" aria-hidden="true"></i> País de origem no recorte</span><span>Contorno: <a href="https://www.naturalearthdata.com/">Natural Earth</a></span></figcaption>
+        <ul id="market-home-partners" aria-label="Principais origens por valor declarado" hidden></ul>
+      </figure>
     </section>
-    <section class="market-start-cases market-panorama-only" aria-label="Comece com um caso real">
-      <article class="market-start-case">
-        <p class="eyebrow">GRAFITA · RISCO DE ABASTECIMENTO</p>
-        <h2>De quais origens o Brasil mais depende para importar grafita?</h2>
-        <p>Compare as origens por valor e peso e veja como a concentração muda mês a mês. O dado aduaneiro não identifica sozinho fornecedores, portos ou trajetos.</p>
-        <a class="button secondary" href="/?ncm=25041000&amp;fluxo=import#comparar-parceiros">Comparar origens da grafita</a>
-        <a class="button secondary" href="/mapa/?ncm=25041000#operacao=itagimirim">Ver a cadeia no globo</a>
-      </article>
-      <article class="market-start-case">
-        <p class="eyebrow">GÁLIO · CADEIA INDUSTRIAL</p>
-        <h2>Que etapa industrial ainda falta comprovar no Brasil?</h2>
-        <p>Acompanhe as evidências desde a bauxita até os semicondutores, separando pesquisa, obra e produção comercial.</p>
-        <a class="button secondary" href="/mercados/?pais=BR&amp;produto=811292&amp;fluxo=export#world-gallium-title">Explorar a cadeia do gálio</a>
-      </article>
+    <section class="market-home-paths market-panorama-only" aria-label="Continue explorando">
+      <div><p class="eyebrow">GRAFITA · DA MINA À INDÚSTRIA</p><h2>Onde ficam as operações?</h2><a href="/mapa/?ncm=25041000#operacao=itagimirim">Conhecer a operação de Itagimirim</a></div>
+      <div><p class="eyebrow">GÁLIO · SEMICONDUTORES</p><h2>O que o Brasil já produz?</h2><a href="/mercados/?pais=BR&amp;produto=811292&amp;fluxo=export#world-gallium-title">Ver as evidências da cadeia do gálio</a></div>
     </section>
     <section class="market-page-intro market-map-intro market-map-only" aria-labelledby="market-map-title">
       <div>
@@ -85,7 +66,7 @@
     </section>
     <section id="explorar" class="market-trade-only" aria-labelledby="market-explore-title" tabindex="-1">
       <div class="market-section-title market-panorama-only">
-        <h2 id="market-explore-title">Recorte do comércio</h2>
+        <div><p class="eyebrow">COMÉRCIO EXTERIOR · BRASIL</p><h2 id="market-explore-title">Analisar dados</h2><p class="market-home-hint">Escolha um produto e um período para comparar países por valor declarado e peso.</p></div>
         <a href="#fonte">Fonte e metodologia ↓</a>
       </div>
       <details id="market-trade-disclosure" class="market-filter-panel" open>
@@ -119,10 +100,10 @@
       <p id="market-status" class="market-status market-panorama-only" role="status">Carregando dados públicos…</p>
       <button type="button" id="market-retry" class="button secondary" hidden>Tentar carregar novamente</button>
       <button type="button" id="market-recent" class="button secondary" hidden>Voltar ao comércio recente</button>
-      <noscript><p>Ative o JavaScript para usar os filtros ou consulte o Comex Stat na seção de fontes.</p></noscript>
+      <noscript><p>Ative o JavaScript para ver os dados do mapa e usar os filtros, ou consulte o Comex Stat na seção de fontes.</p></noscript>
       <div id="market-results" hidden>
         <dl class="market-stats" aria-label="Indicadores do recorte">
-          <div><dt>Valor total FOB</dt><dd id="market-fob"></dd><small>US$ correntes</small></div>
+          <div><dt>Valor declarado (FOB)</dt><dd id="market-fob"></dd><small>Em dólares, sem frete internacional nem seguro</small></div>
           <div><dt>Peso líquido</dt><dd id="market-kg"></dd><small>quilogramas</small></div>
           <div><dt>Países e áreas parceiras</dt><dd id="market-partners"></dd><small>com registros no recorte</small></div>
         </dl>
@@ -534,6 +515,26 @@
           <a id="market-source-download" href="/comex.json" download>Baixar a carga do período (JSON)</a>
           <a id="market-baci-link" href="/mercados/" hidden>Ver a série anual da grafita no BACI</a>
         </div>
+      <aside class="market-release" aria-labelledby="market-source-title">
+        <p class="eyebrow">FONTE OFICIAL</p>
+        <h2 id="market-source-title">Comex Stat</h2>
+        <p>Secretaria de Comércio Exterior · MDIC</p>
+        <dl>
+          <div><dt>Último mês incluído</dt><dd id="market-through">—</dd></div>
+          <div><dt>Atualização na fonte</dt><dd id="market-updated">—</dd></div>
+        </dl>
+        <p id="market-retrieved">Consultando a carga publicada…</p>
+        <p id="market-edition" class="market-edition" hidden>
+          <strong>Edição verificável</strong>
+          <span id="market-edition-id"></span>
+          <a id="market-edition-download" href="">Baixar JSON congelado ↓</a>
+        </p>
+        <details id="market-edition-history" class="market-edition-history" hidden>
+          <summary>Histórico de edições <span id="market-edition-count"></span></summary>
+          <p>Compare as capturas publicadas. Arquivos diferentes são sinais para revisão, não prova de erro na fonte.</p>
+          <ol id="market-edition-list"></ol>
+        </details>
+      </aside>
       </div>
     </section>
   </main>
