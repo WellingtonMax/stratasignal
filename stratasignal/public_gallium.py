@@ -11,11 +11,12 @@ from .schema import InputError, country, day, fields, identifier, number, read_j
 SOURCE = Path(__file__).with_name("data") / "galio.json"
 SUPPLY_STAGES = {"primary_recovery": "gallium_metal", "purification": "gallium_high_purity"}
 STAGES = ("bauxite", "alumina", *SUPPLY_STAGES, "semiconductors")
-STATUSES = ("operation_documented", "coverage_gap", "research_reported", "project_announced", "application_documented")
+STATUSES = ("operation_documented", "coverage_gap", "research_reported", "project_announced",
+            "construction_started", "application_documented")
 PRODUCTS = ("bauxite", "alumina", "gallium_metal", "gallium_high_purity", "gallium_compounds")
 SOURCE_HOSTS = {
     "www.hydro.com", "agenciadenoticias.bndes.gov.br", "www.riotinto.com", "www.canada.ca",
-    "pubs.usgs.gov", "portal.if.usp.br", "www.gov.br", "www.wcoomd.org",
+    "pubs.usgs.gov", "portal.if.usp.br", "www.gov.br", "www.wcoomd.org", "www.minister.industry.gov.au",
 }
 
 

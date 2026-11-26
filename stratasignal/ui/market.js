@@ -170,6 +170,8 @@
   let scopedNewsMonths = newsView && addressMonths.length > 1 ? addressMonths : [];
   let pendingCountry = query.get("pais");
   let zoomedCountry = null;
+  let mapZoom = 1, mapX = 0, mapY = 0, mapWheelActive = false;
+  let currentMapPartner = null;
 
   function validate(data) {
     const codes = new Set(Array.from(product.options, option => option.value));
@@ -504,9 +506,64 @@
       if (!groups.has(row.country)) groups.set(row.country, []);
       groups.get(row.country).push(row);
     }
-    return [...groups].map(([label, rows]) => ({
-      label, ...summarize(rows), anchor: partnerAnchors.get(label),
-    })).sort((a, b) => b.fob_usd - a.fob_usd || a.label.localeCompare(b.label, "pt-BR"));
+    return [...groups].map(([label, rows]) => {
+      const totals = summarize(rows);
+      return {label, ...totals, anchor: partnerAnchors.get(label), unitValue: unitValue(rows, totals)};
+    }).sort((a, b) => b.fob_usd - a.fob_usd || a.label.localeCompare(b.label, "pt-BR"));
+  }
+
+  function renderPanoramaCover(edition) {
+    if (view !== "panorama" || !get("market-home-result")) return;
+    const result = get("market-home-result"), scope = get("market-home-scope");
+    const pins = get("market-home-pins"), links = get("market-home-partners");
+    const params = new URLSearchParams({ncm:"25041000", fluxo:"import"});
+    if (requestedYear && edition) params.set("ano",requestedYear);
+    const mapUrl = "/mapa/?" + params;
+    get("market-map-link").href = mapUrl;
+    const partners = edition ? summarizePartners(edition.records.filter(row => row.ncm === "25041000" && row.flow === "import")) : [];
+    const total = sum(partners,"fob_usd");
+    const top = partners[0];
+    scope.textContent = "Grafita natural em pó ou escamas · Importações" +
+      (edition ? " · " + monthSpan(edition.months) : "") + " · Comex Stat";
+    if (top && total) {
+      result.replaceChildren(document.createTextNode(top.label + " respondeu por "),
+        element("strong",percent.format(top.fob_usd / total)),document.createTextNode(" do valor declarado."));
+    } else {
+      result.textContent = edition ? "Sem valor declarado neste recorte." : "O recorte do comércio não carregou.";
+    }
+    links.hidden = !partners.length;
+    links.replaceChildren(...partners.slice(0,3).map(({label,fob_usd}) => {
+      const li = element("li");
+      const a = element("a",label);
+      const filtered = new URLSearchParams(params);
+      filtered.set("pais",label);
+      a.href = "/mapa/?" + filtered;
+      if (total) a.append(element("span",percent.format(fob_usd / total)));
+      li.append(a);
+      return li;
+    }));
+    // Orthographic projection matching panorama-globe.svg's centering and radius.
+    const rad = Math.PI / 180, lat0 = 18 * rad;
+    pins.replaceChildren(...partners.flatMap(({label,anchor}) => {
+      if (!anchor) return [];
+      const [lon,lat] = anchor, l = (lon - 22) * rad, p = lat * rad;
+      const depth = Math.sin(lat0) * Math.sin(p) + Math.cos(lat0) * Math.cos(p) * Math.cos(l);
+      if (depth < .015) return [];
+      const x = 260 + 214 * Math.cos(p) * Math.sin(l);
+      const y = 239 - 214 * (Math.cos(lat0) * Math.sin(p) - Math.sin(lat0) * Math.cos(p) * Math.cos(l));
+      const dot = document.createElementNS(svgNamespace,"circle");
+      dot.setAttribute("cx",x.toFixed(2));
+      dot.setAttribute("cy",y.toFixed(2));
+      dot.setAttribute("r",label === top?.label ? "7" : "5");
+      dot.setAttribute("class",label === top?.label ? "market-home-pin is-leading" : "market-home-pin");
+      if (label !== top?.label) return [dot];
+      const ring = document.createElementNS(svgNamespace,"circle");
+      ring.setAttribute("cx",x.toFixed(2));
+      ring.setAttribute("cy",y.toFixed(2));
+      ring.setAttribute("r","13");
+      ring.setAttribute("class","market-home-pin-ring");
+      return [ring,dot];
+    }));
   }
 
   function togglePartner(label) {
@@ -534,13 +591,142 @@
     }));
   }
 
+  let pairInputs, pair = [], pairDeepLinkOpened = false;
+  const pairA = get("market-pair-a"), pairB = get("market-pair-b");
+  function renderPair(partners, grouped, months, scope) {
+    const panel = get("comparar-parceiros");
+    panel.hidden = view !== "panorama" || partners.length < 2;
+    get("market-compare-link").hidden = partners.length < 2 ||
+      Boolean(country.value && !partners.some(item => item.label === country.value));
+    if (panel.hidden) return;
+    const labels = partners.map(item => item.label);
+    const key = JSON.stringify([scope, country.value, labels]);
+    if (pairInputs !== key) {
+      const first = labels.includes(country.value) ? country.value : labels[0];
+      pair = [first, labels.find(label => label !== first)];
+      pairInputs = key;
+    }
+    for (const [slot, select] of [pairA, pairB].entries()) {
+      select.replaceChildren(...labels.map(label => {
+        const option = new Option(label, label);
+        option.disabled = pair[1 - slot] === label;
+        return option;
+      }));
+      select.value = pair[slot];
+    }
+    get("market-pair-scope").textContent = scope + " · Comex Stat";
+    get("market-pair-name-a").textContent = pair[0];
+    get("market-pair-name-b").textContent = pair[1];
+    const allFob = sum(partners, "fob_usd");
+    get("market-pair-cards").replaceChildren(...pair.map(label => {
+      const item = partners.find(partner => partner.label === label);
+      const card = element("div");
+      card.append(element("strong", label), element("p", money(item.fob_usd) + " FOB · " + digits.format(item.kg) + " kg"),
+        element("small", allFob ? percent.format(item.fob_usd / allFob) + " do valor FOB de todos os parceiros" : "Valor FOB total igual a zero"));
+      return card;
+    }));
+    const byMonth = new Map();
+    for (const row of grouped) {
+      if (!pair.includes(row.country)) continue;
+      const k = row.month + "\n" + row.country;
+      byMonth.set(k, (byMonth.get(k) ?? 0) + row.fob_usd);
+    }
+    get("market-pair-months").replaceChildren(...months.map(month => {
+      const tr = element("tr");
+      const th = element("th", monthName(month));
+      th.scope = "row";
+      tr.append(th, ...pair.map(label => {
+        const amount = byMonth.get(month + "\n" + label);
+        return element("td", amount === undefined ? "Sem registros" : money(amount));
+      }));
+      return tr;
+    }));
+    if (!pairDeepLinkOpened && location.hash === "#comparar-parceiros") {
+      pairDeepLinkOpened = true;
+      requestAnimationFrame(() => panel.scrollIntoView?.({block: "start"}));
+    }
+  }
+
   function projectAnchor([lon, lat]) {
     const phi = lat * Math.PI / 180;
     // The packaged Natural Earth outline uses a 1024 × 1024 Web Mercator world.
     return [1024 * (lon + 180) / 360, 512 * (1 - Math.log(Math.tan(Math.PI / 4 + phi / 2)) / Math.PI)];
   }
 
-  function mapPin({label, anchor}, selected) {
+  const mapWorld = get("market-geo-world");
+  const mapPreview = get("market-geo-preview");
+  const fullscreenMap = get("market-map-fullscreen");
+  const partnerDialog = get("market-partner-dialog");
+  let mapPartners = new Map(), mapScope = "";
+  let backdropPressed = false, partnerOrigin;
+  function closePartnerDialog() {
+    if (!partnerDialog?.open) return;
+    partnerDialog.close();
+    if (fullscreenMap.open) {
+      const target = partnerOrigin?.getClientRects().length ? partnerOrigin : get("market-map-collapse");
+      target?.focus({preventScroll:true});
+    }
+    partnerOrigin = null;
+  }
+  get("market-partner-close")?.addEventListener("click", closePartnerDialog);
+  partnerDialog?.addEventListener("cancel", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    closePartnerDialog();
+  });
+  partnerDialog?.addEventListener("pointerdown", event => { backdropPressed = event.target === partnerDialog; });
+  partnerDialog?.addEventListener("click", event => {
+    if (event.target === partnerDialog && (backdropPressed || event.detail === 0)) closePartnerDialog();
+    backdropPressed = false;
+  });
+  fullscreenMap?.addEventListener("close", () => { if (!fullscreenMap.open) closePartnerDialog(); });
+
+  function chooseMapPartner(label, origin) {
+    if (!fullscreenMap?.open || typeof partnerDialog?.showModal !== "function") {
+      togglePartner(label);
+      return;
+    }
+    const item = mapPartners.get(label);
+    if (!item) return;
+    // A second tap on the same point reopens the card without clearing its selection.
+    if (country.value !== label) {
+      pendingCountry = null;
+      country.value = label;
+      applyTradeFilters();
+    }
+    const {fob_usd, kg, unitValue: unit} = item;
+    const heading = get("market-partner-name");
+    heading.textContent = label;
+    const role = flow.value === "import" ? "País de origem" : "País de destino";
+    get("market-partner-scope").textContent = role + " · " + mapScope;
+    const fields = [["Valor declarado",money(fob_usd) + " FOB"],["Peso líquido",digits.format(kg) + " kg"],
+      ["Valor declarado por quilo",unitValueLabel(unit)]];
+    get("market-partner-totals").replaceChildren(...fields.map(([key,value]) => {
+      const row = element("div");
+      row.append(element("dt",key),element("dd",value));
+      return row;
+    }));
+    partnerOrigin = origin;
+    if (!partnerDialog.open) partnerDialog.showModal();
+    heading.focus({preventScroll:true});
+  }
+
+  if (view === "mapa") {
+    window.addEventListener("strata-market-logistics", event => {
+      get("market-geo-logistics")?.replaceChildren(...event.detail.map(route => {
+        const path = document.createElementNS(svgNamespace,"path");
+        path.setAttribute("d",route.anchors.map((anchor,i) => (i ? "L" : "M") + projectAnchor(anchor).join(" ")).join(" "));
+        path.setAttribute("class",route.selected ? "market-logistics-line selected" : "market-logistics-line");
+        return path;
+      }));
+    });
+    window.addEventListener("strata-market-logistics-focus", event => {
+      const [x,y] = projectAnchor(event.detail);
+      zoomedCountry = null;
+      positionMap(3,512-3*x,510-3*y);
+    });
+  }
+  function mapPin({label, anchor, fob_usd, kg, unitValue: declaredUnitValue}, selected) {
     const [x, y] = projectAnchor(anchor);
     const marker = document.createElementNS(svgNamespace, "g");
     marker.setAttribute("class", "market-geo-marker" + (selected ? " selected" : ""));
@@ -556,25 +742,45 @@
       circle.setAttribute("class", className);
       marker.append(circle);
     }
-    marker.addEventListener("click", () => togglePartner(label));
+    marker.addEventListener("pointerenter", () => {
+      get("market-geo-preview-name").textContent = label;
+      get("market-geo-preview-values").textContent = money(fob_usd) + " FOB · " + digits.format(kg) + " kg";
+      get("market-geo-preview-unit").textContent =
+        declaredUnitValue.value !== null ? "Valor declarado por quilo: " + unitValueLabel(declaredUnitValue)
+          : "Valor por quilo indisponível";
+      mapPreview.hidden = false;
+    });
+    marker.addEventListener("pointerleave", () => { mapPreview.hidden = true; });
+    marker.addEventListener("click", () => chooseMapPartner(label, get("market-geo-zoom-in")));
     return marker;
   }
 
+  function positionMap(zoom, x, y) {
+    mapZoom = zoom;
+    mapX = Math.max(1024 * (1 - zoom), Math.min(0, x));
+    mapY = Math.max(820 * (1 - zoom), Math.min(200 * (1 - zoom), y));
+    get("market-geo-scene").style.transform = zoom === 1 ? ""
+      : `translate(${mapX}px, ${mapY}px) scale(${zoom})`;
+    get("market-geo-zoom-in").disabled = zoom >= 3;
+    get("market-geo-zoom-out").disabled = zoom <= 1;
+    get("market-geo-zoom-reset").disabled = zoom <= 1;
+  }
+
+  function changeMapZoom(delta, x = 512, y = 510) {
+    zoomedCountry = null;
+    focusPartner.setAttribute("aria-pressed", "false");
+    const next = Math.max(1, Math.min(3, Math.round((mapZoom + delta) * 10) / 10));
+    positionMap(next, x - (x - mapX) * next / mapZoom, y - (y - mapY) * next / mapZoom);
+  }
+
   function renderMapFocus(selected) {
-    const scene = get("market-geo-scene");
-    if (!selected?.anchor || zoomedCountry !== selected.label) zoomedCountry = null;
+    currentMapPartner = selected ?? null;
+    if (zoomedCountry && (!selected?.anchor || zoomedCountry !== selected.label)) {
+      zoomedCountry = null;
+      positionMap(1, 0, 0);
+    }
     focusPartner.disabled = !selected?.anchor;
     focusPartner.setAttribute("aria-pressed", String(Boolean(zoomedCountry)));
-    if (!zoomedCountry) {
-      scene.style.transform = "";
-      return;
-    }
-    const [x, y] = projectAnchor(selected.anchor);
-    const zoom = 1.8;
-    // Clamp the pan to the visible bounds of the packaged map.
-    const dx = Math.max(1024 * (1 - zoom), Math.min(0, 512 - zoom * x));
-    const dy = Math.max(820 * (1 - zoom), Math.min(200 * (1 - zoom), 510 - zoom * y));
-    scene.style.transform = `translate(${dx}px, ${dy}px) scale(${zoom})`;
   }
 
   function renderPartnerHistory(history) {
@@ -602,9 +808,52 @@
     }));
   }
 
+  let distributionEdition, distributionRequest, unavailableDistribution;
+  const distribution = get("market-distribution");
+  const transportNames = {MARITIMA: "Marítima", AEREA: "Aérea", RODOVIARIA: "Rodoviária", "VICINAL FRONTEIRICO": "Vicinal fronteiriça"};
+
+  function renderDistribution() {
+    const info = releaseManifest?.graphite_distribution;
+    const valid = info && info.trade_sha256 === snapshotSha256 && info.trade_sha256 === releaseManifest?.trade_snapshot?.sha256 &&
+      typeof info.sha256 === "string" && /^[0-9a-f]{64}$/.test(info.sha256) && info.path === "edicoes/grafita-vias-" + info.sha256 + ".json";
+    const isGraphiteMap = view === "mapa" && product.value === "25041000";
+    get("market-port-history").hidden = !isGraphiteMap;
+    distribution.hidden = !isGraphiteMap || !valid;
+    if (distribution.hidden || !distribution.open) return;
+    const state = get("market-distribution-status");
+    if (distributionEdition?.sha !== info.sha256) {
+      state.textContent = unavailableDistribution === info.sha256 ? "Resumo indisponível nesta sessão." : "Carregando distribuição…";
+      if (distributionRequest === info.sha256 || unavailableDistribution === info.sha256) return;
+      distributionRequest = info.sha256;
+      readSnapshot("/" + info.path, data => data).then(({data, sha256}) => {
+        if (sha256 !== info.sha256 || data?.dataset_kind !== "graphite_transport_overview" || data.ncm !== "25041000" ||
+            data.trade_sha256 !== info.trade_sha256 || !Array.isArray(data.months) || data.months.length < 3 ||
+            !data.months.every(month => typeof month === "string" && /^\d{4}-\d{2}$/.test(month)) ||
+            !data.modes || !Object.entries(data.modes).every(([flow, mode]) => ["import", "export"].includes(flow) &&
+              mode && Object.hasOwn(transportNames, mode.leading_mode) && mode.share === "at-least-90-percent")) {
+          throw new Error("Invalid distribution edition");
+        }
+        distributionEdition = {sha: sha256, months: data.months, modes: data.modes};
+      }).catch(() => { unavailableDistribution = info.sha256; }).finally(() => {
+        distributionRequest = null;
+        renderDistribution();
+      });
+      return;
+    }
+    const overview = distributionEdition.modes[flow.value];
+    state.textContent = overview
+      ? flow.selectedOptions[0].textContent + " · Brasil · " + monthSpan(distributionEdition.months) +
+        ". Via " + transportNames[overview.leading_mode].toLocaleLowerCase("pt-BR") + ": pelo menos 90% do peso líquido declarado."
+      : "Nenhum modal atingiu o limiar de publicação deste resumo.";
+  }
+  distribution.addEventListener("toggle", renderDistribution);
+
   function renderGeography(partners, scope) {
-    geographyContent.hidden = !partners.length;
+    mapPreview.hidden = true;
+    geographyContent.hidden = !partners.length && !(view === "mapa" && product.value === "25041000");
     const mapped = partners.filter(partner => partner.anchor);
+    mapPartners = new Map(mapped.map(item => [item.label,item]));
+    mapScope = scope;
     geographyStatus.textContent = (partners.length ?
       digits.format(mapped.length) + " de " + digits.format(partners.length) + " parceiros no mapa" :
       "Nenhum parceiro com registros") + " · " + scope + (country.value ? " · " + country.value : "");
@@ -612,11 +861,33 @@
     const pins = mapped.filter(partner => partner !== selected).map(partner => mapPin(partner, false));
     if (selected?.anchor) pins.push(mapPin(selected, true));
     get("market-geo-pins").replaceChildren(...pins);
-    get("market-geo-selection").textContent = country.value || "Todos os parceiros";
+    const heading = get("market-geo-selection");
+    const summary = get("market-geo-ranking");
+    const allPartners = !country.value;
+    const totalFob = sum(partners, "fob_usd");
+    get("market-geo-kicker").textContent = allPartners ? "VISÃO DO RECORTE" : "PARCEIRO EM FOCO";
+    heading.textContent = country.value || "Principais parceiros";
     get("market-geo-amount").textContent = selected ?
       money(selected.fob_usd) + " FOB · " + digits.format(selected.kg) + " kg" +
         (selected.anchor ? "" : " · Sem ponto no mapa") :
-      country.value ? "Sem registros neste período." : "Selecione um país para ver o valor e o peso.";
+      allPartners ? (totalFob ? "Participação no valor FOB do recorte." : "Valor FOB total igual a zero.")
+        : "Sem registros neste período.";
+    summary.hidden = !allPartners;
+    summary.replaceChildren(...(allPartners ? partners.slice(0, 4).map(({label, fob_usd}) => {
+      const item = element("li");
+      const button = element("button");
+      button.type = "button";
+      const share = totalFob ? percent.format(fob_usd / totalFob) : "Sem participação calculável";
+      const value = money(fob_usd) + " FOB";
+      button.setAttribute("aria-label", label + " · " + share + " · " + value);
+      button.append(element("span", label), element("strong", share), element("small", value));
+      button.addEventListener("click", () => {
+        togglePartner(label);
+        heading.focus({preventScroll: true});
+      });
+      item.append(button);
+      return item;
+    }) : []));
     const context = get("market-geo-context");
     context.hidden = !selected;
     clearPartner.hidden = !selected;
@@ -630,6 +901,10 @@
       renderPartnerHistory(reportSlice.monthly);
     }
     renderMapFocus(selected);
+    window.strataMarketGlobe?.update(mapped.map(({label, anchor, fob_usd, kg, unitValue: unit}) => ({
+      label, anchor, totals: money(fob_usd) + " FOB · " + digits.format(kg) + " kg",
+      unit: unit.value === null ? "Valor por quilo indisponível" : "Valor declarado: " + unitValueLabel(unit),
+    })), selected?.label, chooseMapPartner);
     get("market-geo-table-caption").textContent = scope;
     const focusedLabel = geographyRows.contains(document.activeElement) ? document.activeElement.value : null;
     let nextFocus;
@@ -736,6 +1011,48 @@
     return card;
   }
 
+  function renderHomeNews() {
+    if (view !== "panorama") return;
+    const list = get("market-home-news-items");
+    // Give the second headline a different angle when the edition allows it.
+    const items = newsState === "available" ? news.items : [];
+    const [first, next] = items;
+    list.closest("section").hidden = !first;
+    if (!first) {
+      list.replaceChildren();
+      return;
+    }
+    const second = items.find(item => item.topic !== first.topic) || next;
+    list.replaceChildren(...[first, second].filter(Boolean).map(item => {
+      const card = element("li");
+      const cover = element("div");
+      cover.className = "market-home-news-cover";
+      const img = element("img");
+      img.src = item.topic === "Logística" ? "/news-cover-logistics.svg" : "/news-cover-minerals.svg";
+      img.alt = "";
+      img.width = 720;
+      img.height = 300;
+      img.loading = "lazy";
+      img.decoding = "async";
+      const illustration = element("span", "Ilustração");
+      cover.append(img, illustration);
+      const copy = element("div");
+      copy.className = "market-home-news-copy";
+      const meta = element("p");
+      meta.className = "market-news-meta";
+      const date = element("time", calendar.format(new Date(item.published_on)));
+      date.dateTime = item.published_on;
+      meta.append(item.source_id === "mdic" ? "MDIC" : newsSource, " · ", date);
+      const title = element("h3");
+      const link = element("a", item.title);
+      link.href = item.url;
+      title.append(link);
+      copy.append(meta,title);
+      card.append(cover,copy);
+      return card;
+    }));
+  }
+
   function renderNews() {
     if (!newsView && !tradeControls.disabled) renderReportPreview();
     const available = Boolean(news && (newsView || !tradeControls.disabled));
@@ -819,6 +1136,7 @@
 
   function render() {
     const baciLink = get("market-baci-link");
+    baciLink.title = "O BACI é anual e nacional: abre Brasil e preserva o fluxo, mas não o parceiro nem o mês.";
     baciLink.hidden = product.value !== "25041000";
     if (!baciLink.hidden) {
       const query = new URLSearchParams({pais: "BR", produto: "250410", fluxo: flow.value});
@@ -861,6 +1179,14 @@
     status.textContent = (records.length ? quantity : "Nenhum registro neste recorte") + " · " + scope;
     results.hidden = records.length === 0;
     renderGeography(partners, scopeBase);
+    window.strataMarketOperations?.show(product.value, partners.map(partner => partner.label));
+    renderDistribution();
+    renderPair(partners, grouped, months, scopeBase);
+    const leader = partners[0], allFob = sum(partners, "fob_usd");
+    const insight = get("market-slice-insight");
+    insight.hidden = !leader || !allFob || Boolean(country.value);
+    if (!insight.hidden) insight.textContent = leader.label + " concentrou " +
+      percent.format(leader.fob_usd / allFob) + " do valor FOB do recorte. " + scopeBase + ".";
     renderNews();
     updateRouteLinks();
     if (!records.length) return;
@@ -998,10 +1324,12 @@
   async function loadNews() {
     newsRetry.hidden = true;
     newsState = "loading";
+    renderHomeNews();
     renderNews();
     try {
       ({data: news, sha256: newsSha256} = await readSnapshot("/news.json", validateNews));
       newsState = "available";
+      renderHomeNews();
       const coverage = get("market-news-coverage");
       coverage.textContent = newsSource + " · Curadoria de " + digits.format(news.canadaCount) + " entre " + digits.format(news.feed_entries) +
         " publicações do feed. Atualizado pela fonte em " + timestamp.format(new Date(news.feed_updated_at)) +
@@ -1065,6 +1393,7 @@
       }
     } catch {
       newsState = "unavailable";
+      renderHomeNews();
       get("market-news-edition").textContent = "Edição publicada indisponível.";
       get("market-news-summary").hidden = true;
       newsRetry.hidden = false;
@@ -1102,6 +1431,7 @@
         }
       }
       ({data: snapshot, sha256: snapshotSha256} = loaded);
+      renderPanoramaCover(snapshot);
       get("market-through").textContent = monthName(snapshot.months.at(-1));
       get("market-updated").textContent = calendar.format(new Date(snapshot.updated_on));
       get("market-geo-updated").textContent = "Atualização do Comex Stat em " + get("market-updated").textContent + ".";
@@ -1137,12 +1467,23 @@
       get("market-edition").hidden = true;
       get("market-edition-history").hidden = true;
       get("market-retrieved").textContent = "Carga publicada indisponível.";
+      renderPanoramaCover(null);
       const missingYear = requestedYear && tradeHistory && !Object.hasOwn(tradeHistory.years, requestedYear);
       status.textContent = missingYear ? "O ano solicitado ainda está sem edição validada. Volte ao comércio recente." :
         requestedYear ? "Não foi possível carregar o ano solicitado. Tente novamente ou volte ao comércio recente." :
           "Não foi possível carregar o panorama. Tente novamente ou consulte o Comex Stat.";
-      geographyStatus.textContent = requestedYear ? status.textContent :
-        "Mapa indisponível enquanto a carga de comércio estiver indisponível.";
+      if (!requestedYear && view === "mapa" && product.value === "25041000" && window.strataMarketOperations) {
+        snapshotSha256 = null;
+        renderGeography([], "Comex Stat indisponível");
+        renderDistribution();
+        get("market-geo-amount").textContent = "Dados do comércio indisponíveis. As operações documentadas continuam disponíveis.";
+        get("market-geo-updated").textContent = "";
+        geographyStatus.textContent = "Comex Stat indisponível · pontos de operações com fontes próprias";
+        window.strataMarketOperations.show(product.value);
+      } else {
+        geographyStatus.textContent = requestedYear ? status.textContent :
+          "Mapa indisponível enquanto a carga de comércio estiver indisponível.";
+      }
       retry.hidden = Boolean(missingYear);
       recent.hidden = !requestedYear;
       if (restoreFocus && document.activeElement === document.body) (missingYear ? recent : retry).focus();
@@ -1177,7 +1518,8 @@
     document.querySelector('[data-market-nav="panorama"]').href = panorama;
     document.querySelector('[data-market-nav="mapa"]').href = map;
     get("market-chart-link").href = panorama;
-    get("market-map-link").href = map;
+    get("market-compare-link").href = panorama + "#comparar-parceiros";
+    if (view !== "panorama") get("market-map-link").href = map;
     if (newsView) return;
     document.querySelector('[data-market-nav="noticias"]').href = route("/noticias/", trade);
     const newsContext = new URLSearchParams(trade);
@@ -1244,14 +1586,45 @@
       applyTradeFilters();
       product.focus();
     });
+    for (const [slot, select] of [pairA, pairB].entries()) {
+      select.addEventListener("change", () => {
+        if (!select.value || select.value === pair[1 - slot]) return;
+        pair[slot] = select.value;
+        render();
+        select.focus({preventScroll: true});
+      });
+    }
     historyMetric.addEventListener("change", () => renderPartnerHistory(reportSlice.monthly));
     focusPartner.addEventListener("click", () => {
-      zoomedCountry = zoomedCountry ? null : country.value;
-      renderMapFocus({label: country.value, anchor: partnerAnchors.get(country.value)});
+      if (!currentMapPartner?.anchor) return;
+      if (window.strataMarketGlobe?.focus(currentMapPartner.anchor)) return;
+      if (zoomedCountry) {
+        zoomedCountry = null;
+        positionMap(1, 0, 0);
+      } else {
+        zoomedCountry = currentMapPartner.label;
+        const [x, y] = projectAnchor(currentMapPartner.anchor);
+        positionMap(1.8, 512 - 1.8 * x, 510 - 1.8 * y);
+      }
+      renderMapFocus(currentMapPartner);
     });
+    get("market-geo-zoom-in").addEventListener("click", () => changeMapZoom(0.4));
+    get("market-geo-zoom-out").addEventListener("click", () => changeMapZoom(-0.4));
+    get("market-geo-zoom-reset").addEventListener("click", () => changeMapZoom(-3));
+    mapWorld.addEventListener("click", () => { mapWheelActive = true; });
+    mapWorld.addEventListener("pointerleave", () => { mapWheelActive = false; mapPreview.hidden = true; });
+    mapWorld.addEventListener("wheel", event => {
+      if (!mapWheelActive || !event.deltaY || event.ctrlKey || event.metaKey) return;
+      const rect = mapWorld.getBoundingClientRect();
+      if (!rect.width || !rect.height || (event.deltaY < 0 ? mapZoom >= 3 : mapZoom <= 1)) return;
+      event.preventDefault();
+      changeMapZoom(event.deltaY < 0 ? 0.2 : -0.2,
+        1024 * (event.clientX - rect.left) / rect.width, 200 + 620 * (event.clientY - rect.top) / rect.height);
+    }, {passive: false});
     clearPartner.addEventListener("click", () => {
       togglePartner(country.value);
-      country.focus();
+      const first = get("market-geo-ranking").querySelector("button");
+      (first || get("market-geo-selection")).focus({preventScroll: true});
     });
     get("market-download").addEventListener("click", downloadReport);
     retry.addEventListener("click", () => load(true));

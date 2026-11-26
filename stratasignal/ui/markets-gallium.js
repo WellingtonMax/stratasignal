@@ -6,9 +6,10 @@
   const stages = {bauxite: "Bauxita e logística", alumina: "Refino de alumina", primary_recovery: "Recuperação de gálio",
     purification: "Purificação", semiconductors: "Compostos e semicondutores"};
   const statuses = {operation_documented: "Operação documentada", coverage_gap: "Lacuna no recorte",
-    research_reported: "Pesquisa declarada", project_announced: "Projeto anunciado", application_documented: "Aplicação documentada"};
+    research_reported: "Pesquisa declarada", project_announced: "Projeto anunciado", construction_started: "Obras iniciadas",
+    application_documented: "Aplicação documentada"};
   const hosts = new Set(["www.hydro.com", "agenciadenoticias.bndes.gov.br", "www.riotinto.com", "www.canada.ca",
-    "pubs.usgs.gov", "portal.if.usp.br", "www.gov.br", "www.wcoomd.org"]);
+    "pubs.usgs.gov", "portal.if.usp.br", "www.gov.br", "www.wcoomd.org", "www.minister.industry.gov.au"]);
   let selection, catalog, reader, edition, source, loading = false, failed = false;
 
   function node(tag, text, className) {

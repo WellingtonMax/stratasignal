@@ -2,7 +2,7 @@
   "schema_version": 1,
   "dataset_kind": "public_documentary_evidence",
   "material": "gallium",
-  "reviewed_on": "2026-11-10",
+  "reviewed_on": "2026-11-25",
   "coverage": "Casos selecionados do Brasil, Canadá e Estados Unidos, além da estimativa mundial do USGS para a recuperação primária em 2025.",
   "sources": {
     "hydro-mina": {
@@ -74,6 +74,13 @@
       "published_on": null,
       "kind": "classification",
       "updated_on": null
+    },
+    "au-wagerup": {
+      "publisher": "Governo da Austrália",
+      "url": "https://www.minister.industry.gov.au/t-ayres/media/ground-broken-landmark-gallium-project",
+      "published_on": "2026-08-24",
+      "updated_on": null,
+      "kind": "government"
     }
   },
   "records": [
@@ -217,6 +224,24 @@
       "limit": "Escala de laboratório. A página consultada carece de data de referência e de identificação da origem do insumo.",
       "sources": [
         "ifusp"
+      ],
+      "measure": null
+    },
+    {
+      "id": "GA-09",
+      "stage": "primary_recovery",
+      "status": "construction_started",
+      "country": "AU",
+      "place": "Wagerup, Austrália Ocidental",
+      "facility_id": "wagerup",
+      "reference_period": "2026-08-24",
+      "product": "gallium_metal",
+      "title": "Wagerup: obras para recuperar gálio numa refinaria de alumina",
+      "summary": "O governo australiano anunciou o início das obras da unidade Alcoa–Sojitz na refinaria de alumina de Wagerup. O projeto mostra uma etapa industrial posterior ao refino de alumina, atividade já documentada na Alunorte, no Pará.",
+      "limit": "Início de obra não comprova entrada em operação ou volume produzido. A comparação não comprova que a Alunorte tenha um projeto equivalente.",
+      "sources": [
+        "au-wagerup",
+        "hydro-refino"
       ],
       "measure": null
     }

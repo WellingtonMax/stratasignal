@@ -120,3 +120,59 @@ python -m stratasignal.build_public_site \
 ```
 
 A curadoria também consulta um arquivo Atom fixo do Natural Resources Canada com corte em março de 2025. A publicação exige que o endereço original do comunicado selecionado apareça no arquivo. A atualização informada pelo arquivo, o horário da consulta e o SHA-256 ficam separados do feed corrente no manifesto e em `news_context.canada_archive`. O filtro de fonte agrupa ambos em Natural Resources Canada, e o de mês segue a publicação do comunicado.
+
+### Aceite visual do globo público
+
+A configuração canônica `mapa/mapbox-config.json` sai com `publicToken: null`.
+O publicador configura a chave pública somente para a origem autorizada. Não
+copie a configuração real para o GitHub, registros de teste ou uma nova origem.
+
+Antes de publicar uma mudança no globo, abra a prévia de
+`/mapa/?ncm=25041000&fluxo=import` num navegador com WebGL. Confira visualmente
+que os continentes e pontos foram desenhados antes de a base de reserva sumir.
+Aproximar, girar, abrir o detalhe de um país e restaurar a visão global devem
+funcionar sem perder o recorte. Confira também um estado sem WebGL, em que
+tabela, filtros e mapa de reserva precisam continuar utilizáveis. Se o satélite
+não entregar imagens, confira se o controle retorna ao estilo escuro. Um
+evento de carregamento, um canvas vazio ou um teste com Mapbox simulado não
+comprovam a renderização. Registre a evidência visual e a versão de origem.
+
+### Distribuição observada da grafita
+
+O recorte de agosto a outubro de 2026 (NCM 25041000) é uma edição
+documentada de dados agregados do Comex Stat. As duas consultas usam
+`/general?language=pt`, `monthDetail: true`, o mesmo intervalo e NCM,
+`details: ["country", "ncm", "via", "urf"]` e as métricas
+`metricFOB` e `metricKG`. Os hashes das respostas originais e a data
+da consulta acompanham a edição publicada.
+
+O build só publica a distribuição se a soma de FOB e kg for igual à
+edição principal, para cada mês, fluxo e país. A tela também valida o
+hash dos dois arquivos. Uma unidade da Receita Federal (URF) não é
+necessariamente um porto físico, nem um trajeto ou embarque. A
+apresentação não faz junção com dados portuários ou empresariais.
+
+#### Distribuição pública da grafita
+
+O resumo Comex verifica as células da edição original e publica somente o modal
+nacional predominante em cada fluxo, quando representa pelo menos 90% do peso
+líquido, reúne registros positivos em pelo menos três meses e soma pelo menos
+uma tonelada. A edição pública não contém células por país, mês ou unidade
+aduaneira, nem a quantidade exata por modal.
+
+O quadro portuário da ANM (ano-base 2019) é independente da edição Comex. A
+medida é a quantidade de grafita movimentada por município, não carga em
+trânsito, terminais, pares origem–destino ou rotas. Os três municípios de maior
+volume são exibidos e os demais são reunidos em uma linha. A fonte original
+está ligada diretamente no painel.
+
+#### Camada de operações documentadas da grafita
+
+A camada mostra localidades aproximadas ligadas a empresas e operações, com
+etapa, produto, situação de referência e fontes. Não participa dos totais
+aduaneiros e não identifica fornecedores de importações brasileiras. As ligações
+de escoamento e integração industrial divulgadas pela Syrah não são trajetos
+de embarques. Sem WebGL, a mesma seleção fica disponível na lista por cidade.
+O catálogo v1 é pequeno e curado em `stratasignal/ui/market-operations.js`;
+mantenha fontes por registro e por vínculo e não publique dados operacionais
+individuais. O manifesto registra o hash do módulo usado pelo mapa.

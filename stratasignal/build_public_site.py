@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import math
 import re
 import shutil
 import time
@@ -12,7 +13,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from . import __version__
-from . import public_gallium, public_markets, public_markets_world, public_news
+from . import public_distribution, public_gallium, public_markets, public_markets_world, public_news
 from .build_demo import build_demo
 from .market import month
 from .schema import InputError, day, rows, text_value, unique_object
@@ -427,14 +428,46 @@ def _write_markets(output, ui):
             "gallium_evidence": public_gallium.write_snapshot(market, world["release"], public_markets_world.YEARS)}
 
 
+def _write_globe_outline(source, target):
+    """Reverse the projection of the existing public-domain map outline."""
+    svg = source.read_text(encoding="utf-8")
+    match = re.search(r' d="([^"]+)"', svg)
+    if not match or not re.fullmatch(r"[MLZ0-9. -]+", match[1]):
+        raise InputError("Contorno público do globo inválido")
+    features = []
+    for path in match[1].split("Z"):
+        vertices = [(float(x), float(y)) for x, y in
+                    re.findall(r"[ML](-?[0-9.]+) (-?[0-9.]+)", path)]
+        if len(vertices) < 3:
+            continue
+        ring = []
+        for x, y in vertices:
+            # Keep the lower world seam's long edge from wrapping back at the antimeridian.
+            if ring and abs(x * 360 / 1024 - 180 - ring[-1][0]) >= 180:
+                if y < 1023 or ring[-1][1] > -85:
+                    raise InputError("Contorno atravessa o antimeridiano fora da borda")
+                ring.extend([[lon, -85.05113] for lon in
+                             ([-90, 0, 90] if x > 512 else [90, 0, -90])])
+            ring.append([round(x * 360 / 1024 - 180, 5),
+                         round(math.degrees(math.atan(math.sinh(math.pi * (1 - y / 512)))), 5)])
+        if ring[0] != ring[-1]:
+            ring.append(ring[0])
+        features.append({"type": "Feature", "properties": {}, "geometry": {
+            "type": "Polygon", "coordinates": [ring]}})
+    if not features:
+        raise InputError("O contorno público do globo está vazio")
+    with target.open("x", encoding="utf-8") as stream:
+        json.dump({"type": "FeatureCollection", "features": features}, stream, separators=(",", ":"))
+
+
 def _write_observatory_ui(output, ui):
     """Write the three public routes from the shared observatory layout."""
     template = (ui / "market.html").read_text(encoding="utf-8")
     with (output / "index.html").open("x", encoding="utf-8") as stream:
         stream.write(template)
     for view, title, description in (
-        ("mapa", "Parceiros comerciais do Brasil",
-         "Explore os parceiros do Brasil no comércio de grafita natural, carbonatos de lítio e ferronióbio."),
+        ("mapa", "Mapa da inteligência mineral",
+         "Explore parceiros comerciais do Brasil e operações documentadas da cadeia da grafita."),
         ("noticias", "Notícias da cadeia mineral",
          "Leia a curadoria de comunicados oficiais sobre grafita, lítio e políticas minerais."),
     ):
@@ -444,13 +477,32 @@ def _write_observatory_ui(output, ui):
         )
         page = re.sub(r"<title>[^<]+</title>", f"<title>StrataSignal · {title}</title>", page, count=1)
         page = re.sub(r'<meta name="description" content="[^"]+">', f'<meta name="description" content="{description}">', page, count=1)
+        if view == "mapa":
+            page = page.replace('content="no-referrer"', 'content="strict-origin-when-cross-origin"')
+            page = page.replace("script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self';",
+                                "script-src 'self' https://api.mapbox.com; "
+                                "style-src 'self' https://api.mapbox.com; style-src-attr 'unsafe-inline'; "
+                                "connect-src 'self' https://api.mapbox.com https://events.mapbox.com "
+                                "https://*.tiles.mapbox.com; img-src 'self' data: blob:; worker-src blob:;")
+            page = page.replace('<script src="/market.js" defer></script>',
+                                '<script src="/mapa/globe.js" defer></script>\n'
+                                '  <script src="/mapa/operations.js" defer></script>\n'
+                                '  <script src="/market.js" defer></script>')
         if view == "noticias":
             page = page.replace('aria-labelledby="market-context-title"', 'aria-labelledby="market-news-title"')
         directory = output / view
         directory.mkdir()
         with (directory / "index.html").open("x", encoding="utf-8") as stream:
             stream.write(page)
-    for name in ("market.js", "market.css", "app.css", "favicon.svg"):
+    with (output / "mapa" / "globe.js").open("xb") as stream:
+        stream.write((ui / "market-globe.js").read_bytes())
+    with (output / "mapa" / "operations.js").open("xb") as stream:
+        stream.write((ui / "market-operations.js").read_bytes())
+    _write_globe_outline(ui / "world-land.svg", output / "mapa" / "world-outline.json")
+    with (output / "mapa" / "mapbox-config.json").open("x", encoding="utf-8") as stream:
+        stream.write('{"publicToken":null}\n')
+    for name in ("market.js", "market.css", "app.css", "favicon.svg", "panorama-globe.svg",
+                 "news-cover-minerals.svg", "news-cover-logistics.svg"):
         with (output / name).open("xb") as stream:
             stream.write((ui / name).read_bytes())
 
@@ -485,12 +537,18 @@ def build_public_site(directory, source_commit=None, *, enable_ml=True, retained
             "news_snapshot": _news_manifest(news, news_bytes),
             "markets_snapshot": _write_markets(output, ui),
             "synthetic_workbench": "carteira/source-manifest.json",
+            "graphite_operations": {"path": "mapa/operations.js",
+                                    "sha256": hashlib.sha256((output / "mapa/operations.js").read_bytes()).hexdigest(),
+                                    "scope": "documented-operations-not-trade-suppliers"},
             "partner_map": {
                 "basemap_path": "carteira/world-land.svg",
                 "basemap_sha256": hashlib.sha256((output / "carteira/world-land.svg").read_bytes()).hexdigest(),
                 "anchor_source": "Natural Earth · Admin 0 – Countries 5.1.1",
             },
         }
+        distribution = public_distribution.write_distribution(output, snapshot, manifest["trade_snapshot"]["sha256"])
+        if distribution is not None:
+            manifest["graphite_distribution"] = distribution
         if trade_history_from is not None:
             manifest["trade_history"] = _write_trade_history(output, snapshot, trade_history_from)
         with (output / "source-manifest.json").open("x", encoding="utf-8", newline="\n") as stream:

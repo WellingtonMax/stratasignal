@@ -32,45 +32,48 @@
   <main id="main" tabindex="-1">
     <section class="market-hero market-panorama-only" aria-labelledby="market-title">
       <div class="market-hero-copy">
-        <p class="eyebrow"><span class="market-dot" aria-hidden="true"></span> OBSERVATÓRIO PÚBLICO · BRASIL</p>
-        <h1 id="market-title">Comércio mineral do Brasil</h1>
-        <p>Compare importações e exportações de grafita natural, carbonatos de lítio e ferronióbio por mês e país parceiro.</p>
+        <p class="eyebrow"><span class="market-dot" aria-hidden="true"></span> STRATASIGNAL · INTELIGÊNCIA MINERAL</p>
+        <h1 id="market-title">De onde o Brasil importa grafita?</h1>
+        <p class="market-home-intro">Explore o comércio de minerais e descubra onde ficam as operações da cadeia produtiva.</p>
+        <div class="market-home-answer" id="market-home-answer" aria-live="polite">
+          <p id="market-home-result">Carregando o recorte do Comex Stat…</p>
+          <p id="market-home-scope" class="market-home-scope">Grafita natural em pó ou escamas · Importações</p>
+        </div>
         <div class="market-hero-actions">
-          <a class="button primary" href="#explorar">Comparar fluxos <span aria-hidden="true">↓</span></a>
-          <a class="button market-atlas-link" id="market-map-link" href="/mapa/">Explorar no mapa <span aria-hidden="true">→</span></a>
+          <a class="button primary" id="market-map-link" href="/mapa/?ncm=25041000&amp;fluxo=import">Explorar mapa completo</a>
+          <a class="button market-atlas-link" href="#explorar">Analisar dados</a>
         </div>
       </div>
-      <aside class="market-release" aria-labelledby="market-source-title">
-        <p class="eyebrow">FONTE OFICIAL</p>
-        <h2 id="market-source-title">Comex Stat</h2>
-        <p>Secretaria de Comércio Exterior · MDIC</p>
-        <dl>
-          <div><dt>Último mês incluído</dt><dd id="market-through">—</dd></div>
-          <div><dt>Atualização na fonte</dt><dd id="market-updated">—</dd></div>
-        </dl>
-        <p id="market-retrieved">Consultando a carga publicada…</p>
-        <p id="market-edition" class="market-edition" hidden>
-          <strong>Edição verificável</strong>
-          <span id="market-edition-id"></span>
-          <a id="market-edition-download" href="">Baixar JSON congelado ↓</a>
-        </p>
-        <details id="market-edition-history" class="market-edition-history" hidden>
-          <summary>Histórico de edições <span id="market-edition-count"></span></summary>
-          <p>Compare as capturas publicadas. Arquivos diferentes são sinais para revisão, não prova de erro na fonte.</p>
-          <ol id="market-edition-list"></ol>
-        </details>
-      </aside>
+      <figure class="market-home-globe">
+        <svg viewBox="0 0 520 478" aria-hidden="true" focusable="false">
+          <image href="/panorama-globe.svg" width="520" height="478"/>
+          <g id="market-home-pins"></g>
+        </svg>
+        <figcaption><span><i class="market-geo-dot" aria-hidden="true"></i> País de origem no recorte</span><span>Contorno: <a href="https://www.naturalearthdata.com/">Natural Earth</a></span></figcaption>
+        <ul id="market-home-partners" aria-label="Principais origens por valor declarado" hidden></ul>
+      </figure>
     </section>
-    <section class="market-page-intro market-map-only" aria-labelledby="market-map-title">
+    <section class="market-home-paths market-panorama-only" aria-label="Continue explorando">
+      <div><p class="eyebrow">GRAFITA · DA MINA À INDÚSTRIA</p><h2>Onde ficam as operações?</h2><a href="/mapa/?ncm=25041000#operacao=itagimirim">Conhecer a operação de Itagimirim</a></div>
+      <div><p class="eyebrow">GÁLIO · SEMICONDUTORES</p><h2>O que o Brasil já produz?</h2><a href="/mercados/?pais=BR&amp;produto=811292&amp;fluxo=export#world-gallium-title">Ver as evidências da cadeia do gálio</a></div>
+    </section>
+    <section class="market-home-news market-panorama-only" aria-labelledby="market-home-news-title" hidden>
+      <div class="market-home-news-heading">
+        <div><p class="eyebrow">RADAR MINERAL</p><h2 id="market-home-news-title">Notícias em destaque</h2></div>
+        <a href="/noticias/">Ver todas as notícias <span aria-hidden="true">→</span></a>
+      </div>
+      <ul id="market-home-news-items" class="market-home-news-grid"></ul>
+    </section>
+    <section class="market-page-intro market-map-intro market-map-only" aria-labelledby="market-map-title">
       <div>
-        <p class="eyebrow"><span class="market-dot" aria-hidden="true"></span> GEOGRAFIA DO COMÉRCIO</p>
-        <h1 id="market-map-title">Parceiros do Brasil</h1>
-        <p>Veja os países do recorte. Toque em um ponto do mapa ou escolha um parceiro na lista.</p>
+        <p class="eyebrow"><span class="market-dot" aria-hidden="true"></span> INTELIGÊNCIA MINERAL</p>
+        <h1 id="market-map-title">Mapa da cadeia mineral</h1>
+        <p>Explore comércio, empresas e cidades da cadeia da grafita.</p>
       </div>
     </section>
     <section id="explorar" class="market-trade-only" aria-labelledby="market-explore-title" tabindex="-1">
       <div class="market-section-title market-panorama-only">
-        <h2 id="market-explore-title">Recorte do comércio</h2>
+        <div><p class="eyebrow">COMÉRCIO EXTERIOR · BRASIL</p><h2 id="market-explore-title">Analisar dados</h2><p class="market-home-hint">Escolha um produto e um período para comparar países por valor declarado e peso.</p></div>
         <a href="#fonte">Fonte e metodologia ↓</a>
       </div>
       <details id="market-trade-disclosure" class="market-filter-panel" open>
@@ -104,13 +107,14 @@
       <p id="market-status" class="market-status market-panorama-only" role="status">Carregando dados públicos…</p>
       <button type="button" id="market-retry" class="button secondary" hidden>Tentar carregar novamente</button>
       <button type="button" id="market-recent" class="button secondary" hidden>Voltar ao comércio recente</button>
-      <noscript><p>Ative o JavaScript para usar os filtros ou consulte o Comex Stat na seção de fontes.</p></noscript>
+      <noscript><p>Ative o JavaScript para ver os dados do mapa e usar os filtros, ou consulte o Comex Stat na seção de fontes.</p></noscript>
       <div id="market-results" hidden>
         <dl class="market-stats" aria-label="Indicadores do recorte">
-          <div><dt>Valor total FOB</dt><dd id="market-fob"></dd><small>US$ correntes</small></div>
+          <div><dt>Valor declarado (FOB)</dt><dd id="market-fob"></dd><small>Em dólares, sem frete internacional nem seguro</small></div>
           <div><dt>Peso líquido</dt><dd id="market-kg"></dd><small>quilogramas</small></div>
           <div><dt>Países e áreas parceiras</dt><dd id="market-partners"></dd><small>com registros no recorte</small></div>
         </dl>
+        <p id="market-slice-insight" class="market-slice-insight market-panorama-only"></p>
         <div class="market-charts">
           <article class="card market-series" aria-labelledby="market-series-title">
             <p class="eyebrow">SÉRIE MENSAL</p>
@@ -135,14 +139,51 @@
             <ol id="market-ranking" aria-describedby="market-ranking-note"></ol>
           </article>
         </div>
+        <section id="comparar-parceiros" class="card market-pair market-panorama-only" aria-labelledby="market-pair-title" hidden>
+          <p class="eyebrow">COMPARAÇÃO NO MESMO RECORTE</p>
+          <h3 id="market-pair-title">Comparar parceiros</h3>
+          <p id="market-pair-scope"></p>
+          <div class="market-pair-controls">
+            <label for="market-pair-a">Primeiro parceiro <select id="market-pair-a"></select></label>
+            <label for="market-pair-b">Segundo parceiro <select id="market-pair-b"></select></label>
+          </div>
+          <div class="market-pair-cards" id="market-pair-cards" aria-live="polite"></div>
+          <details class="market-table">
+            <summary>Ver histórico mensal dos dois</summary>
+            <div class="table-wrap" role="region" aria-label="Histórico mensal dos parceiros" tabindex="0">
+              <table>
+                <caption>Valor FOB declarado (US$) por mês</caption>
+                <thead><tr><th scope="col">Mês</th><th scope="col" id="market-pair-name-a"></th><th scope="col" id="market-pair-name-b"></th></tr></thead>
+                <tbody id="market-pair-months"></tbody>
+              </table>
+            </div>
+          </details>
+        </section>
       </div>
     </section>
     <section id="mapa" class="market-geo market-map-only" aria-labelledby="market-geo-title" tabindex="-1">
-      <h2 id="market-geo-title" class="market-visually-hidden">Mapa dos parceiros do Brasil</h2>
+      <h2 id="market-geo-title" class="market-visually-hidden">Mapa do comércio e das operações minerais</h2>
       <p id="market-geo-status" class="market-status" role="status">Carregando parceiros do comércio…</p>
       <div id="market-geo-content" class="card market-geo-content" hidden>
         <div class="market-geo-layout">
           <figure class="market-geo-figure">
+            <div class="market-map-expand">
+              <button id="market-map-expand" type="button" aria-haspopup="dialog" aria-controls="market-map-fullscreen" hidden>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5"/></svg>
+                Tela cheia
+              </button>
+            </div>
+            <div class="market-geo-viewport">
+            <div id="market-globe" class="market-globe" aria-label="Globo interativo do comércio mineral" inert>
+              <div id="market-globe-canvas" class="market-globe-canvas"></div>
+              <div class="market-globe-tools" role="group" aria-label="Visão do globo">
+                <button type="button" id="market-globe-streets" aria-pressed="false">Ruas</button>
+                <button type="button" id="market-globe-style" aria-pressed="false">Satélite</button>
+                <button type="button" id="market-globe-reset">Visão global</button>
+                <button type="button" id="market-operations-toggle" aria-pressed="false" hidden>Operações</button>
+              </div>
+              <p id="market-globe-status" class="market-globe-status" role="status" hidden></p>
+            </div>
             <svg id="market-geo-world" viewBox="0 200 1024 620" aria-hidden="true" focusable="false">
               <defs><pattern id="market-geo-grid" width="64" height="64" patternUnits="userSpaceOnUse">
                 <path d="M 64 0 H 0 V 64" fill="none" stroke="#2E5279" stroke-width="1"/>
@@ -150,18 +191,74 @@
               <rect x="0" y="200" width="1024" height="620" fill="url(#market-geo-grid)"/>
               <g id="market-geo-scene">
                 <image href="/carteira/world-land.svg" width="1024" height="1024"/>
+                <g id="market-geo-logistics"></g>
                 <g id="market-geo-pins"></g>
               </g>
             </svg>
+            <div class="market-geo-zoom" role="group" aria-label="Zoom do mapa">
+              <button type="button" id="market-geo-zoom-in" aria-label="Aproximar mapa">+</button>
+              <button type="button" id="market-geo-zoom-out" aria-label="Afastar mapa" disabled>−</button>
+              <button type="button" id="market-geo-zoom-reset" aria-label="Restaurar visão geral" disabled>1×</button>
+            </div>
+            <div class="market-geo-preview" id="market-geo-preview" aria-hidden="true" hidden>
+              <strong id="market-geo-preview-name"></strong>
+              <span id="market-geo-preview-values"></span>
+              <small id="market-geo-preview-unit"></small>
+            </div>
+            </div>
             <figcaption class="market-geo-caption">
-              <span><i class="market-geo-dot" aria-hidden="true"></i> Parceiro com registros</span>
+              <span class="market-map-partner-legend"><i class="market-geo-dot" aria-hidden="true"></i> País parceiro · Comex Stat</span>
               <span><i class="market-geo-ring" aria-hidden="true"></i> Parceiro selecionado</span>
+              <span id="market-operations-legend" aria-label="Símbolos das operações" hidden></span>
+              <details id="market-logistics" class="market-logistics" hidden>
+                <summary><i aria-hidden="true"></i> Rotas documentadas</summary>
+                <p>O tracejado segue as estradas do corredor estudado. É um traçado aproximado, não o registro de uma viagem.</p>
+                <div id="market-logistics-choices" role="group" aria-label="Aproximar uma rota"></div>
+                <p id="market-logistics-context" aria-live="polite" hidden></p>
+                <p id="market-logistics-carrier" aria-live="polite" hidden></p>
+                <div class="market-logistics-sources">
+                  <a id="market-logistics-carrier-source" hidden></a>
+                  <a id="market-logistics-source">Escoamento · Syrah ↗</a>
+                  <a id="market-logistics-study">Estudo rodoviário · Syrah/DFC ↗</a>
+                  <a href="https://www.openstreetmap.org/copyright">Malha viária © colaboradores do OpenStreetMap ↗</a>
+                </div>
+              </details>
+              <span id="market-globe-hint" hidden><span class="market-globe-hint-pointer">Arraste para girar. Use a roda para aproximar.</span><span class="market-globe-hint-touch">Arraste para girar e use dois dedos para aproximar.</span></span>
+              <span class="market-geo-scroll-hint">Para usar a roda do mouse, clique no mapa primeiro.</span>
             </figcaption>
           </figure>
+          <dialog id="market-map-fullscreen" class="market-map-fullscreen" aria-labelledby="market-map-fullscreen-title">
+            <div class="market-map-fullscreen-bar">
+              <h3 id="market-map-fullscreen-title">Mapa de minerais</h3>
+              <button id="market-map-collapse" type="button" autofocus>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h5V4m11 5h-5V4M9 20v-5H4m11 5v-5h5"/></svg>
+                Sair da tela cheia
+              </button>
+            </div>
+            <div id="market-map-fullscreen-stage"></div>
+            <div class="market-map-fullscreen-selection" id="market-map-fullscreen-selection" hidden>
+              <button id="market-map-fullscreen-operation" type="button" aria-haspopup="dialog" aria-controls="market-operation-dialog" hidden></button>
+              <select id="market-map-fullscreen-picker" aria-label="Consultar uma operação por cidade"></select>
+            </div>
+            <dialog id="market-partner-dialog" class="market-operation-dialog market-partner-dialog" aria-labelledby="market-partner-name">
+              <article>
+                <header>
+                  <p><i class="market-geo-dot" aria-hidden="true"></i> COMÉRCIO DO BRASIL · COMEX STAT</p>
+                  <button id="market-partner-close" type="button" aria-label="Fechar ficha do país">×</button>
+                </header>
+                <h4 id="market-partner-name" tabindex="-1"></h4>
+                <p id="market-partner-scope"></p>
+                <dl id="market-partner-totals"></dl>
+                <p class="market-news-note">Dados agregados por país. Não identificam empresas, portos ou rotas.</p>
+              </article>
+            </dialog>
+            <dialog id="market-operation-dialog" class="market-operation-dialog" aria-labelledby="market-operations-name"></dialog>
+          </dialog>
           <div class="market-geo-notes">
-            <p class="eyebrow">PARCEIRO EM FOCO</p>
-            <h3 id="market-geo-selection"></h3>
+            <p class="eyebrow" id="market-geo-kicker">PARCEIRO EM FOCO</p>
+            <h3 id="market-geo-selection" tabindex="-1"></h3>
             <p id="market-geo-amount"></p>
+            <ol class="market-geo-ranking" id="market-geo-ranking" aria-label="Principais parceiros por valor FOB" hidden></ol>
             <div id="market-geo-context" class="market-geo-context" hidden>
               <p id="market-geo-rank"></p>
               <p class="market-news-note">Participação no total de todos os parceiros para o mesmo produto, fluxo e período.</p>
@@ -181,10 +278,67 @@
             <button id="market-geo-focus" type="button" class="button secondary" aria-pressed="false" disabled>Aproximar parceiro</button>
             <button id="market-geo-clear" type="button" class="button secondary" hidden>Ver todos os parceiros</button>
             <a class="button secondary" id="market-chart-link" href="/">Ver gráficos do recorte <span aria-hidden="true">→</span></a>
+            <a class="button secondary" id="market-compare-link" href="/#comparar-parceiros" hidden>Comparar parceiros</a>
             <p id="market-geo-updated" class="market-news-note"></p>
-            <p class="market-news-note">Os pontos são referências aproximadas de países, sem escala de volume, rotas de transporte ou localização de instalações. Base e pontos de referência do <a id="market-geo-source" href="https://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-admin-0-countries/">Natural Earth · 1:110m</a>.</p>
+            <p class="market-news-note">Os pontos de comércio são referências aproximadas dos países, sem escala de volume. Os pontos de operações representam localidades documentadas, sem coordenadas de instalações ou rotas de embarque. Base e pontos de referência do <a id="market-geo-source" href="https://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-admin-0-countries/">Natural Earth · 1:110m</a>.</p>
           </div>
         </div>
+        <section id="market-operations" class="market-operations" aria-labelledby="market-operations-title" hidden>
+          <header><p class="eyebrow">CADEIA DA GRAFITA</p><h3 id="market-operations-title">Empresas e operações por cidade</h3>
+          <p>Explore minas, plantas de processamento, portos e projetos ainda sem produção. Esta seleção tem fontes próprias e não segue o mês ou o país do comércio. Um ponto no mapa não prova que a empresa forneceu grafita ao Brasil.</p></header>
+          <div class="market-operation-examples" aria-label="Exemplos da cadeia da grafita">
+            <button class="button secondary" type="button" data-open-operation="itagimirim">Itagimirim e Mesa · Fornecedor e planta piloto</button>
+            <button class="button secondary" type="button" data-open-operation="balama">Balama · Mina, portos e processamento</button>
+          </div>
+          <div class="market-operations-controls">
+            <label>Buscar cidade ou empresa <input type="search" id="market-operations-search" placeholder="Ex.: Jordânia ou Graphcoa" maxlength="80"></label>
+            <label>Etapa da cadeia <select id="market-operations-kind"><option value="">Todas</option><option value="mine">Mineração e beneficiamento</option><option value="plant">Processamento industrial</option><option value="port">Portos e logística</option><option value="project">Projeto em desenvolvimento</option></select></label>
+          </div>
+          <p class="market-news-note" id="market-operations-result" role="status"></p>
+          <div class="market-operations-layout">
+            <ul id="market-operations-list" aria-label="Operações por cidade"></ul>
+            <article id="market-operations-detail" aria-labelledby="market-operations-name" hidden>
+              <div class="market-operation-detail-head">
+                <p id="market-operations-badge"></p>
+                <button type="button" id="market-operations-close" aria-label="Fechar ficha da operação">×</button>
+              </div>
+              <h4 id="market-operations-name" tabindex="-1"></h4>
+              <p id="market-operations-subtitle"></p>
+              <dl id="market-operations-fields"></dl>
+              <div class="market-operation-actions">
+                <button type="button" id="market-operations-focus">Centrar no globo</button>
+                <button type="button" id="market-operations-trade" hidden>Comércio do país · dados agregados</button>
+                <a id="market-operations-website" target="_blank" rel="noopener noreferrer" hidden>Site oficial da empresa</a>
+                <a class="market-operation-permalink" id="market-operations-permalink">Link deste ponto</a>
+              </div>
+              <section id="market-operations-links-wrap" hidden><h5>Ligações documentadas</h5><ul id="market-operations-links"></ul></section>
+              <section id="market-operations-related-wrap" hidden><h5>Outros pontos da empresa</h5><p class="market-news-note">Mesmo grupo no catálogo. Não indica rota nem fornecimento entre esses pontos.</p><ul id="market-operations-related"></ul></section>
+              <details class="market-operation-evidence"><summary>Fontes e precisão do mapa</summary><ul id="market-operations-sources"></ul><p class="market-news-note" id="market-operations-geo"></p></details>
+            </article>
+          </div>
+        </section>
+        <details id="market-distribution" class="market-table market-geo-table market-distribution" hidden>
+          <summary>Distribuição observada: modal predominante</summary>
+          <p class="market-news-note">Visão nacional do período completo da edição Comex Stat. O resumo segue a seleção de importação ou exportação, não os filtros de país ou mês. O modal declarado não identifica o porto ou a rota. <a href="https://www.gov.br/mdic/pt-br/assuntos/comercio-exterior/estatisticas/perguntas-frequentes-faq">Consultar metodologia do Comex Stat</a>.</p>
+          <p id="market-distribution-status" role="status"></p>
+        </details>
+        <details id="market-port-history" class="market-table market-geo-table" hidden>
+          <summary>Histórico portuário da grafita no Brasil · 2019</summary>
+          <p><strong>19.310 toneladas</strong> de grafita registradas em municípios com operações portuárias. Salvador concentrou cerca de 53% desse total.</p>
+          <div class="table-wrap" role="region" aria-label="Movimentação histórica por município" tabindex="0">
+            <table>
+              <caption>Janeiro a dezembro de 2019 · ANM com dados da ANTAQ</caption>
+              <thead><tr><th scope="col">Município</th><th scope="col">Quantidade (t)</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Salvador (BA)</th><td>10.255</td></tr>
+                <tr><th scope="row">Guarujá (SP)</th><td>6.452</td></tr>
+                <tr><th scope="row">Santos (SP)</th><td>1.986</td></tr>
+                <tr><th scope="row">Demais municípios</th><td>617</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="market-news-note">Recorte independente dos filtros do mapa. Mostra quantidade movimentada por município, sem distinguir importação, exportação, terminais ou trajetos. A categoria grafita da ANM não equivale ao NCM 2504.10.00. <a href="https://www.gov.br/anm/pt-br/assuntos/arrecadacao/apuracao-municipios-afetados-1/apuracao-municipios-afetados-por-ano-1/apuracao-de-municipios-afetados-2020/lista-provisoria-dos-municipios-afetados-pela-atividade-de-mineracao-beneficiarios-de-parcela-da-cfem/municipios-afetados-operacoes-portuarias/portos-grafita.pdf/@@download/file">Consultar a tabela original da ANM (PDF)</a>.</p>
+        </details>
         <details class="market-table market-geo-table">
           <summary>Explorar parceiros em tabela</summary>
           <p class="market-news-note">Use a tabela para conferir valores e selecionar um país. Selecione-o novamente para voltar a todos.</p>
@@ -360,7 +514,7 @@
             </dd>
           </div>
         </dl>
-        <p class="market-report-limits">O comércio reúne agregados aduaneiros sujeitos a revisão. O mapa usa pontos aproximados de países. Possíveis impactos nas notícias são hipóteses.</p>
+        <p class="market-report-limits">O comércio reúne agregados aduaneiros sujeitos a revisão. O mapa usa pontos aproximados de países e, na camada de grafita, de cidades ou localidades. Possíveis impactos nas notícias são hipóteses.</p>
         <p class="market-report-limits"><strong>Fora do recorte</strong> · Origem por embarque, trajetos logísticos e imagens de satélite.</p>
       </details>
       <div class="market-report-actions">
@@ -382,6 +536,26 @@
           <a id="market-source-download" href="/comex.json" download>Baixar a carga do período (JSON)</a>
           <a id="market-baci-link" href="/mercados/" hidden>Ver a série anual da grafita no BACI</a>
         </div>
+      <aside class="market-release" aria-labelledby="market-source-title">
+        <p class="eyebrow">FONTE OFICIAL</p>
+        <h2 id="market-source-title">Comex Stat</h2>
+        <p>Secretaria de Comércio Exterior · MDIC</p>
+        <dl>
+          <div><dt>Último mês incluído</dt><dd id="market-through">—</dd></div>
+          <div><dt>Atualização na fonte</dt><dd id="market-updated">—</dd></div>
+        </dl>
+        <p id="market-retrieved">Consultando a carga publicada…</p>
+        <p id="market-edition" class="market-edition" hidden>
+          <strong>Edição verificável</strong>
+          <span id="market-edition-id"></span>
+          <a id="market-edition-download" href="">Baixar JSON congelado ↓</a>
+        </p>
+        <details id="market-edition-history" class="market-edition-history" hidden>
+          <summary>Histórico de edições <span id="market-edition-count"></span></summary>
+          <p>Compare as capturas publicadas. Arquivos diferentes são sinais para revisão, não prova de erro na fonte.</p>
+          <ol id="market-edition-list"></ol>
+        </details>
+      </aside>
       </div>
     </section>
   </main>

@@ -85,6 +85,7 @@ function open(fetcher, newsFetcher, query = "", manifestFetcher, view = "panoram
     assert.equal(url, "/comex.json");
     return fetcher ? fetcher(attempts) : response(sample);
   };
+  if (view === "mapa") window.eval(fs.readFileSync("stratasignal/ui/market-operations.js", "utf8"));
   window.eval(script);
   const change = (id, value) => {
     const select = get(id);
@@ -392,7 +393,7 @@ test("the public map and accessible partner table share the trade and news filte
   button("Chile").click();
   get("market-geo-clear").click();
   assert.equal(get("market-country").value, "");
-  assert.equal(window.document.activeElement, get("market-country"));
+  assert.equal(window.document.activeElement, get("market-geo-ranking").querySelector("button"));
   dom.window.close();
 });
 
@@ -889,4 +890,236 @@ test("the publisher filter travels from News to the map and report without chang
   listing.get("market-news-clear").click();
   assert.equal(listing.get("market-news-items").children.length, 2);
   assert.equal(new URL(listing.window.location.href).searchParams.has("noticias_fonte"), false);
+});
+
+test("map shows declared partner value on hover and only captures the wheel after activation", async t => {
+  const {dom, window, get} = open(null, null, "?ncm=25041000&fluxo=import", undefined, "mapa");
+  t.after(() => dom.window.close());
+  await settle(get);
+  const world = get("market-geo-world");
+  const pin = get("market-geo-pins").querySelector(".market-geo-marker");
+  pin.dispatchEvent(new window.Event("pointerenter"));
+  assert.equal(get("market-geo-preview").hidden, false);
+  assert.equal(get("market-geo-preview-name").textContent, "China");
+  assert.match(get("market-geo-preview-values").textContent, /US\$ 1\.700 FOB · 1\.000 kg/);
+  assert.match(get("market-geo-preview-unit").textContent, /US\$ 1,7 FOB\/kg/);
+  pin.dispatchEvent(new window.Event("pointerleave"));
+  assert.equal(get("market-geo-preview").hidden, true);
+  assert.equal(get("market-country").value, "");
+
+  world.getBoundingClientRect = () => ({width: 512, height: 310, left: 0, top: 0});
+  const wheel = () => world.dispatchEvent(new window.WheelEvent("wheel",
+    {deltaY: -60, clientX: 256, clientY: 155, cancelable: true}));
+  assert.equal(wheel(), true);
+  assert.equal(get("market-geo-scene").style.transform, "");
+  world.dispatchEvent(new window.MouseEvent("click", {bubbles: true}));
+  assert.equal(wheel(), false);
+  assert.match(get("market-geo-scene").style.transform, /scale\(1.2\)/);
+  world.dispatchEvent(new window.Event("pointerleave"));
+  assert.equal(wheel(), true);
+  get("market-geo-zoom-in").click();
+  assert.match(get("market-geo-scene").style.transform, /scale\(1.6\)/);
+  get("market-geo-zoom-reset").click();
+  assert.equal(get("market-geo-scene").style.transform, "");
+  assert.equal(get("market-geo-zoom-reset").disabled, true);
+});
+
+
+test("the map opens with a scoped partner ranking and preserves keyboard focus when opening a partner", async t => {
+  const {dom, window, get} = open(null, null, "?ncm=25041000&fluxo=import", undefined, "mapa");
+  t.after(() => dom.window.close());
+  await settle(get);
+  const list = get("market-geo-ranking");
+  assert.equal(get("market-geo-selection").textContent, "Principais parceiros");
+  assert.equal(list.hidden, false);
+  assert.equal(list.children.length, 2);
+  assert.equal(list.querySelector("img"), null);
+  const china = list.querySelector("button");
+  assert.match(china.getAttribute("aria-label"), /China · 85% · US\$ 1\.700 FOB/);
+  china.click();
+  assert.equal(list.hidden, true);
+  assert.equal(get("market-country").value, "China");
+  assert.equal(window.document.activeElement, get("market-geo-selection"));
+  get("market-geo-clear").click();
+  assert.equal(window.document.activeElement, list.querySelector("button"));
+});
+
+
+test("Panorama compares two partners in the same trade scope, distinguishing no observation from zero", async t => {
+  const snap = {...sample, records:[...sample.records, record("2025-02", "Alemanha", 0, 20)]};
+  const {dom, get, change} = open(() => response(snap), null, "?ncm=25041000&fluxo=import", undefined, "panorama");
+  t.after(() => dom.window.close());
+  await settle(get);
+  assert.equal(get("comparar-parceiros").hidden, false);
+  assert.match(get("market-slice-insight").textContent, /China concentrou 85%/);
+  assert.equal(get("market-pair-a").value, "China");
+  assert.equal(get("market-pair-b").options[0].disabled, true);
+  change("market-pair-b", "Alemanha");
+  assert.equal(get("market-pair-name-b").textContent, "Alemanha");
+  assert.deepEqual([...get("market-pair-months").rows].map(r=>[...r.cells].slice(1).map(c=>c.textContent)), [
+    ["US$ 1.200","Sem registros"], ["Sem registros","US$ 0"], ["US$ 500","Sem registros"],
+  ]);
+  assert.match(get("market-pair-cards").textContent, /ChinaUS\$ 1\.700 FOB/);
+  change("market-product", "28369100");
+  assert.equal(get("comparar-parceiros").hidden, true);
+});
+
+test("a graphite operation link still opens when trade files are unavailable", async () => {
+  const {dom, get, window} = open(() => ({ok:false}), null, "?ncm=25041000#operacao=itagimirim", undefined, "mapa");
+  await settle(get);
+  assert.equal(get("market-geo-content").hidden,false);
+  assert.equal(get("market-report").hidden,true);
+  assert.equal(get("market-controls").disabled,true);
+  assert.match(get("market-geo-status").textContent,/Comex Stat indisponível/);
+  assert.equal(get("market-geo-pins").children.length,0);
+  assert.equal(get("market-operations-detail").hidden,false);
+  assert.match(get("market-operations-name").textContent,/Boa Sorte/);
+  assert.equal(get("market-operations-permalink").getAttribute("href"),"/mapa/?ncm=25041000#operacao=itagimirim");
+  get("market-operations-links").querySelector("button").click();
+  assert.equal(window.location.hash,"#operacao=mesa");
+  assert.match(get("market-operations-fields").textContent,/Mesa.*Allied Graphite/);
+  dom.window.close();
+});
+
+
+test("an operation opens country trade explicitly without assigning records to the company", async () => {
+  const {dom, get, window} = open(null, null,"?ncm=25041000#operacao=jixi",undefined,"mapa");
+  await settle(get);
+  const scope = get("market-operations-trade");
+  assert.equal(scope.hidden,false);
+  assert.match(scope.textContent,/dados agregados/);
+  scope.click();
+  assert.equal(get("market-country").value,"China");
+  assert.equal(window.location.hash,"#operacao=jixi");
+  assert.equal(get("market-operations-detail").hidden,false);
+  get("market-operations-list").querySelector("[data-operation=balama]").click();
+  assert.equal(scope.hidden,true);
+  dom.window.close();
+});
+
+test("fullscreen country dots show current-scope totals without leaving or clearing the map", async t => {
+  const {dom, window, get, change} = open(null, null, "?ncm=25041000&fluxo=import", undefined, "mapa");
+  t.after(() => dom.window.close());
+  await settle(get);
+  await settle(get, "market-news-status");
+  const wrapper = get("market-map-fullscreen"), card = get("market-partner-dialog");
+  card.showModal = () => card.setAttribute("open","");
+  card.close = () => card.removeAttribute("open");
+  wrapper.setAttribute("open","");
+  const click = target => target.dispatchEvent(new window.MouseEvent("click",{bubbles:true}));
+  const pin = label => [...get("market-geo-pins").children].find(marker => marker.firstChild.textContent === label);
+  click(pin("China"));
+  assert.equal(card.open,true);
+  assert.equal(get("market-partner-name").textContent,"China");
+  assert.match(get("market-partner-scope").textContent,/País de origem · Importações · NCM 25041000/);
+  assert.match(get("market-partner-totals").textContent,/US\$ 1\.700 FOB.*1\.000 kg.*US\$ 1,7 FOB\/kg/);
+  assert.equal(get("market-country").value,"China");
+  assert.equal(pin("China").classList.contains("selected"),true);
+  get("market-partner-close").click();
+  assert.equal(card.open,false);
+  assert.equal(wrapper.open,true);
+  click(pin("China"));
+  assert.equal(card.open,true);
+  assert.equal(get("market-country").value,"China");
+  card.firstElementChild.click();
+  assert.equal(card.open,true);
+  card.dispatchEvent(new window.Event("pointerdown",{bubbles:true}));
+  card.dispatchEvent(new window.MouseEvent("click",{bubbles:true,detail:1}));
+  assert.equal(card.open,false);
+  assert.equal(wrapper.open,true);
+  // The globe receives the same callback that a fallback dot uses.
+  let pick;
+  window.strataMarketGlobe = {operations: () => {}, update: (_rows,_current,handler) => {pick=handler;}};
+  change("market-flow","export");
+  pick("Japão",get("market-globe-reset"));
+  assert.equal(card.open,true);
+  assert.equal(get("market-partner-name").textContent,"Japão");
+  assert.match(get("market-partner-scope").textContent,/País de destino · Exportações/);
+  card.dispatchEvent(new window.Event("cancel",{bubbles:true,cancelable:true}));
+  assert.equal(card.open,false);
+  assert.equal(wrapper.open,true);
+});
+
+test("the Panorama cover grounds its graphite story, links and globe in the published edition", async t => {
+  const {dom,get,change} = open();
+  t.after(() => dom.window.close());
+  await settle(get);
+  await settle(get,"market-news-status");
+  assert.match(get("market-home-result").textContent,/China respondeu por 85% do valor declarado/);
+  assert.match(get("market-home-scope").textContent,/Importações.*janeiro de 2025 a março de 2025.*Comex Stat/);
+  assert.ok(get("market-home-pins").querySelector(".is-leading"));
+  assert.ok(get("market-edition-history").closest("#fonte"));
+  const origin = get("market-home-partners").querySelector("a");
+  assert.equal(new URL(origin.href).searchParams.get("pais"),"China");
+  change("market-product","28369100");
+  change("market-flow","export");
+  assert.match(get("market-home-result").textContent,/China respondeu por 85%/);
+  assert.equal(new URL(get("market-map-link").href).searchParams.get("ncm"),"25041000");
+  assert.equal(new URL(get("market-map-link").href).searchParams.get("fluxo"),"import");
+});
+
+test("the Panorama cover does not claim a percentage when the trade data cannot load", async t => {
+  const {dom,get} = open(() => ({ok:false}));
+  t.after(() => dom.window.close());
+  await settle(get);
+  await settle(get,"market-news-status");
+  assert.match(get("market-home-result").textContent,/não carregou/);
+  assert.equal(get("market-home-partners").hidden,true);
+  assert.equal(get("market-home-pins").children.length,0);
+});
+
+test("Panorama highlights two different news topics independently of the trade filters", async () => {
+  const recent = {...newsItem, published_on: "2025-03-09", topic: "Política mineral", title: "Política de minerais",
+    url: newsItem.url.replace("example", "policy")};
+  const repeated = {...recent, published_on: "2025-03-08", title: "Outro artigo de política",
+    url: newsItem.url.replace("example", "policy-2")};
+  const {dom, get, calls, change} = open(undefined, () => response({...newsSample,feed_entries:3,items:[newsItem,repeated,recent]}));
+  await settle(get,"market-news-status");
+  await settle(get);
+  const list = get("market-home-news-items");
+  assert.equal(list.closest("section").hidden, false);
+  assert.deepEqual([...list.querySelectorAll("h3 a")].map(a => [a.textContent,a.href]), [[recent.title,recent.url],[newsItem.title,newsItem.url]]);
+  assert.deepEqual([...list.querySelectorAll("img")].map(i => [i.getAttribute("src"),i.getAttribute("alt")]),
+    [["/news-cover-minerals.svg",""],["/news-cover-logistics.svg",""]]);
+  assert.equal(list.closest("section").querySelector(".market-home-news-heading a").getAttribute("href"),"/noticias/");
+  assert.deepEqual([...list.querySelectorAll("time")].map(t => t.dateTime),[recent.published_on,newsItem.published_on]);
+  const card = list.firstElementChild;
+  change("market-product","28369100");
+  assert.equal(list.firstElementChild,card);
+  assert.equal(calls.filter(call => call.url === "/news.json").length,1);
+  dom.window.close();
+});
+
+test("news highlights stay hidden outside Panorama or if no curated items load", async () => {
+  for (const [view,items] of [["mapa",[newsItem]],["noticias",[newsItem]],["panorama",[]]]) {
+    const {dom,get} = open(undefined, () => response({...newsSample,items}),"",undefined,view);
+    await settle(get,"market-news-status");
+    if (view !== "noticias") await settle(get);
+    const list = get("market-home-news-items");
+    assert.equal(list.closest("section").hidden,true);
+    assert.equal(list.children.length,0);
+    dom.window.close();
+  }
+});
+
+test("schematic port links also draw and zoom in the 2D map when the globe is unavailable", async () => {
+  const {dom,window,get,change}=open(undefined,undefined,"",undefined,"mapa");
+  await settle(get);
+  const panel=get("market-logistics");
+  const svg=get("market-geo-logistics");
+  assert.equal(panel.hidden,false);
+  assert.equal(svg.children.length,0);
+  panel.open=true;
+  panel.dispatchEvent(new window.Event("toggle"));
+  assert.equal(svg.children.length,2);
+  panel.querySelector("button").click();
+  assert.equal(svg.querySelectorAll(".selected").length,1);
+  assert.match(get("market-geo-scene").style.transform,/scale\(3\)/);
+  assert.match(panel.querySelector("p").textContent,/traçado aproximado/);
+  assert.ok((svg.querySelector("path").getAttribute("d").match(/L/g) ?? []).length>100);
+  assert.match(get("market-logistics-carrier").textContent,/Grindrod.*2024/);
+  change("market-product","28369100");
+  assert.equal(panel.hidden,true);
+  assert.equal(svg.children.length,0);
+  dom.window.close();
 });

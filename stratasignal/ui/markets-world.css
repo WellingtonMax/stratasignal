@@ -451,7 +451,8 @@
 }
 
 .world-gallium-state.coverage_gap,
-.world-gallium-state.project_announced {
+.world-gallium-state.project_announced,
+.world-gallium-state.construction_started {
   background: #fff6d6;
   color: #624c0a;
 }

@@ -20,13 +20,16 @@ class GalliumEvidenceTests(unittest.TestCase):
 
     def test_current_cases_distinguish_research_capacity_and_unavailable_production(self):
         records = {record["id"]: record for record in self.edition["records"]}
-        self.assertEqual(list(records), [f"GA-{i:02}" for i in range(1, 9)])
+        self.assertEqual(list(records), [f"GA-{i:02}" for i in range(1, 10)])
         for code, stage in (("BR", "primary_recovery"), ("BR", "purification"),
-                            ("US", "primary_recovery"), ("US", "purification"), ("CA", "primary_recovery")):
+                            ("US", "primary_recovery"), ("US", "purification"), ("CA", "primary_recovery"),
+                            ("AU", "primary_recovery")):
             with self.subTest(country=code, stage=stage):
                 self.assertEqual(assess_supply(self.edition, code, stage),
                                  {"country": code, "stage": stage, "status": "unavailable", "evidence_ids": []})
         self.assertEqual(records["GA-02"]["product"], "alumina")
+        self.assertEqual(records["GA-09"]["status"], "construction_started")
+        self.assertIsNone(records["GA-09"]["measure"])
         self.assertEqual(records["GA-04"]["country"], "US")
         self.assertEqual(records["GA-04"]["status"], "research_reported")
         self.assertEqual(records["GA-05"]["measure"],
@@ -45,7 +48,7 @@ class GalliumEvidenceTests(unittest.TestCase):
         self.assertEqual(assess_supply(approved, "BR", "purification")["status"], "unavailable")
         self.assertEqual(assess_supply(approved, "US", "primary_recovery")["status"], "unavailable")
         for key, invalid in (("product", "alumina"), ("status", "research_reported"),
-                             ("status", "project_announced"), ("facility_id", None), ("reference_period", None)):
+                             ("status", "project_announced"), ("status", "construction_started"), ("facility_id", None), ("reference_period", None)):
             with self.subTest(key=key, invalid=invalid):
                 previous = candidate[key]
                 candidate[key] = invalid
