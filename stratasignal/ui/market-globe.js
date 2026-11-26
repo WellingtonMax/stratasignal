@@ -360,6 +360,11 @@
       logistics = routes;
       map?.getSource("mineral-logistics")?.setData(logisticsData());
     },
+    fitRoute(bounds) {
+      if (!visible) return false;
+      map.fitBounds(bounds,{padding:36,maxZoom:8,duration:0,pitch:0,bearing:0});
+      return true;
+    },
     focus(anchor, whenReady = false) {
       if (!visible) {
         if (whenReady && requested) pendingFocus = anchor;

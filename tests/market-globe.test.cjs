@@ -39,6 +39,7 @@ function setup(t, token, supported = true, modal = false) {
     addImage(id,image,opts) { this.images[id]={image,opts}; }
     getCanvas() { return this.canvas; }
     jumpTo(view) { this.view=view; }
+    fitBounds(bounds,opts) { this.lastBounds={bounds,opts}; }
     setStyle(style) { this.style=style; this.sources={}; }
     getZoom() { return 1; }
     setMaxZoom(value) { this.maxZoom=value; }
@@ -420,10 +421,19 @@ test("only documented port routes draw as schematic lines on Mapbox and survive 
   panel.open=true;
   panel.dispatchEvent(new w.Event("toggle"));
   a.equal(features().length,2);
-  a.deepEqual(JSON.parse(JSON.stringify(features().map(f=>f.geometry))),[
-    {type:"LineString",coordinates:[[38.57,-13.35],[40.68,-14.54]]},
-    {type:"LineString",coordinates:[[38.57,-13.35],[40.52,-12.97]]},
-  ]);
+  const [nacala,pemba]=features().map(f=>f.geometry);
+  const near=(a,b)=>Math.hypot(...a.map((v,i)=>v-b[i]))<0.01;
+  for (const line of [nacala,pemba]) {
+    a.equal(line.type,"LineString");
+    a.ok(line.coordinates.length>100);
+    a.ok(near(line.coordinates[0],[38.57,-13.35]));
+    a.ok(line.coordinates.some(p=>near(p,[39.87249,-13.10590])));
+  }
+  a.ok(near(nacala.coordinates.at(-1),[40.66672,-14.54386]));
+  a.ok(near(pemba.coordinates.at(-1),[40.48596,-12.96671]));
+  m.extent={width:720,height:400};
+  m.fire("sourcedata",{sourceId:"public-outline",coord:{},sourceDataType:"content"});
+  m.fire("render");
   a.equal(m.layers["mineral-logistics"].type,"line");
   a.ok(m.layers["mineral-logistics"].paint["line-dasharray"]);
   const choices=[...panel.querySelectorAll("button")];
@@ -431,6 +441,13 @@ test("only documented port routes draw as schematic lines on Mapbox and survive 
   choices[1].click();
   a.equal(features()[1].properties.selected,true);
   a.match(doc.getElementById("market-logistics-context").textContent,/carga geral/);
+  a.ok(m.lastBounds.bounds[0][1]<-13.33);
+  a.match(doc.getElementById("market-logistics-carrier").textContent,/Grindrod.*2022/);
+  a.match(doc.getElementById("market-logistics-carrier-source").href,/grindrod\.com/);
+  choices[0].click();
+  a.match(doc.getElementById("market-logistics-carrier").textContent,/rodoviário.*2024/);
+  a.match(doc.getElementById("market-logistics-carrier-source").href,/eiti\.org.*page=147/);
+  choices[1].click();
   a.match(doc.getElementById("market-logistics-source").href,/syrahresources\.com\.au/);
   m.setStyle({});
   m.fire("style.load");

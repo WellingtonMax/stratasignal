@@ -212,10 +212,16 @@
               <span id="market-operations-legend" aria-label="Símbolos das operações" hidden></span>
               <details id="market-logistics" class="market-logistics" hidden>
                 <summary><i aria-hidden="true"></i> Rotas documentadas</summary>
-                <p>Linha tracejada liga a mina ao porto de escoamento. Não mostra a estrada ou o trajeto exato nem identifica quem transportou.</p>
+                <p>O tracejado segue as estradas do corredor estudado. É um traçado aproximado, não o registro de uma viagem.</p>
                 <div id="market-logistics-choices" role="group" aria-label="Aproximar uma rota"></div>
                 <p id="market-logistics-context" aria-live="polite" hidden></p>
-                <a id="market-logistics-source">Fonte: logística da Syrah Resources ↗</a>
+                <p id="market-logistics-carrier" aria-live="polite" hidden></p>
+                <div class="market-logistics-sources">
+                  <a id="market-logistics-carrier-source" hidden></a>
+                  <a id="market-logistics-source">Escoamento · Syrah ↗</a>
+                  <a id="market-logistics-study">Estudo rodoviário · Syrah/DFC ↗</a>
+                  <a href="https://www.openstreetmap.org/copyright">Malha viária © colaboradores do OpenStreetMap ↗</a>
+                </div>
               </details>
               <span id="market-globe-hint" hidden><span class="market-globe-hint-pointer">Arraste para girar. Use a roda para aproximar.</span><span class="market-globe-hint-touch">Arraste para girar e use dois dedos para aproximar.</span></span>
               <span class="market-geo-scroll-hint">Para usar a roda do mouse, clique no mapa primeiro.</span>

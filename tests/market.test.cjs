@@ -1115,7 +1115,9 @@ test("schematic port links also draw and zoom in the 2D map when the globe is un
   panel.querySelector("button").click();
   assert.equal(svg.querySelectorAll(".selected").length,1);
   assert.match(get("market-geo-scene").style.transform,/scale\(3\)/);
-  assert.match(panel.querySelector("p").textContent,/Não mostra a estrada/);
+  assert.match(panel.querySelector("p").textContent,/traçado aproximado/);
+  assert.ok((svg.querySelector("path").getAttribute("d").match(/L/g) ?? []).length>100);
+  assert.match(get("market-logistics-carrier").textContent,/Grindrod.*2024/);
   change("market-product","28369100");
   assert.equal(panel.hidden,true);
   assert.equal(svg.children.length,0);

@@ -511,3 +511,7 @@
 .market-logistics-line{fill:none;stroke:#f6b65f;stroke-width:2.7;stroke-dasharray:3 3;stroke-linecap:round;vector-effect:non-scaling-stroke;pointer-events:none}
 .market-logistics-line.selected{stroke:#fff5c9;stroke-width:3.5}
 @media(max-width:640px){.market-map-fullscreen .market-geo-caption:has(.market-logistics[open]){max-height:35dvh}}
+.market-logistics-sources{display:flex;flex-wrap:wrap;gap:0 14px}
+.market-logistics-sources a[hidden],#market-logistics-carrier[hidden]{display:none}
+#market-logistics-choices button[aria-pressed="true"]{background:#f8e2bd;border-color:#704215;color:#482606}
+.market-map-fullscreen #market-logistics-choices button[aria-pressed="true"]{background:#4a342b;border-color:#efbb7b;color:#fff4ce}
