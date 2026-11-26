@@ -218,7 +218,7 @@
             </div>
             </div>
             <figcaption class="market-geo-caption">
-              <span><i class="market-geo-dot" aria-hidden="true"></i> Parceiro com registros</span>
+              <span class="market-map-partner-legend"><i class="market-geo-dot" aria-hidden="true"></i> País parceiro · Comex Stat</span>
               <span><i class="market-geo-ring" aria-hidden="true"></i> Parceiro selecionado</span>
               <span id="market-operations-legend" aria-label="Símbolos das operações" hidden></span>
               <span id="market-globe-hint" hidden><span class="market-globe-hint-pointer">Arraste para girar. Use a roda para aproximar.</span><span class="market-globe-hint-touch">Arraste para girar e use dois dedos para aproximar.</span></span>
@@ -235,8 +235,10 @@
             </div>
             <div id="market-map-fullscreen-stage"></div>
             <div class="market-map-fullscreen-selection" id="market-map-fullscreen-selection" hidden>
-              <button id="market-map-fullscreen-operation" type="button"></button>
+              <button id="market-map-fullscreen-operation" type="button" aria-haspopup="dialog" aria-controls="market-operation-dialog" hidden></button>
+              <select id="market-map-fullscreen-picker" aria-label="Consultar uma operação por cidade"></select>
             </div>
+            <dialog id="market-operation-dialog" class="market-operation-dialog" aria-labelledby="market-operations-name"></dialog>
           </dialog>
           <div class="market-geo-notes">
             <p class="eyebrow" id="market-geo-kicker">PARCEIRO EM FOCO</p>
@@ -292,6 +294,7 @@
               <div class="market-operation-actions">
                 <button type="button" id="market-operations-focus">Centrar no globo</button>
                 <button type="button" id="market-operations-trade" hidden>Comércio do país · dados agregados</button>
+                <a id="market-operations-website" target="_blank" rel="noopener noreferrer" hidden>Site oficial da empresa</a>
                 <a class="market-operation-permalink" id="market-operations-permalink">Link deste ponto</a>
               </div>
               <section id="market-operations-links-wrap" hidden><h5>Ligações documentadas</h5><ul id="market-operations-links"></ul></section>

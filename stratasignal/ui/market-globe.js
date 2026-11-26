@@ -38,6 +38,7 @@
     const stage = document.getElementById("market-map-fullscreen-stage");
     const selection = document.getElementById("market-map-fullscreen-selection");
     const operation = document.getElementById("market-map-fullscreen-operation");
+    const picker = document.getElementById("market-map-fullscreen-picker");
     const figure = root.closest(".market-geo-figure");
     if (!figure || !dialog || typeof dialog.showModal !== "function") return null;
     const home = figure.parentNode;
@@ -51,6 +52,7 @@
     };
     function close(target) {
       restore = target;
+      window.strataMarketOperations?.closeOverlay?.();
       dialog.close();
       returnFigure();
       (restore ?? enter).focus({preventScroll:!target});
@@ -69,15 +71,21 @@
     leave.addEventListener("click", () => close());
     dialog.addEventListener("cancel", event => { event.preventDefault(); close(); });
     dialog.addEventListener("close", () => { if (!dialog.open && figure.parentNode === stage) { returnFigure(); enter.focus(); } });
-    operation.addEventListener("click", () => {
-      const heading = document.getElementById("market-operations-name");
-      close(heading);
-      heading?.scrollIntoView?.({block:"center"});
+    operation.addEventListener("click", () => pickOperation?.(operationSelected, operation));
+    picker.addEventListener("change", () => {
+      const id = picker.value;
+      picker.value = "";
+      if (operations.has(id)) pickOperation?.(id, picker);
     });
-    return {open:() => dialog.open, select(current) {
-      selection.hidden = !current;
+    return {open:() => dialog.open, close, select(points, current) {
+      selection.hidden = !points.length;
+      operation.hidden = !current;
       operation.textContent = current ? "Ver ficha: " + current.city : "";
+      const items = [...points].sort((a,b) => a.city.localeCompare(b.city,"pt-BR"));
+      const choices = items.map(item => new Option(item.city + " · " + item.country,item.id));
+      picker.replaceChildren(new Option("Escolher operação",""),...choices);
     }};
+
   }
 
   function notice(text) {
@@ -295,7 +303,7 @@
       map.on("mouseleave", "mineral-operations", clearPopup);
       map.on("click", "mineral-operations", event => {
         const id = event.features?.[0]?.properties.id;
-        if (operations.has(id)) { clearPopup(); pickOperation(id); }
+        if (operations.has(id)) { clearPopup(); pickOperation(id, get("-reset")); }
       });
       map.on("error", event => {
         const code = Number(event?.error?.status ?? event?.error?.statusCode);
@@ -315,6 +323,7 @@
   get("-reset").addEventListener("click", () => { if (visible) map.jumpTo(globalView()); });
   window.strataMarketGlobe = {
     isFullscreen: () => Boolean(full?.open()),
+    closeFullscreen: () => { if (full?.open()) full.close(); },
     update(points, current, handler) {
       rows = new Map(points.map(item => [item.label, item]));
       selected = current;
@@ -326,7 +335,7 @@
     operations(points, current, handler) {
       operations = new Map(points.map(item => [item.id, item]));
       operationSelected = current;
-      full?.select(operations.get(current));
+      full?.select(points, operations.get(current));
       if (!operations.has(current)) pendingFocus = null;
       pickOperation = handler;
       updateData();

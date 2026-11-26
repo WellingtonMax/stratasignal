@@ -27,6 +27,15 @@
   const declared = "Operação cadastrada pela empresa";
   const national = "Nacional de Grafite";
   const syrah = "Syrah Resources";
+  const websites = new Map([
+    [national,"https://www.grafite.com/"],
+    ["Graphcoa","https://graphcoa.com/"],
+    ["South Star Battery Metals","https://southstarbatterymetals.com/"],
+    ["Allied Graphite (antiga Urbix)","https://alliedgraphite.com/"],
+    [syrah,"https://www.syrahresources.com.au/"],
+    ["Syrah Resources (usuária do porto)","https://www.syrahresources.com.au/"],
+    ["BTR New Material Group",btr],
+  ]);
   const records = [
     {id:"itapecerica", city:"Itapecerica", region:"Minas Gerais", country:"Brasil", anchor:[-45.13,-20.47], company:national, kind:"mine", name:"Unidade de Itapecerica", material:"Grafita natural cristalina", status:declared, sources:[["Unidades",minas],["Certificado DNV (2024)",cert]]},
     {id:"pedra-azul", city:"Pedra Azul", region:"Minas Gerais", country:"Brasil", anchor:[-41.30,-16.01], company:national, kind:"mine", name:"Unidade de Pedra Azul", material:"Grafita natural em flocos", status:declared, sources:[["Unidades",minas],["Origem do Graflake",brazilProduct],["Certificado DNV (2024)",cert]]},
@@ -57,6 +66,46 @@
   let active = false, enabled = true, selected = "";
   const selector = dom("kind"), list = dom("list"), toggle = dom("toggle"), legend = dom("legend");
   const search = dom("search"), result = dom("result"), detail = dom("detail");
+  const overlay = document.getElementById("market-operation-dialog");
+  const detailHome = detail.parentNode, detailNext = detail.nextSibling;
+  const website = dom("website");
+  let returnTo;
+  function restoreDetail() {
+    if (detail.parentNode === overlay) detailHome.insertBefore(detail, detailNext);
+    const previous = returnTo;
+    returnTo = null;
+    if (overlay?.closest("dialog[open]")) {
+      const target = previous?.isConnected && !previous.closest("[hidden],[inert]") ? previous : document.getElementById("market-map-collapse");
+      target?.focus({preventScroll:true});
+    }
+  }
+  function closeOverlay() {
+    if (overlay?.open) overlay.close();
+    if (detail.parentNode === overlay) restoreDetail();
+  }
+  function showOverlay(origin) {
+    if (!overlay || typeof overlay.showModal !== "function") return;
+    if (!overlay.open) {
+      returnTo = origin;
+      overlay.append(detail);
+      try { overlay.showModal(); }
+      catch { restoreDetail(); return; }
+    }
+    overlay.scrollTop = 0;
+    dom("name").focus({preventScroll:true});
+  }
+  let backdropDown = false;
+  overlay?.addEventListener("pointerdown", event => { backdropDown = event.target === overlay; });
+  overlay?.addEventListener("click", event => {
+    if (event.target === overlay && (backdropDown || event.detail === 0)) closeOverlay();
+    backdropDown = false;
+  });
+  overlay?.addEventListener("cancel", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    closeOverlay();
+  });
+  overlay?.addEventListener("close", () => { if (!overlay.open && detail.parentNode === overlay) restoreDetail(); });
   const normalize = value => value.normalize("NFD").replace(/\p{M}/gu, "").toLocaleLowerCase("pt-BR");
   const matches = (x, terms) => terms.every(term => normalize([x.city, x.company, x.region, x.country, x.name].join(" ")).includes(term));
   const terms = () => normalize(search.value).trim().split(/\s+/).filter(Boolean);
@@ -113,7 +162,9 @@
       trade.hidden = !option;
       if (option) trade.textContent = "Comércio do país · dados agregados";
     }
-    window.strataMarketGlobe?.operations(active && enabled ? visible() : [], selected, open);
+    const points = active && enabled ? visible() : [];
+    if (overlay?.open && !points.some(point => point.id === selected)) closeOverlay();
+    window.strataMarketGlobe?.operations(points, selected, (id,origin) => open(id,false,false,origin));
   }
   function renderList() {
     const items = visible();
@@ -137,7 +188,7 @@
       return item;
     }));
   }
-  function open(id, focusMap = false, alignDetail = false) {
+  function open(id, focusMap = false, alignDetail = false, origin = null) {
     const record = lookup.get(id);
     if (!active || !record) return;
     selected = id;
@@ -152,6 +203,10 @@
     dom("name").textContent = record.name;
     dom("badge")?.replaceChildren(symbol(record.kind),create("span",kinds[record.kind]));
     if (dom("subtitle")) dom("subtitle").textContent = record.city + " · " + record.country + " | " + record.company;
+    const official = websites.get(record.company);
+    website.hidden = !official;
+    if (official) website.href = official;
+    else website.removeAttribute("href");
     const direct = dom("permalink");
     direct.href = "/mapa/?ncm=25041000#operacao=" + record.id;
     const fields = [["Localidade",record.city + " · " + record.region + " · " + record.country],
@@ -184,12 +239,15 @@
     dom("geo").textContent = geography;
     update();
     if (focusMap) window.strataMarketGlobe?.focus(record.anchor, true);
-    if (!window.strataMarketGlobe?.isFullscreen?.()) {
+    if (window.strataMarketGlobe?.isFullscreen?.()) {
+      if (origin || overlay?.open) showOverlay(origin);
+    } else {
       dom("name").focus({preventScroll:true});
       if (!focusMap || alignDetail) detail.scrollIntoView?.({block:"nearest"});
     }
   }
   close?.addEventListener("click",() => {
+    if (overlay?.open) { closeOverlay(); return; }
     const previous = selected;
     selected = "";
     setAddress("");
@@ -201,6 +259,7 @@
   trade?.addEventListener("click",() => {
     const option = tradeOption(lookup.get(selected));
     if (!option) return;
+    if (overlay?.open) window.strataMarketGlobe?.closeFullscreen();
     tradePartner.value = option.value;
     tradePartner.dispatchEvent(new Event("change",{bubbles:true}));
     const countryTitle = document.getElementById("market-geo-selection");
@@ -218,7 +277,8 @@
     }
     if (!enabled) { enabled = true; update(); }
     focus.textContent = "Centrar no globo";
-    globe.scrollIntoView?.({block:"center"});
+    if (overlay?.open) closeOverlay();
+    else globe.scrollIntoView?.({block:"center"});
   });
   toggle.addEventListener("click",() => { enabled = !enabled; update(); });
   const applyFilters = () => { renderList(); update(); };
@@ -233,7 +293,7 @@
   });
   window.addEventListener("hashchange",openAddress);
   renderList();
-  window.strataMarketOperations = {show(value, partnerLabels = []) {
+  window.strataMarketOperations = {closeOverlay, show(value, partnerLabels = []) {
     tradeCountries = new Set(partnerLabels);
     active = value === "25041000";
     if (!active && addressId()) {

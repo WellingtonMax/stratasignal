@@ -381,8 +381,28 @@
 .market-map-fullscreen .market-globe{border-radius:0}
 .market-map-fullscreen .mapboxgl-canvas-container{touch-action:none;overscroll-behavior:contain}
 .market-map-fullscreen .market-geo-caption{margin:0;padding:4px 8px;background:#0b2037;color:#e8f3ff;max-height:20dvh;overflow:auto}
-.market-map-fullscreen .market-geo-caption>span:not(#market-operations-legend){display:none}
+.market-map-fullscreen .market-geo-caption>span:not(#market-operations-legend,.market-map-partner-legend){display:none}
+.market-map-fullscreen .market-map-partner-legend{font-size:.82rem}
 .market-map-fullscreen #market-operations-legend:not([hidden]){display:flex;width:100%}
 .market-map-fullscreen #market-operations-legend button{background:#102945;color:#f4f8fc;border-color:#466581}
 .market-map-fullscreen-selection:not([hidden]){display:flex;justify-content:center;padding:5px 10px;border-top:1px solid #31516d}
 .market-map-fullscreen-selection button{max-width:100%;overflow-wrap:anywhere}
+
+/* Operation details above the fullscreen map, using the same live article. */
+.market-map-fullscreen-selection:not([hidden]){gap:8px;flex-wrap:wrap}
+.market-map-fullscreen-selection select{min-height:44px;min-width:0;max-width:100%;border:1px solid #7291ad;border-radius:9px;padding:7px 9px;background:#102945;color:#f4f8fc;font:inherit}
+.market-map-fullscreen-selection button[hidden],#market-operations-website[hidden]{display:none}
+.market-operation-dialog:not([open]){display:none}
+.market-operation-dialog[open]{
+  box-sizing:border-box;position:fixed;inset:0;width:min(36rem,calc(100% - 24px));
+  max-width:none;max-height:80vh;max-height:min(80dvh,calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px));
+  margin:auto;padding:0;overflow:auto;overscroll-behavior:contain;touch-action:pan-y;
+  background:var(--layer,var(--canvas));color:var(--ink,#e8f3ff);border:1px solid var(--line);border-radius:14px;
+}
+.market-operation-dialog::backdrop{background:rgb(4 13 26 / 68%)}
+.market-operation-dialog #market-operations-detail{padding-block-start:0}
+.market-operation-dialog .market-operation-detail-head{
+  position:sticky;top:0;z-index:1;min-height:58px;background:var(--layer,var(--canvas));
+}
+.market-operation-dialog #market-operations-close{min-height:44px;cursor:pointer;color:inherit}
+#market-operations-website{display:inline-flex;align-items:center;min-height:44px;padding:6px 11px;border:1px solid var(--line);border-radius:8px;font-weight:650}
