@@ -13,7 +13,7 @@ function setup(t, token, supported = true) {
   const w = dom.window; const doc = w.document;
   class MockMap {
     constructor(opts) {
-      globe=this; this.opts=opts; this.handlers={}; this.sources={};
+      globe=this; this.opts=opts; this.handlers={}; this.sources={}; this.layers={}; this.images={};
       this.canvas=doc.createElement("canvas");
       this.mount=opts.container;
       this.extent={width:0,height:0};
@@ -30,7 +30,9 @@ function setup(t, token, supported = true) {
     setFog() {}
     addSource(id,details) { this.sources[id]={data:details.data,setData(data){this.data=data;}}; }
     getSource(id) { return this.sources[id]; }
-    addLayer(layer) { this.layer=layer; }
+    addLayer(layer) { this.layer=layer; this.layers[layer.id]=layer; }
+    hasImage(id) { return id in this.images; }
+    addImage(id,image,opts) { this.images[id]={image,opts}; }
     getCanvas() { return this.canvas; }
     jumpTo(view) { this.view=view; }
     setStyle(style) { this.style=style; this.sources={}; }
@@ -115,7 +117,9 @@ test("operation markers are separate from country trade markers and open documen
   a.equal(m.getSource("trade-partners").data.features.length,1);
   const balama=feed.data.features.find(f=>f.properties.id==="balama");
   m.fire("mousemove:mineral-operations",{features:[balama]});
-  a.match(m.card.textContent,/Balama · Syrah/);
+  a.equal(m.card.querySelector("strong").textContent,"Balama");
+  a.match(m.card.textContent,/Mina · Moçambique.*Syrah/);
+  a.equal(m.card.querySelectorAll("svg path").length,1);
   m.fire("click:mineral-operations",{features:[balama]});
   a.match(get("fields").textContent,/Moçambique.*Syrah Resources.*Mineração.*Concentrado de grafita.*2026/);
   a.equal(get("links").querySelectorAll("button").length,3);
@@ -214,4 +218,46 @@ test("a city permalink focuses the intended pin after the globe becomes ready", 
   w.strataMarketOperations.show("28369100");
   a.equal(w.location.hash,"");
   a.equal(doc.getElementById("market-operations").hidden,true);
+});
+
+
+test("legend, docket and operation markers use the same four pictograms and keep peers separate", async t => {
+  const {w,doc,map}=setup(t,"pk.example.synthetic");
+  w.eval(fs.readFileSync("stratasignal/ui/market-operations.js","utf8"));
+  const get=id=>doc.getElementById("market-operations-"+id);
+  w.strataMarketOperations.show("25041000");
+  w.strataMarketGlobe.update(demo,null,()=>{});
+  await flush();
+  const m=map();
+  const strokes=[];
+  w.Path2D=class { constructor(path) { this.path=path; } };
+  w.HTMLCanvasElement.prototype.getContext=()=>({
+    setTransform(){},clearRect(){},scale(){},
+    stroke(value){ strokes.push(value.path); },
+    getImageData(){ return {width:40,height:40,data:new Uint8ClampedArray(6400)}; },
+  });
+  m.fire("style.load");
+  a.equal(m.layers["mineral-operation-icons"].type,"symbol");
+  a.equal(m.images["strata-op-mine"].opts.pixelRatio,2);
+  a.equal(strokes.length,4);
+  const legend=get("legend"), paths=[...legend.querySelectorAll("svg path")].map(x=>x.getAttribute("d"));
+  a.equal(new Set(paths).size,4);
+  legend.querySelector("[data-kind=port]").click();
+  a.equal(get("kind").value,"port");
+  a.equal(get("list").querySelectorAll("button").length,2);
+  a.equal(m.getSource("mineral-operations").data.features.length,2);
+  a.equal(legend.querySelector("[data-kind=port]").getAttribute("aria-pressed"),"true");
+  legend.querySelector("[data-kind=port]").click();
+  get("list").querySelector("[data-operation=itagimirim]").click();
+  a.match(get("links").textContent,/Fornecimento divulgado.*Allied/);
+  a.match(get("related").textContent,/Jordânia/);
+  a.doesNotMatch(get("related").textContent,/Allied/);
+  get("related").querySelector("button").click();
+  a.equal(w.location.hash,"#operacao=jordania");
+  a.match(get("badge").textContent,/Projeto/);
+  a.equal(get("links-wrap").hidden,true);
+  get("close").click();
+  a.equal(w.location.hash,"");
+  a.equal(get("detail").hidden,true);
+  a.equal(doc.activeElement.dataset.operation,"jordania");
 });

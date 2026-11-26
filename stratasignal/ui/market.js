@@ -1011,7 +1011,7 @@
     status.textContent = (records.length ? quantity : "Nenhum registro neste recorte") + " · " + scope;
     results.hidden = records.length === 0;
     renderGeography(partners, scopeBase);
-    window.strataMarketOperations?.show(product.value);
+    window.strataMarketOperations?.show(product.value, partners.map(partner => partner.label));
     renderDistribution();
     renderPair(partners, grouped, months, scopeBase);
     const leader = partners[0], allFob = sum(partners, "fob_usd");

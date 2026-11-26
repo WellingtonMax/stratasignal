@@ -4,6 +4,8 @@
   if (!panel) return;
   const dom = id => document.getElementById("market-operations-" + id);
   const kinds = {mine:"Mineração e beneficiamento", plant:"Processamento industrial", port:"Porto e logística", project:"Projeto em desenvolvimento"};
+  const graphics = window.strataOperationSymbols;
+  const icons = {mine:"Mina",plant:"Planta",port:"Porto",project:"Projeto"};
   const geography = "Ponto aproximado no município ou na localidade, não coordenada da instalação.";
   const minas = "https://www.grafite.com/unidades-e-escritorio";
   const brazilProduct = "https://www.grafite.com/graflake";
@@ -41,11 +43,16 @@
     {id:"jixi", city:"Jixi", region:"Heilongjiang", country:"China", anchor:[130.97,45.30], company:"BTR New Material Group", kind:"plant", name:"Unidade Jixi BTR", material:"Grafita esférica e grafita de alta pureza", status:declared, sources:[["Unidades industriais da BTR",btr]]},
   ];
   const relations = [
-    {a:"itagimirim", b:"mesa", text:"Relação de fornecimento divulgada: a Allied informa que a Graphcoa é sua fornecedora de concentrado de grafita natural em flocos. A ligação é entre empresas; não confirma embarque para Mesa, rota nem volume comercial.", url:allied},
-    {a:"balama", b:"nacala", text:"Escoamento portuário em contêineres informado pela Syrah; primeiro embarque divulgado em 2017.", url:logistics},
-    {a:"balama", b:"pemba", text:"Escoamento portuário em carga geral informado pela Syrah; atividade divulgada desde 2022.", url:logistics},
-    {a:"balama", b:"vidalia", text:"Integração industrial divulgada pela Syrah: grafita de Balama é insumo da cadeia de ânodos de Vidalia. A fonte não comprova um itinerário marítimo.", url:syrahPlant},
+    {a:"itagimirim", b:"mesa", kind:"Fornecimento divulgado", text:"Relação de fornecimento divulgada: a Allied informa que a Graphcoa é sua fornecedora de concentrado de grafita natural em flocos. A ligação é entre empresas; não confirma embarque para Mesa, rota nem volume comercial.", url:allied},
+    {a:"balama", b:"nacala", kind:"Escoamento documentado", text:"Escoamento portuário em contêineres informado pela Syrah; primeiro embarque divulgado em 2017.", url:logistics},
+    {a:"balama", b:"pemba", kind:"Escoamento documentado", text:"Escoamento portuário em carga geral informado pela Syrah; atividade divulgada desde 2022.", url:logistics},
+    {a:"balama", b:"vidalia", kind:"Integração industrial", text:"Integração industrial divulgada pela Syrah: grafita de Balama é insumo da cadeia de ânodos de Vidalia. A fonte não comprova um itinerário marítimo.", url:syrahPlant},
   ];
+  const groups = new Map([
+    [national,["itapecerica","pedra-azul","salto-da-divisa"]],
+    ["Graphcoa",["itagimirim","jordania"]],
+    [syrah,["balama","nacala","pemba","vidalia"]],
+  ]);
   const lookup = new Map(records.map(x => [x.id,x]));
   let active = false, enabled = true, selected = "";
   const selector = dom("kind"), list = dom("list"), toggle = dom("toggle"), legend = dom("legend");
@@ -66,11 +73,46 @@
   };
   const create = (tag, value) => Object.assign(document.createElement(tag), {textContent:value});
   const link = (label, href) => Object.assign(create("a", label), {href});
+  const symbol = kind => graphics?.icon(kind) ?? create("span","");
+  const close = dom("close"), focus = dom("focus"), trade = dom("trade");
+  let tradeCountries = new Set();
+  const tradePartner = document.getElementById("market-country");
+  function tradeOption(record) {
+    if (!record || !tradePartner || tradePartner.disabled || tradePartner.closest("fieldset")?.disabled) return null;
+    return [...tradePartner.options].find(option => option.value && tradeCountries.has(option.value) && normalize(option.value) === normalize(record.country)) ?? null;
+  }
+  const filter = kind => {
+    selector.value = selector.value === kind ? "" : kind;
+    applyFilters();
+  };
+  legend.replaceChildren(...Object.entries(icons).map(([kind,label]) => {
+    const button = create("button","");
+    button.type = "button";
+    button.dataset.kind = kind;
+    button.append(symbol(kind),create("span",label));
+    button.addEventListener("click",() => filter(kind));
+    return button;
+  }));
+  function relatedButton(other) {
+    const button = create("button","");
+    button.type = "button";
+    const label = create("span","");
+    label.append(create("strong",other.city + " · " + other.name),create("small",other.company + " · " + other.country));
+    button.append(symbol(other.kind),label);
+    button.addEventListener("click", () => open(other.id,true,true));
+    return button;
+  }
   function update() {
     panel.hidden = !active;
     toggle.hidden = !active;
     legend.hidden = !active || !enabled;
     toggle.setAttribute("aria-pressed", String(enabled && active));
+    for (const button of legend.querySelectorAll("button")) button.setAttribute("aria-pressed",String(selector.value === button.dataset.kind));
+    if (trade) {
+      const option = active ? tradeOption(lookup.get(selected)) : null;
+      trade.hidden = !option;
+      if (option) trade.textContent = "Comércio do país · dados agregados";
+    }
     window.strataMarketGlobe?.operations(active && enabled ? visible() : [], selected, open);
   }
   function renderList() {
@@ -87,8 +129,10 @@
       button.type = "button";
       button.dataset.operation = x.id;
       button.setAttribute("aria-pressed", String(x.id === selected));
-      button.append(create("strong",x.city),create("span",x.company),create("small",kinds[x.kind]));
-      button.addEventListener("click", () => open(x.id,true));
+      const label = create("span","");
+      label.append(create("strong",x.city),create("span",x.company),create("small",kinds[x.kind]));
+      button.append(symbol(x.kind),label);
+      button.addEventListener("click", () => open(x.id,true,true));
       item.append(button);
       return item;
     }));
@@ -101,9 +145,13 @@
     if (selector.value && selector.value !== record.kind) selector.value = "";
     if (!matches(record, terms())) search.value = "";
     renderList();
-    if (focusMap && !enabled) enabled = true;
+    if (!enabled) enabled = true;
     for (const button of list.querySelectorAll("button")) button.setAttribute("aria-pressed",String(button.dataset.operation === id));
+    if (focus) focus.textContent = "Centrar no globo";
+    detail.querySelector?.("details")?.removeAttribute("open");
     dom("name").textContent = record.name;
+    dom("badge")?.replaceChildren(symbol(record.kind),create("span",kinds[record.kind]));
+    if (dom("subtitle")) dom("subtitle").textContent = record.city + " · " + record.country + " | " + record.company;
     const direct = dom("permalink");
     direct.href = "/mapa/?ncm=25041000#operacao=" + record.id;
     const fields = [["Localidade",record.city + " · " + record.region + " · " + record.country],
@@ -120,13 +168,18 @@
     dom("links").replaceChildren(...edges.map(x => {
       const other = lookup.get(x.a === id ? x.b : x.a);
       const li = create("li","");
-      const button = create("button",other.city + " · " + other.name);
-      button.type = "button";
-      button.addEventListener("click", () => { open(other.id,true); dom("name").focus({preventScroll:true}); });
-      li.append(button,create("p",x.text),link("Fonte da ligação",x.url));
+      li.append(create("p",x.kind),relatedButton(other),create("p",x.text),link("Fonte da ligação",x.url));
       return li;
     }));
     dom("links-wrap").hidden = !edges.length;
+    const linked = new Set(edges.map(x => x.a === id ? x.b : x.a));
+    const peers = [...groups.values()].find(group => group.includes(id))?.filter(key => key !== id && !linked.has(key)) ?? [];
+    dom("related")?.replaceChildren(...peers.map(key => {
+      const li = create("li","");
+      li.append(relatedButton(lookup.get(key)));
+      return li;
+    }));
+    if (dom("related-wrap")) dom("related-wrap").hidden = !peers.length;
     detail.hidden = false;
     dom("geo").textContent = geography;
     update();
@@ -134,6 +187,35 @@
     dom("name").focus({preventScroll:true});
     if (!focusMap || alignDetail) detail.scrollIntoView?.({block:"nearest"});
   }
+  close?.addEventListener("click",() => {
+    const previous = selected;
+    selected = "";
+    setAddress("");
+    detail.hidden = true;
+    renderList();
+    update();
+    list.querySelector('[data-operation="' + previous + '"]')?.focus();
+  });
+  trade?.addEventListener("click",() => {
+    const option = tradeOption(lookup.get(selected));
+    if (!option) return;
+    tradePartner.value = option.value;
+    tradePartner.dispatchEvent(new Event("change",{bubbles:true}));
+    const countryTitle = document.getElementById("market-geo-selection");
+    countryTitle?.focus();
+    countryTitle?.scrollIntoView?.({block:"center"});
+  });
+  focus?.addEventListener("click",() => {
+    const record = lookup.get(selected);
+    const globe = document.getElementById("market-globe");
+    if (!record || globe?.dataset.state !== "ready") {
+      if (focus) focus.textContent = "Globo 3D indisponível";
+      return;
+    }
+    if (!enabled) { enabled = true; update(); }
+    window.strataMarketGlobe?.focus(record.anchor,true);
+    globe.scrollIntoView?.({block:"center"});
+  });
   toggle.addEventListener("click",() => { enabled = !enabled; update(); });
   const applyFilters = () => { renderList(); update(); };
   selector.addEventListener("change",applyFilters);
@@ -147,7 +229,8 @@
   });
   window.addEventListener("hashchange",openAddress);
   renderList();
-  window.strataMarketOperations = {show(value) {
+  window.strataMarketOperations = {show(value, partnerLabels = []) {
+    tradeCountries = new Set(partnerLabels);
     active = value === "25041000";
     if (!active && addressId()) {
       setAddress("");

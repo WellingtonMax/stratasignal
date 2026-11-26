@@ -214,7 +214,7 @@
             <figcaption class="market-geo-caption">
               <span><i class="market-geo-dot" aria-hidden="true"></i> Parceiro com registros</span>
               <span><i class="market-geo-ring" aria-hidden="true"></i> Parceiro selecionado</span>
-              <span id="market-operations-legend" hidden><i class="market-operation-dot" aria-hidden="true"></i> Mina <i class="market-operation-dot plant" aria-hidden="true"></i> Planta <i class="market-operation-dot port" aria-hidden="true"></i> Porto <i class="market-operation-dot project" aria-hidden="true"></i> Projeto</span>
+              <span id="market-operations-legend" aria-label="Símbolos das operações" hidden></span>
               <span id="market-globe-hint" hidden><span class="market-globe-hint-pointer">Arraste para girar. Use a roda para aproximar.</span><span class="market-globe-hint-touch">Arraste para girar e use dois dedos para aproximar.</span></span>
               <span class="market-geo-scroll-hint">Para usar a roda do mouse, clique no mapa primeiro.</span>
             </figcaption>
@@ -263,11 +263,21 @@
           <div class="market-operations-layout">
             <ul id="market-operations-list" aria-label="Operações por cidade"></ul>
             <article id="market-operations-detail" aria-labelledby="market-operations-name" hidden>
-              <h4 id="market-operations-name" tabindex="-1"></h4><dl id="market-operations-fields"></dl>
-              <p class="market-news-note" id="market-operations-geo"></p>
-              <a class="market-operation-permalink" id="market-operations-permalink">Link direto deste ponto</a>
-              <div id="market-operations-links-wrap" hidden><h5>Ligações documentadas</h5><ul id="market-operations-links"></ul></div>
-              <h5>Fontes</h5><ul id="market-operations-sources"></ul>
+              <div class="market-operation-detail-head">
+                <p id="market-operations-badge"></p>
+                <button type="button" id="market-operations-close" aria-label="Fechar ficha da operação">×</button>
+              </div>
+              <h4 id="market-operations-name" tabindex="-1"></h4>
+              <p id="market-operations-subtitle"></p>
+              <dl id="market-operations-fields"></dl>
+              <div class="market-operation-actions">
+                <button type="button" id="market-operations-focus">Centrar no globo</button>
+                <button type="button" id="market-operations-trade" hidden>Comércio do país · dados agregados</button>
+                <a class="market-operation-permalink" id="market-operations-permalink">Link deste ponto</a>
+              </div>
+              <section id="market-operations-links-wrap" hidden><h5>Ligações documentadas</h5><ul id="market-operations-links"></ul></section>
+              <section id="market-operations-related-wrap" hidden><h5>Outros pontos da empresa</h5><p class="market-news-note">Mesmo grupo no catálogo. Não indica rota nem fornecimento entre esses pontos.</p><ul id="market-operations-related"></ul></section>
+              <details class="market-operation-evidence"><summary>Fontes e precisão do mapa</summary><ul id="market-operations-sources"></ul><p class="market-news-note" id="market-operations-geo"></p></details>
             </article>
           </div>
         </section>

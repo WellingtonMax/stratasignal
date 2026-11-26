@@ -1,5 +1,25 @@
 (() => {
   "use strict";
+  // Single icon vocabulary for the globe, legend, list and operation details.
+  const symbols = {
+    mine: {label:"Mina", color:"#65eed0", path:"M2 16l6-11 3 5 2-3 5 9H2m4-7 2 2 2-2"},
+    plant: {label:"Planta", color:"#d7b1ff", path:"M3 17V9l5 3V9l5 3 1-8h3l1 13H3m3-2h1m3 0h1m3 0h1"},
+    port: {label:"Porto", color:"#ffc670", path:"M10 5v12m-4-8h8M4 12c0 3 2 5 6 5s6-2 6-5M2 13l2-1 2 1m8 0 2-1 2 1M8 4a2 2 0 1 0 4 0 2 2 0 1 0-4 0"},
+    project: {label:"Projeto", color:"#f49bb8", path:"M10 2l8 8-8 8-8-8 8-8zm-4 8h8m-4-4v8"},
+  };
+  window.strataOperationSymbols = {symbols, icon(kind) {
+    const item = symbols[kind];
+    const ns = "http://www.w3.org/2000/svg";
+    const icon = document.createElementNS(ns,"svg");
+    icon.setAttribute("class","market-operation-icon");
+    icon.setAttribute("viewBox","0 0 20 20");
+    icon.setAttribute("aria-hidden","true");
+    icon.style.color = item.color;
+    const path = document.createElementNS(ns,"path");
+    path.setAttribute("d",item.path);
+    icon.append(path);
+    return icon;
+  }};
   const get = id => document.getElementById("market-globe" + id);
   const root = get(""), canvas = get("-canvas"), toggle = get("-style"), streets = get("-streets");
   if (!root || !canvas || !toggle) return;
@@ -8,7 +28,7 @@
   const sdk = "https://api.mapbox.com/mapbox-gl-js/v3.35.0/mapbox-gl";
   let rows = new Map(), pick, selected, map, popup, timer, outline;
   let operations = new Map(), operationSelected, pickOperation;
-  let pendingFocus;
+  let pendingFocus, hoveredOperation;
   let requested = false, visible = false, layerReady = false, loadError = false, active = "outline";
 
   function notice(text) {
@@ -31,6 +51,7 @@
     map?.getSource("mineral-operations")?.setData(operationData());
   }
   function clearPopup() {
+    hoveredOperation = null;
     popup?.remove();
     if (map) map.getCanvas().style.cursor = "";
   }
@@ -127,11 +148,36 @@
         }, layout: {"circle-sort-key": ["case", chosen, 1, 0]}});
         map.addSource("mineral-operations", {type:"geojson", data:operationData()});
         map.addLayer({id:"mineral-operations", source:"mineral-operations", type:"circle", paint:{
-          "circle-color": ["match", ["get","kind"], "mine","#65eed0", "plant","#d7b1ff", "project", "#f49bb8", "#ffc670"],
-          "circle-radius": ["case", chosen, 11, 8],
-          "circle-stroke-width": ["case", chosen, 3, 2],
+          "circle-color": ["match", ["get","kind"], ...Object.entries(symbols).flatMap(([k,v]) => [k,v.color]), "#a4d1ff"],
+          "circle-radius": ["case", chosen, 14, 11],
+          "circle-stroke-width": ["case", chosen, 3, 1.75],
           "circle-stroke-color": ["case", chosen, "#fff7dc", "#081b33"],
         }, layout:{"circle-sort-key": ["case",chosen,1,0]}});
+        // Keep the underlying interactive circles if symbol rendering is unavailable.
+        if (typeof Path2D === "function") {
+          const tile = document.createElement("canvas");
+          tile.width = tile.height = 40;
+          const ctx = tile.getContext("2d");
+          if (ctx) {
+            for (const [kind, item] of Object.entries(symbols)) {
+              ctx.setTransform(1,0,0,1,0,0);
+              ctx.clearRect(0,0,40,40);
+              ctx.scale(2,2);
+              ctx.strokeStyle = "#081b33";
+              ctx.lineWidth = 1.8;
+              ctx.lineJoin = ctx.lineCap = "round";
+              ctx.stroke(new Path2D(item.path));
+              if (!map.hasImage("strata-op-" + kind)) map.addImage("strata-op-" + kind,ctx.getImageData(0,0,40,40),{pixelRatio:2});
+            }
+            map.addLayer({id:"mineral-operation-icons", source:"mineral-operations", type:"symbol", layout:{
+              "icon-image":["concat","strata-op-",["get","kind"]],
+              "icon-size":["case",chosen,0.97,0.77],
+              "icon-allow-overlap":true, "icon-ignore-placement":true,
+              "icon-rotation-alignment":"viewport", "icon-pitch-alignment":"viewport",
+              "symbol-sort-key":["case",chosen,1,0],
+            }});
+          }
+        }
       });
       map.on("sourcedata", event => {
         if (event.sourceId && event.sourceId !== "trade-partners" && event.coord && event.sourceDataType === "content") layerReady = true;
@@ -183,17 +229,24 @@
       });
       map.on("mousemove", "mineral-operations", event => {
         const item = operations.get(event.features?.[0]?.properties.id);
-        if (!item) return;
-        const card = document.createElement("div"), title = document.createElement("strong");
-        title.textContent = item.city + " · " + item.company;
-        card.append(title, document.createTextNode(item.name));
+        if (!item || (hoveredOperation === item.id && popup.isOpen())) return;
+        hoveredOperation = item.id;
+        const card = document.createElement("div");
+        card.className = "market-operation-preview";
+        const header = document.createElement("div"), category = document.createElement("span");
+        category.textContent = symbols[item.kind].label + " · " + item.country;
+        header.append(window.strataOperationSymbols.icon(item.kind),category);
+        const title = document.createElement("strong"), company = document.createElement("span");
+        title.textContent = item.city;
+        company.textContent = item.company;
+        card.append(header,title,company);
         popup.setLngLat(item.anchor).setDOMContent(card).addTo(map);
         map.getCanvas().style.cursor = "pointer";
       });
       map.on("mouseleave", "mineral-operations", clearPopup);
       map.on("click", "mineral-operations", event => {
         const id = event.features?.[0]?.properties.id;
-        if (operations.has(id)) pickOperation(id);
+        if (operations.has(id)) { clearPopup(); pickOperation(id); }
       });
       map.on("error", event => {
         const code = Number(event?.error?.status ?? event?.error?.statusCode);

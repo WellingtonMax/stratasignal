@@ -289,7 +289,6 @@
 .market-start-case>p:not(.eyebrow){margin:0 0 10px;color:var(--muted);font-size:.9rem}
 .market-start-case .button{min-height:44px}
 @media(max-width:700px){.market-start-cases{grid-template-columns:minmax(0,1fr)}}
-.market-operation-dot{display:inline-block;width:11px;height:11px;border-radius:50%;background:#65eed0;border:1px solid #16372e}
 .market-operations:not([hidden]){margin-top:16px;padding:16px;background:var(--canvas);border:1px solid var(--line);border-radius:10px}
 .market-operations header h3{margin:.2rem 0}
 .market-operations header p{margin:.45rem 0 .8rem}
@@ -312,12 +311,51 @@
 #market-operations-links p{margin:.25rem 0}
 @media(max-width:740px){.market-operations-layout{grid-template-columns:1fr}#market-operations-detail{grid-row:1}}
 #market-operations-legend[hidden],#market-operations-toggle[hidden]{display:none}
-#market-operations-legend{gap:.3rem}
-.market-operation-dot.plant{background:#d7b1ff}
-.market-operation-dot.port{background:#ffc670}
 
-.market-operation-dot.project{background:#f49bb8}
+
+
+
+
 
 .market-operation-examples{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 .9rem}
 .market-operation-examples button{text-align:left;max-width:100%;white-space:normal}
 .market-operation-permalink{display:inline-flex;align-items:center;min-height:44px;margin:0 0 .25rem}
+
+/* Graphite atlas: the same silhouette reads in the globe, legend and dossier. */
+.market-operation-icon{flex:none;width:30px;height:30px;padding:5px;border-radius:9px;background:#0e2035;vertical-align:middle}
+.market-operation-icon path{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+#market-operations-legend{display:flex;flex-wrap:wrap;gap:4px}
+#market-operations-legend button{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:4px 8px;border:1px solid var(--line);border-radius:9px;background:var(--layer,var(--canvas));color:inherit;font:inherit;cursor:pointer}
+#market-operations-legend button[aria-pressed=true]{outline:2px solid #238277;outline-offset:-2px}
+#market-operations-legend .market-operation-icon,.market-operation-preview .market-operation-icon{width:25px;height:25px;padding:4px}
+.market-operation-preview{display:grid;gap:4px;padding:2px;font-size:14px}
+.market-operation-preview div{display:flex;align-items:center;gap:7px}
+.market-operation-preview strong{font-size:16px}
+#market-operations-list button,#market-operations-links button,#market-operations-related button{display:flex;gap:9px;align-items:flex-start;font:inherit;text-align:left}
+#market-operations-list button>span,#market-operations-links button>span,#market-operations-related button>span{display:grid;min-width:0;gap:3px}
+#market-operations-list button:hover,#market-operations-links button:hover,#market-operations-related button:hover{border-color:#238277}
+#market-operations-list button[aria-pressed=true]{box-shadow:inset 3px 0 #238277}
+#market-operations-detail{background:var(--layer,var(--canvas));border-radius:13px;border-top:3px solid #238277;padding:clamp(12px,2vw,22px);min-width:0}
+.market-operation-detail-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#market-operations-badge{display:flex;align-items:center;gap:8px;margin:0;color:var(--muted);font-size:.9rem;font-weight:650}
+#market-operations-detail h4{font-size:clamp(1.25rem,2.1vw,1.65rem);line-height:1.2;margin:.55rem 0 .3rem}
+#market-operations-subtitle{color:var(--muted);font-size:.95rem;margin:.25rem 0 1rem}
+#market-operations-fields{gap:8px}
+#market-operations-fields>div{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--canvas)}
+#market-operations-fields>div:last-child{grid-column:1/-1}
+#market-operations-fields dt{color:var(--muted);font-size:.83rem;margin-bottom:3px}
+#market-operations-fields dd{font-size:.94rem}
+#market-operations-detail h5{font-size:1rem;margin:1rem 0 .55rem}
+.market-operation-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+#market-operations-close,#market-operations-focus,#market-operations-trade{border:1px solid var(--line);background:var(--canvas);border-radius:8px;padding:7px 12px;font:inherit}
+#market-operations-close{min-width:44px;font-size:1.3rem}
+.market-operation-permalink{margin:0;padding:4px 8px}
+#market-operations-links,#market-operations-related{list-style:none;display:grid;gap:8px;padding:0;margin:0}
+#market-operations-links>li{border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--canvas)}
+#market-operations-links>li>p:first-child{font-weight:650;color:var(--muted);font-size:.84rem}
+#market-operations-links>li>p:not(:first-child){font-size:.94rem}
+#market-operations-links button,#market-operations-related button{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--layer,var(--canvas))}
+#market-operations-links a,.market-operation-evidence a{display:inline-flex;align-items:center;min-height:44px}
+.market-operation-evidence{border-top:1px solid var(--line);margin-top:13px}
+.market-operation-evidence summary{cursor:pointer;padding:10px 0;min-height:44px;font-weight:650}
+@media(max-width:475px){#market-operations-list{grid-template-columns:1fr}#market-operations-fields{grid-template-columns:1fr}}

@@ -980,3 +980,19 @@ test("a graphite operation link still opens when trade files are unavailable", a
   assert.match(get("market-operations-fields").textContent,/Mesa.*Allied Graphite/);
   dom.window.close();
 });
+
+
+test("an operation opens country trade explicitly without assigning records to the company", async () => {
+  const {dom, get, window} = open(null, null,"?ncm=25041000#operacao=jixi",undefined,"mapa");
+  await settle(get);
+  const scope = get("market-operations-trade");
+  assert.equal(scope.hidden,false);
+  assert.match(scope.textContent,/dados agregados/);
+  scope.click();
+  assert.equal(get("market-country").value,"China");
+  assert.equal(window.location.hash,"#operacao=jixi");
+  assert.equal(get("market-operations-detail").hidden,false);
+  get("market-operations-list").querySelector("[data-operation=balama]").click();
+  assert.equal(scope.hidden,true);
+  dom.window.close();
+});
