@@ -601,6 +601,61 @@
 
   const mapWorld = get("market-geo-world");
   const mapPreview = get("market-geo-preview");
+  const fullscreenMap = get("market-map-fullscreen");
+  const partnerDialog = get("market-partner-dialog");
+  let mapPartners = new Map(), mapScope = "";
+  let backdropPressed = false, partnerOrigin;
+  function closePartnerDialog() {
+    if (!partnerDialog?.open) return;
+    partnerDialog.close();
+    if (fullscreenMap.open) {
+      const target = partnerOrigin?.getClientRects().length ? partnerOrigin : get("market-map-collapse");
+      target?.focus({preventScroll:true});
+    }
+    partnerOrigin = null;
+  }
+  get("market-partner-close")?.addEventListener("click", closePartnerDialog);
+  partnerDialog?.addEventListener("cancel", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    closePartnerDialog();
+  });
+  partnerDialog?.addEventListener("pointerdown", event => { backdropPressed = event.target === partnerDialog; });
+  partnerDialog?.addEventListener("click", event => {
+    if (event.target === partnerDialog && (backdropPressed || event.detail === 0)) closePartnerDialog();
+    backdropPressed = false;
+  });
+  fullscreenMap?.addEventListener("close", () => { if (!fullscreenMap.open) closePartnerDialog(); });
+
+  function chooseMapPartner(label, origin) {
+    if (!fullscreenMap?.open || typeof partnerDialog?.showModal !== "function") {
+      togglePartner(label);
+      return;
+    }
+    const item = mapPartners.get(label);
+    if (!item) return;
+    // A second tap on the same point reopens the card without clearing its selection.
+    if (country.value !== label) {
+      pendingCountry = null;
+      country.value = label;
+      applyTradeFilters();
+    }
+    const {fob_usd, kg, unitValue: unit} = item;
+    const heading = get("market-partner-name");
+    heading.textContent = label;
+    const role = flow.value === "import" ? "País de origem" : "País de destino";
+    get("market-partner-scope").textContent = role + " · " + mapScope;
+    const fields = [["Valor declarado",money(fob_usd) + " FOB"],["Peso líquido",digits.format(kg) + " kg"],
+      ["Valor declarado por quilo",unitValueLabel(unit)]];
+    get("market-partner-totals").replaceChildren(...fields.map(([key,value]) => {
+      const row = element("div");
+      row.append(element("dt",key),element("dd",value));
+      return row;
+    }));
+    partnerOrigin = origin;
+    if (!partnerDialog.open) partnerDialog.showModal();
+    heading.focus({preventScroll:true});
+  }
 
   function mapPin({label, anchor, fob_usd, kg, unitValue: declaredUnitValue}, selected) {
     const [x, y] = projectAnchor(anchor);
@@ -627,7 +682,7 @@
       mapPreview.hidden = false;
     });
     marker.addEventListener("pointerleave", () => { mapPreview.hidden = true; });
-    marker.addEventListener("click", () => togglePartner(label));
+    marker.addEventListener("click", () => chooseMapPartner(label, get("market-geo-zoom-in")));
     return marker;
   }
 
@@ -728,6 +783,8 @@
     mapPreview.hidden = true;
     geographyContent.hidden = !partners.length && !(view === "mapa" && product.value === "25041000");
     const mapped = partners.filter(partner => partner.anchor);
+    mapPartners = new Map(mapped.map(item => [item.label,item]));
+    mapScope = scope;
     geographyStatus.textContent = (partners.length ?
       digits.format(mapped.length) + " de " + digits.format(partners.length) + " parceiros no mapa" :
       "Nenhum parceiro com registros") + " · " + scope + (country.value ? " · " + country.value : "");
@@ -778,7 +835,7 @@
     window.strataMarketGlobe?.update(mapped.map(({label, anchor, fob_usd, kg, unitValue: unit}) => ({
       label, anchor, totals: money(fob_usd) + " FOB · " + digits.format(kg) + " kg",
       unit: unit.value === null ? "Valor por quilo indisponível" : "Valor declarado: " + unitValueLabel(unit),
-    })), selected?.label, togglePartner);
+    })), selected?.label, chooseMapPartner);
     get("market-geo-table-caption").textContent = scope;
     const focusedLabel = geographyRows.contains(document.activeElement) ? document.activeElement.value : null;
     let nextFocus;

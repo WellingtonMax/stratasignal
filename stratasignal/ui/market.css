@@ -239,6 +239,7 @@
 .market-globe-tools button{min-height:44px;padding:0 10px;border:1px solid #a4b9cc;border-radius:7px;background:#081b33;color:#f7fafc;font:600 .875rem system-ui;cursor:pointer}
 .market-globe-tools button[aria-pressed=true]{border-color:#f2c94c}
 .market-globe-status{position:absolute;left:10px;right:10px;bottom:18px;margin:0;padding:10px;border-radius:7px;background:#081b33;color:#f7fafc;font-size:.875rem;pointer-events:none}
+.market-globe .mapboxgl-popup,.market-globe .mapboxgl-popup-content{pointer-events:none}
 .market-globe .mapboxgl-popup-content{background:#081b33;color:#f7fafc;line-height:1.5}
 .market-globe .mapboxgl-popup-content strong{display:block}
 .market-globe .mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip{border-top-color:#081b33}
@@ -406,3 +407,16 @@
 }
 .market-operation-dialog #market-operations-close{min-height:44px;cursor:pointer;color:inherit}
 #market-operations-website{display:inline-flex;align-items:center;min-height:44px;padding:6px 11px;border:1px solid var(--line);border-radius:8px;font-weight:650}
+
+.market-partner-dialog article{padding:12px clamp(14px,4vw,24px) 20px;border-top:3px solid #6cafea}
+.market-partner-dialog header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.market-partner-dialog header p{display:flex;align-items:center;gap:6px;margin:0;color:var(--muted);font-size:.8rem;font-weight:700}
+.market-partner-dialog header i{flex:none}
+.market-partner-dialog h4{margin:.35rem 0;font-size:1.55rem;overflow-wrap:anywhere}
+#market-partner-scope{color:var(--muted);margin:0 0 .8rem}
+#market-partner-close{min-width:44px;min-height:44px;border:1px solid var(--line);border-radius:8px;background:var(--canvas);color:inherit;font:1.3rem system-ui;cursor:pointer}
+#market-partner-totals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:0 0 .8rem}
+#market-partner-totals>div{background:var(--canvas);padding:7px 10px;border:1px solid var(--line);border-radius:8px;overflow-wrap:anywhere}
+#market-partner-totals>div:last-child{grid-column:1/-1}
+#market-partner-totals dt{color:var(--muted);font-size:.85rem}
+#market-partner-totals dd{margin:4px 0 0;font-weight:700}

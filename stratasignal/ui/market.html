@@ -238,6 +238,18 @@
               <button id="market-map-fullscreen-operation" type="button" aria-haspopup="dialog" aria-controls="market-operation-dialog" hidden></button>
               <select id="market-map-fullscreen-picker" aria-label="Consultar uma operação por cidade"></select>
             </div>
+            <dialog id="market-partner-dialog" class="market-operation-dialog market-partner-dialog" aria-labelledby="market-partner-name">
+              <article>
+                <header>
+                  <p><i class="market-geo-dot" aria-hidden="true"></i> COMÉRCIO DO BRASIL · COMEX STAT</p>
+                  <button id="market-partner-close" type="button" aria-label="Fechar ficha do país">×</button>
+                </header>
+                <h4 id="market-partner-name" tabindex="-1"></h4>
+                <p id="market-partner-scope"></p>
+                <dl id="market-partner-totals"></dl>
+                <p class="market-news-note">Dados agregados por país. Não identificam empresas, portos ou rotas.</p>
+              </article>
+            </dialog>
             <dialog id="market-operation-dialog" class="market-operation-dialog" aria-labelledby="market-operations-name"></dialog>
           </dialog>
           <div class="market-geo-notes">

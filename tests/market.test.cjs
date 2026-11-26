@@ -996,3 +996,46 @@ test("an operation opens country trade explicitly without assigning records to t
   assert.equal(scope.hidden,true);
   dom.window.close();
 });
+
+test("fullscreen country dots show current-scope totals without leaving or clearing the map", async t => {
+  const {dom, window, get, change} = open(null, null, "?ncm=25041000&fluxo=import", undefined, "mapa");
+  t.after(() => dom.window.close());
+  await settle(get);
+  await settle(get, "market-news-status");
+  const wrapper = get("market-map-fullscreen"), card = get("market-partner-dialog");
+  card.showModal = () => card.setAttribute("open","");
+  card.close = () => card.removeAttribute("open");
+  wrapper.setAttribute("open","");
+  const click = target => target.dispatchEvent(new window.MouseEvent("click",{bubbles:true}));
+  const pin = label => [...get("market-geo-pins").children].find(marker => marker.firstChild.textContent === label);
+  click(pin("China"));
+  assert.equal(card.open,true);
+  assert.equal(get("market-partner-name").textContent,"China");
+  assert.match(get("market-partner-scope").textContent,/País de origem · Importações · NCM 25041000/);
+  assert.match(get("market-partner-totals").textContent,/US\$ 1\.700 FOB.*1\.000 kg.*US\$ 1,7 FOB\/kg/);
+  assert.equal(get("market-country").value,"China");
+  assert.equal(pin("China").classList.contains("selected"),true);
+  get("market-partner-close").click();
+  assert.equal(card.open,false);
+  assert.equal(wrapper.open,true);
+  click(pin("China"));
+  assert.equal(card.open,true);
+  assert.equal(get("market-country").value,"China");
+  card.firstElementChild.click();
+  assert.equal(card.open,true);
+  card.dispatchEvent(new window.Event("pointerdown",{bubbles:true}));
+  card.dispatchEvent(new window.MouseEvent("click",{bubbles:true,detail:1}));
+  assert.equal(card.open,false);
+  assert.equal(wrapper.open,true);
+  // The globe receives the same callback that a fallback dot uses.
+  let pick;
+  window.strataMarketGlobe = {update: (_rows,_current,handler) => {pick=handler;}};
+  change("market-flow","export");
+  pick("Japão",get("market-globe-reset"));
+  assert.equal(card.open,true);
+  assert.equal(get("market-partner-name").textContent,"Japão");
+  assert.match(get("market-partner-scope").textContent,/País de destino · Exportações/);
+  card.dispatchEvent(new window.Event("cancel",{bubbles:true,cancelable:true}));
+  assert.equal(card.open,false);
+  assert.equal(wrapper.open,true);
+});

@@ -282,7 +282,10 @@
       map.on("movestart", clearPopup);
       map.on("click", "trade-partners", event => {
         const label = event.features?.[0]?.properties.label;
-        if (!map.queryRenderedFeatures?.(event.point, {layers:["mineral-operations"]})?.length && rows.has(label)) pick(label);
+        if (!map.queryRenderedFeatures?.(event.point, {layers:["mineral-operations"]})?.length && rows.has(label)) {
+          clearPopup();
+          pick(label, get("-reset"));
+        }
       });
       map.on("mousemove", "mineral-operations", event => {
         const item = operations.get(event.features?.[0]?.properties.id);
